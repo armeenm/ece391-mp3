@@ -1,9 +1,8 @@
 /* lib.h - Defines for useful library functions
- * vim:ts=4 noexpandtab
  */
 
-#ifndef _LIB_H
-#define _LIB_H
+#ifndef LIB_H
+#define LIB_H
 
 #include "types.h"
 
@@ -125,4 +124,4 @@ static inline uint32_t inl(int port) {
                  : "memory", "cc");                                                                \
   } while (0)
 
-#endif /* _LIB_H */
+#endif /* LIB_H */

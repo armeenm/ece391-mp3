@@ -12,8 +12,7 @@
   printf("[TEST %s] Result = %s\n", name, (result) ? "PASS" : "FAIL");
 
 static inline void assertion_failure() {
-  /* Use exception #15 for assertions, otherwise
-     reserved by Intel */
+  /* Use exception #15 for assertions, otherwise reserved by Intel */
   asm volatile("int $15");
 }
 
