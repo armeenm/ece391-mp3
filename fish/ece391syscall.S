@@ -33,9 +33,9 @@ DO_CALL(ece391_sigreturn,SYS_SIGRETURN)
 
 .GLOBAL _start
 _start:
-	CALL	main
-    PUSHL   $0
-    PUSHL   $0
+	CALL  main
+  PUSHL $0
+  PUSHL $0
 	PUSHL	%EAX
-	CALL	ece391_halt
+	CALL  ece391_halt
 
