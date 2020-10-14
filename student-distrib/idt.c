@@ -31,7 +31,7 @@ EXC_DFL(exc_xf, "SIMD Floating-Point Exception");
 EXC_DFL(exc_ve, "Virtualization Exception");
 EXC_DFL(exc_sx, "Security Exception");
 
-void syscall_handler() {
+void syscall_handler(void) {
   printf("Handling syscall...\n");
   for (;;)
     ;
@@ -45,11 +45,11 @@ static const IntHandler int_handlers[] = {
     [0xA] = exc_ts, exc_np,          exc_ss,
     exc_gp,         exc_pf,          [0x10] = exc_mf,
     exc_ac,         exc_mc,          exc_xf,
-    exc_ve,         [0x1E] = exc_sx, [SYSCALL_IDT_IDX] = syscall_handler};
+    exc_ve,         [0x1E] = exc_sx, [SYSCALL_IDT] = syscall_handler};
 
 /* Various types used for make_idt_desc */
 typedef enum Dpl { DPL0 = 0, DPL3 = 3 } Dpl;
-typedef enum IntType { TASK = 2, SYSCALL = 3, EXCEPTION = 5 } IntType;
+typedef enum IntType { TASK = 5, SYSCALL = 6, EXCEPTION = 7 } IntType;
 typedef union IntTypeU {
   IntType val;
 
@@ -100,9 +100,9 @@ void init_idt(void) {
    * Defined by Intel
    * Read Appendix D for more information
    */
-  for (i = 0; i < EXCEPTION_COUNT; ++i)
+  for (i = 0; i < EXCEPTION_CNT; ++i)
     idt[i] = make_idt_desc(int_handlers[i], KERNEL_CS, EXCEPTION, DPL0);
 
   /* Syscalls must be callable from ring 3 */
-  idt[SYSCALL_IDT_IDX] = make_idt_desc(int_handlers[SYSCALL_IDT_IDX], KERNEL_CS, SYSCALL, DPL3);
+  idt[SYSCALL_IDT] = make_idt_desc(int_handlers[SYSCALL_IDT], KERNEL_CS, SYSCALL, DPL3);
 }
