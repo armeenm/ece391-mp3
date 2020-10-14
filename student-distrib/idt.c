@@ -19,6 +19,7 @@ EXC_DFL(exc_br, "Bound Range Exceeded")
 EXC_DFL(exc_ud, "Invalid Opcode")
 EXC_DFL(exc_nm, "Device Not Available")
 EXC_DFL(exc_df, "Double Fault")
+EXC_DFL(exc_cso, "Coprocessor Segment Overrun")
 EXC_DFL(exc_ts, "Invalid TSS")
 EXC_DFL(exc_np, "Segment Not Present")
 EXC_DFL(exc_ss, "Stack-Segment Fault")
@@ -51,7 +52,8 @@ static const IntHandler int_handlers[] = {exc_de,
                                           exc_ud,
                                           exc_nm,
                                           exc_df,
-                                          [0xA] = exc_ts,
+                                          exc_cso,
+                                          exc_ts,
                                           exc_np,
                                           exc_ss,
                                           exc_gp,
