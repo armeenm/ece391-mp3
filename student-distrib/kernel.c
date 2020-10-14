@@ -50,7 +50,7 @@ void entry(unsigned long magic, unsigned long addr) {
     printf("cmdline = %s\n", (char*)mbi->cmdline);
 
   if (CHECK_FLAG(mbi->flags, 3)) {
-    int mod_count = 0;
+    unsigned int mod_count = 0;
     int i;
     module_t* mod = (module_t*)mbi->mods_addr;
     while (mod_count < mbi->mods_count) {
