@@ -27,7 +27,9 @@ continue:
   lgdt gdt_desc
 
   # Init and load IDT
+  pushl %eax
   call init_idt
+  popl %eax
   lidt idt_desc_ptr
 
   # Load CS with the new descriptor value
