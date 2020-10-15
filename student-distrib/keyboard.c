@@ -16,3 +16,13 @@ void irqh_keyboard(void) {
 
   enable_irq(KEYBOARD_IRQ);
 }
+
+KeyDiff keycode_scs1(SCSet1 const scancode) {
+  if (scancode >= SCS1_RELEASED_ESC) {
+    KeyDiff const kd = {.pressed = 0, .keycode = scancode - SCS1_RELEASED_ESC + 1};
+    return kd;
+  } else {
+    KeyDiff const kd = {.pressed = 1, .keycode = scancode};
+    return kd;
+  }
+}
