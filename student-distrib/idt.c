@@ -103,16 +103,17 @@ static idt_desc_t make_idt_desc(void const* const handler, uint16_t const seg_se
                                 IntType const int_type, Dpl const dpl) {
 
   IntTypeU const int_type_u = {.val = int_type};
-  idt_desc_t ret = {.seg_selector = seg_selector,
-                    .reserved4 = 0,
-                    .reserved3 = int_type_u.reserved3,
-                    .reserved2 = int_type_u.reserved2,
-                    .reserved1 = int_type_u.reserved1,
-                    .size = 1,
-                    .reserved0 = (int_type_u.val == TASK),
-                    .dpl = dpl,
-                    .present = 1};
+  idt_desc_t ret;
 
+  ret.seg_selector = seg_selector;
+  ret.reserved4 = 0;
+  ret.reserved3 = int_type_u.reserved3;
+  ret.reserved2 = int_type_u.reserved2;
+  ret.reserved1 = int_type_u.reserved1;
+  ret.size = 1;
+  ret.reserved0 = (int_type_u.val == TASK);
+  ret.dpl = dpl;
+  ret.present = 1;
   SET_IDT_ENTRY(ret, handler);
 
   return ret;
