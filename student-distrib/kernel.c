@@ -4,6 +4,7 @@
 
 #include "debug.h"
 #include "i8259.h"
+#include "keyboard.h"
 #include "lib.h"
 #include "multiboot.h"
 #include "tests.h"
@@ -137,6 +138,8 @@ void entry(unsigned long magic, unsigned long addr) {
 
   /* Initialize devices, memory, filesystem, enable device interrupts on the
    * PIC, any other initialization stuff... */
+
+  init_keyboard();
 
   /* Enable interrupts */
   /* Do not enable the following until after you have set up your

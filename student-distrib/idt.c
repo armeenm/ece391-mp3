@@ -1,6 +1,7 @@
 #include "idt.h"
 #include "lib.h"
 #include "util.h"
+#include "x86_desc.h"
 
 /* Default exception handler */
 #define EXC_DFL(name, str)                                                                         \
@@ -33,8 +34,9 @@ EXC_DFL(exc_ve, "Virtualization Exception")
 EXC_DFL(exc_sx, "Security Exception")
 
 /* TODO: These need to be legitimate handlers */
-EXC_DFL(rtc_handler, "RTC event!")
+EXC_DFL(pit_handler, "PIT event!")
 EXC_DFL(keyboard_handler, "Keyboard event!")
+EXC_DFL(rtc_handler, "RTC event!")
 
 void syscall_handler(void) {
   printf("Handling syscall...\n");
@@ -64,8 +66,9 @@ static const IntHandler int_handlers[] = {exc_de,
                                           exc_xf,
                                           exc_ve,
                                           [0x1E] = exc_sx,
-                                          [RTC_IDT] = rtc_handler,
+                                          [PIT_IDT] = pit_handler,
                                           [KEYBOARD_IDT] = keyboard_handler,
+                                          [RTC_IDT] = rtc_handler,
                                           [SYSCALL_IDT] = syscall_handler};
 
 /* Various types used for make_idt_desc */
@@ -125,7 +128,8 @@ void init_idt(void) {
   for (i = 0; i < EXCEPTION_CNT; ++i)
     idt[i] = make_idt_desc(int_handlers[i], KERNEL_CS, EXCEPTION, DPL0);
 
-  idt[RTC_IDT] = make_idt_desc(int_handlers[RTC_IDT], KERNEL_CS, SYSCALL, DPL0);
+  idt[PIT_IDT] = make_idt_desc(int_handlers[PIT_IDT], KERNEL_CS, SYSCALL, DPL0);
   idt[KEYBOARD_IDT] = make_idt_desc(int_handlers[KEYBOARD_IDT], KERNEL_CS, SYSCALL, DPL0);
+  idt[RTC_IDT] = make_idt_desc(int_handlers[RTC_IDT], KERNEL_CS, SYSCALL, DPL0);
   idt[SYSCALL_IDT] = make_idt_desc(int_handlers[SYSCALL_IDT], KERNEL_CS, SYSCALL, DPL3);
 }
