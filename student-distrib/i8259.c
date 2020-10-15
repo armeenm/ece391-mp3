@@ -19,18 +19,18 @@ void i8259_init(void) {
   outb(ICW1, SLAVE_8259_PORT);
 
   /* ICW2: Vector offsets */
-  outb(ICW2_MASTER, MASTER_8259_PORT);
-  outb(ICW2_SLAVE, SLAVE_8259_PORT);
+  outb(ICW2_MASTER, MASTER_8259_DATA_PORT);
+  outb(ICW2_SLAVE, SLAVE_8259_DATA_PORT);
 
   /* ICW3: Slavery */
-  outb(ICW3_MASTER, MASTER_8259_PORT);
-  outb(ICW3_SLAVE, SLAVE_8259_PORT);
+  outb(ICW3_MASTER, MASTER_8259_DATA_PORT);
+  outb(ICW3_SLAVE, SLAVE_8259_DATA_PORT);
 
   /* ICW4: Misc. Config
    * - Use 8086/8088 mode
    */
-  outb(ICW4, MASTER_8259_PORT);
-  outb(ICW4, SLAVE_8259_PORT);
+  outb(ICW4, MASTER_8259_DATA_PORT);
+  outb(ICW4, SLAVE_8259_DATA_PORT);
 
   /* Enable IRQ2 */
   enable_irq(ICW3_SLAVE);
