@@ -200,7 +200,7 @@ typedef enum SCSet1 {
 /* pressed = 1 if pressed, 0 if released */
 typedef struct KeyDiff {
   uint8_t keycode;
-  int pressed;
+  uint8_t pressed;
 } KeyDiff;
 
 void init_keyboard(void);
