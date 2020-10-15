@@ -7,6 +7,7 @@
 #include "keyboard.h"
 #include "lib.h"
 #include "multiboot.h"
+#include "rtc.h"
 #include "tests.h"
 #include "x86_desc.h"
 
@@ -140,6 +141,7 @@ void entry(unsigned long magic, unsigned long addr) {
    * PIC, any other initialization stuff... */
 
   init_keyboard();
+  init_rtc();
 
   /* Enable interrupts */
   /* Do not enable the following until after you have set up your

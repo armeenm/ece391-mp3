@@ -4,14 +4,14 @@
 
 void init_keyboard(void) { enable_irq(KEYBOARD_IRQ); }
 
-void keyboard_irqh(void) {
+void irqh_keyboard(void) {
   cli();
   disable_irq(KEYBOARD_IRQ);
   send_eoi(KEYBOARD_IRQ);
   sti();
 
   while (inb(KEYBOARD_STATUS_PORT) & KEYBOARD_OUTBUF_FULL) {
-    printf("Keyboard: %d\n", inb(KEYBOARD_DATA_PORT));
+    printf("Keyboard: %x\n", inb(KEYBOARD_DATA_PORT));
   }
 
   enable_irq(KEYBOARD_IRQ);

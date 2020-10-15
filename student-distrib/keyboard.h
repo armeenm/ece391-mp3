@@ -15,6 +15,6 @@
 #define KEYBOARD_IRQ 0x1
 
 void init_keyboard(void);
-void keyboard_irqh(void);
+void irqh_keyboard(void);
 
 #endif

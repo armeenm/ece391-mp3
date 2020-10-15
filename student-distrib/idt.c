@@ -1,6 +1,7 @@
 #include "idt.h"
 #include "keyboard.h"
 #include "lib.h"
+#include "rtc.h"
 #include "util.h"
 #include "x86_desc.h"
 
@@ -36,7 +37,6 @@ EXC_DFL(exc_sx, "Security Exception")
 
 /* TODO: These need to be legitimate handlers */
 EXC_DFL(pit_handler, "PIT event!")
-EXC_DFL(rtc_handler, "RTC event!")
 
 void syscall_handler(void) {
   printf("Handling syscall...\n");
@@ -67,8 +67,8 @@ static const IntHandler int_handlers[] = {exc_de,
                                           exc_ve,
                                           [0x1E] = exc_sx,
                                           [PIT_IDT] = pit_handler,
-                                          [KEYBOARD_IDT] = keyboard_irqh,
-                                          [RTC_IDT] = rtc_handler,
+                                          [KEYBOARD_IDT] = irqh_keyboard,
+                                          [RTC_IDT] = irqh_rtc,
                                           [SYSCALL_IDT] = syscall_handler};
 
 /* Various types used for make_idt_desc */
