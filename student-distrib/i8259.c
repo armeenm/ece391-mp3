@@ -74,6 +74,6 @@ void send_eoi(uint32_t const irq_num) {
     outb(irq_num | EOI, MASTER_8259_PORT);
   else {
     outb((irq_num - 8) | EOI, SLAVE_8259_PORT);
-    outb(EOI + SLAVE_IRQ, MASTER_8259_PORT);
+    outb(EOI | SLAVE_IRQ, MASTER_8259_PORT);
   }
 }
