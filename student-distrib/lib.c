@@ -171,6 +171,15 @@ void putc(uint8_t c) {
   }
 }
 
+void putc2(uint8_t c) {
+  *(uint8_t*)(video_mem) = c;
+  //*(uint8_t*)(video_mem + 1) = ATTRIB;
+  //*(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
+  // screen_x++;
+  // screen_x %= NUM_COLS;
+  // screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+}
+
 /* int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix);
  * Inputs: uint32_t value = number to convert
  *            int8_t* buf = allocated buffer to place string in
