@@ -6,16 +6,16 @@ void init_keyboard(void) { enable_irq(KEYBOARD_IRQ); }
 
 void irqh_keyboard(void) {
   send_eoi(KEYBOARD_IRQ);
-
-  inb(KEYBOARD_DATA_PORT);
-
-  /*
-  while (inb(KEYBOARD_STATUS_PORT) & KEYBOARD_OUTBUF_FULL) {
-    printf("Keyboard: %x\n", inb(KEYBOARD_DATA_PORT));
-  }
-  */
-
   sti();
+
+  printf("Keyboard event\n");
+
+  if (inb(KEYBOARD_STATUS_PORT) & KEYBOARD_OUTBUF_FULL)
+    inb(KEYBOARD_DATA_PORT);
+
+  /* NOTE: Do NOT printf() after the inb(KEYBOARD_DATA_PORT) call!
+   * It causes odd processor exceptions...
+   */
 }
 
 KeyDiff keycode_scs1(SCSet1 const scancode) {
