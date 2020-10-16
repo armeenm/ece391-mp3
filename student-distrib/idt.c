@@ -7,10 +7,13 @@
 
 /* Default exception handler */
 #define EXC_DFL(name, str)                                                                         \
-  void name(void) {                                                                                \
-    printf("EXCEPTION: " str "\n");                                                                \
-    for (;;)                                                                                       \
-      ;                                                                                            \
+  void name(int eip, int UNUSED(cs), int eflags) {                                                 \
+    printf("EXCEPTION: " str ": eip: 0x%x, eflags: 0x%x\n", eip, eflags);                          \
+  }
+
+#define EXC_DFL_ERRC(name, str)                                                                    \
+  void name(int errc, int eip, int UNUSED(cs), int eflags) {                                       \
+    printf("EXCEPTION: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n", errc, eip, eflags);        \
   }
 
 EXC_DFL(exc_de, "Divide-by-zero Error")
@@ -26,7 +29,7 @@ EXC_DFL(exc_cso, "Coprocessor Segment Overrun")
 EXC_DFL(exc_ts, "Invalid TSS")
 EXC_DFL(exc_np, "Segment Not Present")
 EXC_DFL(exc_ss, "Stack-Segment Fault")
-EXC_DFL(exc_gp, "General Protection Fault")
+EXC_DFL_ERRC(exc_gp, "General Protection Fault")
 EXC_DFL(exc_pf, "Page Fault")
 EXC_DFL(exc_mf, "x87 Floating-Point Exception")
 EXC_DFL(exc_ac, "Alignment Check")
@@ -45,28 +48,28 @@ void syscall_handler(void) {
 }
 
 typedef void (*IntHandler)(void);
-static const IntHandler int_handlers[] = {exc_de,
-                                          exc_db,
-                                          exc_nmi,
-                                          exc_bp,
-                                          exc_of,
-                                          exc_br,
-                                          exc_ud,
-                                          exc_nm,
-                                          exc_df,
-                                          exc_cso,
-                                          exc_ts,
-                                          exc_np,
-                                          exc_ss,
-                                          exc_gp,
-                                          exc_pf,
-                                          [0x10] = exc_mf,
-                                          exc_ac,
-                                          exc_mc,
-                                          exc_xf,
-                                          exc_ve,
-                                          [0x1E] = exc_sx,
-                                          [PIT_IDT] = pit_handler,
+static const IntHandler int_handlers[] = {(IntHandler)exc_de,
+                                          (IntHandler)exc_db,
+                                          (IntHandler)exc_nmi,
+                                          (IntHandler)exc_bp,
+                                          (IntHandler)exc_of,
+                                          (IntHandler)exc_br,
+                                          (IntHandler)exc_ud,
+                                          (IntHandler)exc_nm,
+                                          (IntHandler)exc_df,
+                                          (IntHandler)exc_cso,
+                                          (IntHandler)exc_ts,
+                                          (IntHandler)exc_np,
+                                          (IntHandler)exc_ss,
+                                          (IntHandler)exc_gp,
+                                          (IntHandler)exc_pf,
+                                          [0x10] = (IntHandler)exc_mf,
+                                          (IntHandler)exc_ac,
+                                          (IntHandler)exc_mc,
+                                          (IntHandler)exc_xf,
+                                          (IntHandler)exc_ve,
+                                          [0x1E] = (IntHandler)exc_sx,
+                                          [PIT_IDT] = (IntHandler)pit_handler,
                                           [KEYBOARD_IDT] = irqh_keyboard,
                                           [RTC_IDT] = irqh_rtc,
                                           [SYSCALL_IDT] = syscall_handler};

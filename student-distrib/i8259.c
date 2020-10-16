@@ -32,6 +32,8 @@ void i8259_init(void) {
   outb(ICW4, MASTER_8259_DATA_PORT);
   outb(ICW4, SLAVE_8259_DATA_PORT);
 
+  outb(slave_mask, SLAVE_8259_DATA_PORT);
+
   /* Enable slave IRQ */
   enable_irq(SLAVE_IRQ);
 }
@@ -72,8 +74,6 @@ void send_eoi(uint32_t const irq_num) {
     outb(irq_num | EOI, MASTER_8259_PORT);
   else {
     outb((irq_num - 8) | EOI, SLAVE_8259_PORT);
-
-    /* TODO: This may be wrong */
     outb(EOI + SLAVE_IRQ, MASTER_8259_PORT);
   }
 }
