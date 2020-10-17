@@ -136,4 +136,6 @@ void init_idt(void) {
   idt[KEYBOARD_IDT] = make_idt_desc(int_handlers[KEYBOARD_IDT], KERNEL_CS, SYSCALL, DPL0);
   idt[RTC_IDT] = make_idt_desc(int_handlers[RTC_IDT], KERNEL_CS, SYSCALL, DPL0);
   idt[SYSCALL_IDT] = make_idt_desc(int_handlers[SYSCALL_IDT], KERNEL_CS, SYSCALL, DPL3);
+
+  lidt(idt_desc_ptr);
 }

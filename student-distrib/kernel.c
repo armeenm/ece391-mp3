@@ -4,6 +4,7 @@
 
 #include "debug.h"
 #include "i8259.h"
+#include "idt.h"
 #include "keyboard.h"
 #include "lib.h"
 #include "multiboot.h"
@@ -146,6 +147,8 @@ void entry(unsigned long magic, unsigned long addr) {
   clear();
 
   /* Enable interrupts */
+  init_idt();
+
   /* Do not enable the following until after you have set up your
    * IDT correctly otherwise QEMU will triple fault and simple close
    * without showing you any output */
