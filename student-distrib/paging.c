@@ -27,7 +27,7 @@ void init_paging()
         /* Page table set to i * 4096 and 0b11 is orded to set to
          * R/W mode and present
          */
-        page_table[i] = (i * PAGE_TABLE_SIZE) | 0x3;
+        page_table[i] = (i * 4096) | 0x3;
     }
 
     /* Set first page_directory to page_table, set R/W, Present */
