@@ -1,6 +1,7 @@
 #include "tests.h"
 #include "idt.h"
 #include "lib.h"
+#include "keyboard.h"
 #include "x86_desc.h"
 
 #define PASS 1
@@ -135,6 +136,32 @@ int handle_keypress_test() {
   printf("\n");
   return result;
 }
+
+/* int div_zero_except_test() 
+ *  force div by zero exception to occur, if not handled, test will fail
+ * Inputs: None
+ * Outputs: Exception handled or FAIL
+ * Side Effects: compiler warning
+ * Coverage: vector 0x0
+ */
+int div_zero_except_test() {
+  int x = 391/0;
+  printf("%d", x);
+  return FAIL;
+}
+
+/* int invalid_opcode()
+ *  force invalid op-code exception to occur, if not handled, test will fail
+ * Inputs: None
+ * Outputs: Exception handled or FAIL
+ * Side Effects: none
+ * Coverage: vector 0x6
+ */
+int invalid_opcode() {
+  asm volatile("ud2");
+  return FAIL;
+}
+
 // add more tests here
 
 /* Checkpoint 2 tests */
@@ -146,6 +173,8 @@ int handle_keypress_test() {
 void launch_tests() {
   TEST_OUTPUT("idt_test", idt_test());
   TEST_OUTPUT("Paging Test", page_test());
-  TEST_OUTPUT("handle_keypress", handle_keypress_test());
+  TEST_OUTPUT("Handle Keypress", handle_keypress_test());
+  // TEST_OUTPUT("Divide by zero", div_zero());
+  // TEST_OUTPUT("Invalid Ppcode", invalid_opcode());
   // launch your tests here
 }
