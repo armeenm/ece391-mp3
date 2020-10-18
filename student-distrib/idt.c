@@ -35,6 +35,7 @@ EXC_DFL(exc_np, "Segment Not Present")
 EXC_DFL(exc_ss, "Stack-Segment Fault")
 EXC_DFL_ERRC(exc_gp, "General Protection Fault")
 EXC_DFL(exc_pf, "Page Fault")
+EXC_DFL(exc_af, "ASSERTION FAILURE!!!")
 EXC_DFL(exc_mf, "x87 Floating-Point Exception")
 EXC_DFL(exc_ac, "Alignment Check")
 EXC_DFL(exc_mc, "Machine Check")
@@ -67,7 +68,8 @@ static const IntHandler int_handlers[] = {(IntHandler)exc_de,
                                           (IntHandler)exc_ss,
                                           (IntHandler)exc_gp,
                                           (IntHandler)exc_pf,
-                                          [0x10] = (IntHandler)exc_mf,
+                                          (IntHandler)exc_af,
+                                          (IntHandler)exc_mf,
                                           (IntHandler)exc_ac,
                                           (IntHandler)exc_mc,
                                           (IntHandler)exc_xf,
