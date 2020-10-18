@@ -1,5 +1,5 @@
 Makefile.dep
 .clangd/
 compile_commands*.json
-bootimg
 mp3.img
+bootimg
