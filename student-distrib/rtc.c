@@ -1,6 +1,7 @@
 #include "rtc.h"
 #include "i8259.h"
 #include "lib.h"
+#include "options.h"
 
 void init_rtc() {
   uint8_t prev;
@@ -24,7 +25,9 @@ void irqh_rtc() {
   sti();
 
   ack_rtc_int();
+#if RANDOM_TEXT
   test_interrupts();
+#endif
 }
 
 uint8_t ack_rtc_int() {
