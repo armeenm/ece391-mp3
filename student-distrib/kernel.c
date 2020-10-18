@@ -11,7 +11,7 @@
 #include "rtc.h"
 #include "tests.h"
 #include "x86_desc.h"
-
+#include "paging.h"
 #define RUN_TESTS
 
 /* Macros. */
@@ -143,6 +143,7 @@ void entry(unsigned long magic, unsigned long addr) {
 
   init_keyboard();
   init_rtc();
+  init_paging();
 
   clear();
 
