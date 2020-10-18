@@ -25,11 +25,12 @@ void init_paging()
     int i;
     for (i = 0; i < PAGE_TABLE_SIZE; ++i) {
         /* Page table set to i * 4096 and 0b11 is orded to set to
-         * R/W mode and present
+         * R/W mode and not present
          */
-        page_table[i] = (i * 4096) | 0x3;
+        page_table[i] = (i * PTE_SIZE) | 0x2;
     }
-
+    /* Set Video Memory to present and R/W */
+    page_table[VIDEO_MEMORY_START] = (VIDEO_MEMORY_START * PTE_SIZE) | 0x3;
     /* Set first page_directory to page_table, set R/W, Present */
     page_directory[0] = ((unsigned int)page_table) | 0x3;
     /* Set up kernel page, address equals 1 (22nd bit), R/W Mode (0x3), 
