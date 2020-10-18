@@ -30,6 +30,9 @@ int32_t bad_userspace_addr(const void* addr, int32_t len);
 int32_t safe_strncpy(int8_t* dest, const int8_t* src, int32_t n);
 
 void test_interrupts(void);
+int get_screen_x();
+int get_screen_y();
+
 
 /* Port read functions */
 /* Inb reads a byte and returns its value as a zero-extended 32-bit

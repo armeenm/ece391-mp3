@@ -99,9 +99,8 @@ void irqh_keyboard(void) {
  * Function: 
 */
 void handle_keypress(SCSet1 const scancode) {
-  if (scancode < SCS1_RELEASED_ESC) {
+  if (scancode > 0 && scancode < SCS1_PRESSED_F12) {
     char const disp = keycodes[scancode];
-
     if (disp)
       putc(disp);
   }

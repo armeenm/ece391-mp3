@@ -42,8 +42,6 @@ int idt_test() {
 
   TEST_HEADER;
 
-  assertion_failure();
-
   /* Check the first 20 entires, skipping 15 (reserved) */
   for (i = 0; i < 21; ++i) {
     if (idt_test_helper(i, 1, 0)) {
@@ -109,7 +107,34 @@ int page_test()
   return result;
 }
 
+/* handle Keypress
+ * int handle_keypress_test()
+ * Prints all valid scancode characters to the screen asserts the correct final location on the assumption
+ * we started from top-left
+ * Inputs: None
+ * Outputs: PASS/FAIl
+ * Side Effects: Prints all valid keyboard characters
+ * Coverage: Tests large negative to large postiive scancode inputs
+ */
+int handle_keypress_test() {
+  int i;
+  int result = PASS;
+  int start_x, start_y;
 
+  start_x = get_screen_x();
+  start_y = get_screen_y();
+
+  putc(' ');
+  for (i = -391; i<391; i++) {
+    handle_keypress(i);
+  }
+  // Last character postions from start postions, down 3 rows, 38 across corner
+  if (get_screen_x()-start_x != last_x_pos || get_screen_y()-start_y != last_y_pos) {
+    result = FAIL;
+  }
+  printf("\n");
+  return result;
+}
 // add more tests here
 
 /* Checkpoint 2 tests */
@@ -121,5 +146,6 @@ int page_test()
 void launch_tests() {
   TEST_OUTPUT("idt_test", idt_test());
   TEST_OUTPUT("Paging Test", page_test());
+  TEST_OUTPUT("handle_keypress", handle_keypress_test());
   // launch your tests here
 }

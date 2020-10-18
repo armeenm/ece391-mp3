@@ -23,6 +23,23 @@ void clear(void) {
   }
 }
 
+/* int get_screen_x();
+ * Inputs: void
+ * Return Value: int
+ * Function: get value of screen_x */
+int get_screen_x() {
+  return screen_x;
+}
+
+/* int get_screen_y();
+ * Inputs: void
+ * Return Value: int
+ * Function: get value of screen_y */
+int get_screen_y() {
+  return screen_y;
+}
+
+
 /* Standard printf().
  * Only supports the following format strings:
  * %%  - print a literal '%' character
