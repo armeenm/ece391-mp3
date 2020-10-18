@@ -42,11 +42,10 @@ int idt_test() {
 
   TEST_HEADER;
 
+  assertion_failure();
+
   /* Check the first 20 entires, skipping 15 (reserved) */
   for (i = 0; i < 21; ++i) {
-    if (i == 15)
-      continue;
-
     if (idt_test_helper(i, 1, 0)) {
       result = FAIL;
       assertion_failure();
