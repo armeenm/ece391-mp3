@@ -9,11 +9,15 @@
 #define EXC_DFL(name, str)                                                                         \
   void name(int eip, int UNUSED(cs), int eflags) {                                                 \
     printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", eip, eflags);                                \
+    for (;;)                                                                                       \
+      ;                                                                                            \
   }
 
 #define EXC_DFL_ERRC(name, str)                                                                    \
   void name(int errc, int eip, int UNUSED(cs), int eflags) {                                       \
     printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n", errc, eip, eflags);              \
+    for (;;)                                                                                       \
+      ;                                                                                            \
   }
 
 EXC_DFL(exc_de, "Divide-by-zero Error")
