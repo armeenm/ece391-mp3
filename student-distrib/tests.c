@@ -65,6 +65,52 @@ int idt_test() {
   return result;
 }
 
+/* int deref(int * test)
+ * Description: Dereference an integer pointer
+ * Inputs: test - integer pointer
+ * Return Value: integer value at that point
+ * Side Effects: none
+*/
+int deref(int * test)
+{
+  return *test;
+}
+
+/* Paging Test
+ * int page_test()
+ * Asserts that paging is set up correctly
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: None
+ * Coverage: Paging, null dereference, negative pointer deref, kernel space, userspace, 
+ */
+int page_test()
+{
+  int result = PASS;
+  /* Access null pointer */
+  //deref((int *)0);
+  /* Access negative pointer */
+  //deref((int *)-100);
+  /* Access Video memory*/
+  //deref((int *)0xB8000);
+  /* Access pointer in kernel space (5mb) */
+  //deref((int *)0x4C4B40);
+  /* Access pointer in 8mb - 4gb range (userspace) */
+  //deref((int *)0x10000000);
+
+  int b = 391;
+  int * a = &b;
+
+  if(b != deref(a))
+  {
+    result = FAIL;
+    assertion_failure();
+  }
+
+  return result;
+}
+
+
 // add more tests here
 
 /* Checkpoint 2 tests */
@@ -75,5 +121,6 @@ int idt_test() {
 /* Test suite entry point */
 void launch_tests() {
   TEST_OUTPUT("idt_test", idt_test());
+  TEST_OUTPUT("Paging Test", page_test());
   // launch your tests here
 }

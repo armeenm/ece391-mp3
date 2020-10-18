@@ -24,7 +24,7 @@ void irqh_rtc() {
   sti();
 
   ack_rtc_int();
-  test_interrupts();
+  //test_interrupts();
 }
 
 uint8_t ack_rtc_int() {
