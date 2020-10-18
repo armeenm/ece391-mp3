@@ -8,12 +8,12 @@
 /* Default exception handler */
 #define EXC_DFL(name, str)                                                                         \
   void name(int eip, int UNUSED(cs), int eflags) {                                                 \
-    printf("EXCEPTION: " str ": eip: 0x%x, eflags: 0x%x\n", eip, eflags);                          \
+    printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", eip, eflags);                                \
   }
 
 #define EXC_DFL_ERRC(name, str)                                                                    \
   void name(int errc, int eip, int UNUSED(cs), int eflags) {                                       \
-    printf("EXCEPTION: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n", errc, eip, eflags);        \
+    printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n", errc, eip, eflags);              \
   }
 
 EXC_DFL(exc_de, "Divide-by-zero Error")
@@ -76,9 +76,9 @@ static const IntHandler int_handlers[] = {(IntHandler)exc_de,
 
 /* Various types used for make_idt_desc */
 typedef enum Dpl { DPL0 = 0, DPL3 = 3 } Dpl;
-typedef enum IntType { TASK = 5, SYSCALL = 6, EXCEPTION = 7 } IntType;
-typedef union IntTypeU {
-  IntType val;
+typedef enum GateType { TASK = 5, INT = 6, EXC = 7 } GateType;
+typedef union GateTypeU {
+  GateType val;
 
   struct {
     uint32_t reserved3 : 1;
@@ -86,10 +86,10 @@ typedef union IntTypeU {
     uint32_t reserved1 : 1;
   };
 
-} IntTypeU;
+} GateTypeU;
 
 static idt_desc_t NODISCARD CONST make_idt_desc(void const* handler, uint16_t seg_selector,
-                                                IntType int_type, Dpl dpl) NONNULL(());
+                                                GateType int_type, Dpl dpl) NONNULL(());
 
 /**
  * idt_desc_t
@@ -103,9 +103,9 @@ static idt_desc_t NODISCARD CONST make_idt_desc(void const* handler, uint16_t se
  * Side Effects: None
  */
 static idt_desc_t make_idt_desc(void const* const handler, uint16_t const seg_selector,
-                                IntType const int_type, Dpl const dpl) {
+                                GateType const int_type, Dpl const dpl) {
 
-  IntTypeU const int_type_u = {.val = int_type};
+  GateTypeU const int_type_u = {.val = int_type};
   idt_desc_t ret;
 
   ret.seg_selector = seg_selector;
@@ -130,12 +130,12 @@ void init_idt(void) {
    * Read Appendix D for more information
    */
   for (i = 0; i < EXCEPTION_CNT; ++i)
-    idt[i] = make_idt_desc(int_handlers[i], KERNEL_CS, EXCEPTION, DPL0);
+    idt[i] = make_idt_desc(int_handlers[i], KERNEL_CS, EXC, DPL0);
 
-  idt[PIT_IDT] = make_idt_desc(int_handlers[PIT_IDT], KERNEL_CS, SYSCALL, DPL0);
-  idt[KEYBOARD_IDT] = make_idt_desc(int_handlers[KEYBOARD_IDT], KERNEL_CS, SYSCALL, DPL0);
-  idt[RTC_IDT] = make_idt_desc(int_handlers[RTC_IDT], KERNEL_CS, SYSCALL, DPL0);
-  idt[SYSCALL_IDT] = make_idt_desc(int_handlers[SYSCALL_IDT], KERNEL_CS, SYSCALL, DPL3);
+  idt[PIT_IDT] = make_idt_desc(int_handlers[PIT_IDT], KERNEL_CS, INT, DPL0);
+  idt[KEYBOARD_IDT] = make_idt_desc(int_handlers[KEYBOARD_IDT], KERNEL_CS, INT, DPL0);
+  idt[RTC_IDT] = make_idt_desc(int_handlers[RTC_IDT], KERNEL_CS, INT, DPL0);
+  idt[SYSCALL_IDT] = make_idt_desc(int_handlers[SYSCALL_IDT], KERNEL_CS, INT, DPL3);
 
   lidt(idt_desc_ptr);
 }

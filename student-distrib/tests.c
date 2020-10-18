@@ -1,4 +1,5 @@
 #include "tests.h"
+#include "idt.h"
 #include "lib.h"
 #include "x86_desc.h"
 
@@ -18,9 +19,9 @@ static inline void assertion_failure() {
 
 /* Checkpoint 1 tests */
 
-/* IDT Test - Example
+/* IDT Test
  *
- * Asserts that first 10 IDT entries are not NULL
+ * Asserts that IDT exception entries are correct
  * Inputs: None
  * Outputs: PASS/FAIL
  * Side Effects: None
@@ -28,14 +29,21 @@ static inline void assertion_failure() {
  * Files: x86_desc.h/S
  */
 int idt_test() {
-  TEST_HEADER;
-
   int i;
   int result = PASS;
-  for (i = 0; i < 10; ++i) {
-    if ((idt[i].offset_15_00 == NULL) && (idt[i].offset_31_16 == NULL)) {
-      assertion_failure();
+
+  TEST_HEADER;
+
+  for (i = 0; i < 31; ++i) {
+    if ((i > 20 && i < 30) || i == 15)
+      continue;
+
+    if ((!idt[i].offset_15_00 && !idt[i].offset_31_16) || idt[i].seg_selector != KERNEL_CS ||
+        idt[i].reserved4 || !idt[i].reserved3 || !idt[i].reserved2 || !idt[i].reserved1 ||
+        !idt[i].size || idt[i].reserved0 || idt[i].dpl || !idt[i].present) {
+
       result = FAIL;
+      assertion_failure();
     }
   }
 
