@@ -10,7 +10,7 @@
 #define PAGE_TABLE_SIZE 1024
 
 
-void init_paging(void);
+void init_paging();
 
 static unsigned int page_directory[PAGE_DIRECTORY_SIZE] __attribute__ ((aligned(4096)));
 static unsigned int page_tables[PAGE_TABLE_SIZE] __attribute__ ((aligned(4096)));
