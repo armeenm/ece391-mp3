@@ -9,5 +9,6 @@
 #define NULL_PTR_TEST 0
 #define NEG_PTR_TEST 0
 #define USERSPACE_PTR_TEST 0
+#define VID_MEM_EDGE_CASE_TEST 0
 
 #endif
