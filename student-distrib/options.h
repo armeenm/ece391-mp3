@@ -10,8 +10,4 @@
 #define NEG_PTR_TEST 0
 #define USERSPACE_PTR_TEST 0
 
-/* Should succeed */
-#define KSPACE_PTR_TEST 0
-#define VID_MEM_PTR_TEST 0
-
 #endif
