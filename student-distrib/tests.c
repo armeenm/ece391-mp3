@@ -110,13 +110,20 @@ int page_test() {
     uint32_t i;
 
     // Check 4KB page directory entry for valid address + permission bis (because the CPU can set other bits)
-    if (!(page_directory[0] & PRESENT) || !(page_directory[0] & READ_WRITE) || (page_directory[0] & USER_ACCESS) || ((int)page_table | page_directory[0]) != page_directory[0]) {
+    if (!(page_directory[0] & PRESENT) ||
+        !(page_directory[0] & READ_WRITE) ||
+         (page_directory[0] & USER_ACCESS) ||
+         ((int)page_table | page_directory[0]) != page_directory[0]) {
       result = FAIL;
       assertion_failure();
     }
 
     // Check kernel entry for valid address + permission bits
-    if (!(page_directory[1] & PRESENT) || !(page_directory[1] & READ_WRITE) || (page_directory[1] & USER_ACCESS) || !(page_directory[1] & FOUR_MEG_SIZE) || !(page_directory[1] & FOUR_MEG_ADDRESS_ONE)) {
+    if (!(page_directory[1] & PRESENT) ||
+        !(page_directory[1] & READ_WRITE) ||
+	 (page_directory[1] & USER_ACCESS) ||
+	!(page_directory[1] & FOUR_MEG_SIZE) ||
+	!(page_directory[1] & FOUR_MEG_ADDRESS_ONE)) {
       result = FAIL;
       assertion_failure();
     }
