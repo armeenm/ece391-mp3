@@ -69,20 +69,20 @@ char keycodes[SCS1_PRESSED_F12] = {[KEY_1] = '1',
                                    '0',
                                    '.'};
 
-/* void init_keyboard(void);
+/* init_keyboard
  * Description: Initializes the keyboard
- * Inputs: none
- * Return Value: none
- * Function: Enables the keyboard irq.
+ * Inputs: None
+ * Return Value: None
+ * Side Effects: Enables the keyboard IRQ.
  */
 void init_keyboard(void) { enable_irq(KEYBOARD_IRQ); }
 
-/* void irqh_keyboard(void);
+/* irqh_keyboard
  * Description: Takes care of typed keys.
- * Inputs: none
- * Return Value: none
- * Function: Safely disables keyboard to avoid multi-input and prints
- *           the typed key to the virtual machine window.
+ * Inputs: None
+ * Return Value: None
+ * Side Effects: Safely disables keyboard to avoid multi-input and prints
+ *               the typed key to the virtual machine window.
  */
 void irqh_keyboard(void) {
   send_eoi(KEYBOARD_IRQ);
@@ -92,11 +92,12 @@ void irqh_keyboard(void) {
     handle_keypress(inb(KEYBOARD_DATA_PORT));
 }
 
-/* void handle_keypress(SCSet1 const scancode);
- * Description:
- * Inputs: none
- * Return Value: none
- * Function:
+/* handle_keypress
+ * Description: Puts a scancode on the screen
+ * Inputs: scancode -- Scancode to use
+ * Outputs: None
+ * Return Value: None
+ * Side Effects: Writes to the video buffer
  */
 void handle_keypress(SCSet1 const scancode) {
   if (scancode > 0 && scancode < SCS1_PRESSED_F12) {

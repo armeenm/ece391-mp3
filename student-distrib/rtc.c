@@ -3,6 +3,12 @@
 #include "lib.h"
 #include "options.h"
 
+/* init_rtc
+ * Description: Initializes the real-time clock.
+ * Inputs: None
+ * Return Value: None
+ * Side Effects: Writes to RTC ports, enables RTC IRQ.
+ */
 void init_rtc() {
   uint8_t prev;
 
@@ -20,6 +26,13 @@ void init_rtc() {
   // We may want to renable NMI's here, see OSDev
 }
 
+/* irqh_rtc
+ * Description: Handles an interrupt from the RTC.
+ * Inputs: None
+ * Outputs: None
+ * Return Value: None
+ * Side Effects: Writes to RTC ports, sends EOI.
+ */
 void irqh_rtc() {
   send_eoi(RTC_IRQ);
   sti();
@@ -30,11 +43,25 @@ void irqh_rtc() {
 #endif
 }
 
+/* ack_rtc_int
+ * Description: ACKs an RTC interrupt.
+ * Inputs: None
+ * Outputs: None
+ * Return Value: None
+ * Side Effects: Writes to RTC ports.
+ */
 uint8_t ack_rtc_int() {
   outb(RTC_REG_C, RTC_SEL_PORT); // We need to read register C to permit multiple interupts
   return inb(RTC_DATA_PORT);     // if we want, this gives us back int details
 }
 
+/* set_freq_rtc
+ * Description: Sets the frequency of the RTC's interrupts.
+ * Inputs: freq -- Desired frequency
+ * Outputs: None
+ * Return Value: None
+ * Side Effects: Writes to RTC ports.
+ */
 void set_freq_rtc(RTCFreq const freq) {
   uint8_t prev;
 

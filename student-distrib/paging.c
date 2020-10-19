@@ -1,6 +1,6 @@
 #include "paging.h"
 
-/* Define constants for Paging aligned to 4096 */
+/* Define constants for paging aligned to 4096 */
 uint32_t page_directory[PAGE_DIRECTORY_SIZE] __attribute__((aligned(PTE_SIZE)));
 uint32_t page_table[PAGE_TABLE_SIZE] __attribute__((aligned(PTE_SIZE)));
 
@@ -12,9 +12,10 @@ uint32_t page_table[PAGE_TABLE_SIZE] __attribute__((aligned(PTE_SIZE)));
  * Video memory goes from 0xB8000 to 0xC0000.
  */
 
-/* void init_paging();
+/* init_paging
  * Description: Initializes paging with PSE.
  * Inputs: None
+ * Outputs: None
  * Return Value: None
  * Function: Creates page table & page directories.
  *           Initializes CR0, CR3, and CR4 to enable paging.
