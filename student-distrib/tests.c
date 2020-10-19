@@ -109,11 +109,35 @@ int page_test() {
   {
     uint32_t i;
 
-    for (i = 0; i < PAGE_TABLE_SIZE; ++i) {
-      if (i == VIDEO_MEMORY_START)
-        continue;
+    // Check 4KB page directory entry for valid address + permission bis (because the CPU can set other bits)
+    if (!(page_directory[0] & PRESENT) || !(page_directory[0] & READ_WRITE) || (page_directory[0] & USER_ACCESS) || ((int)page_table | page_directory[0]) != page_directory[0]) {
+      result = FAIL;
+      assertion_failure();
+    }
 
-      else if (page_table[i] != ((i * PTE_SIZE) | 0x2)) {
+    // Check kernel entry for valid address + permission bits
+    if (!(page_directory[1] & PRESENT) || !(page_directory[1] & READ_WRITE) || (page_directory[1] & USER_ACCESS) || !(page_directory[1] & FOUR_MEG_SIZE) || !(page_directory[1] & FOUR_MEG_ADDRESS_ONE)) {
+      result = FAIL;
+      assertion_failure();
+    }
+
+    // Check the page table entry including video memory
+    for (i = 0; i < PAGE_TABLE_SIZE; ++i) {
+      if (i == VIDEO_MEMORY_START) {
+        if (!(page_table[i] & PRESENT) || !(page_table[i] & READ_WRITE)) {
+          result = FAIL;
+          assertion_failure();
+        }
+      // We can only assume this because the CPU should not touch non-present locations
+      } else if (page_table[i] != ((i * PTE_SIZE) | READ_WRITE)) {
+        result = FAIL;
+        assertion_failure();
+      }
+    }
+    
+    // Check that the 4MB to 4GB range has the correct bits set (4MB entries, not present), no adddress yet
+    for (i = 2; i < PAGE_DIRECTORY_SIZE; i++) {
+      if (page_directory[i] != (READ_WRITE | USER_ACCESS | FOUR_MEG_SIZE)) {
         result = FAIL;
         assertion_failure();
       }
@@ -132,11 +156,14 @@ int page_test() {
   return result;
 }
 
-/* handle Keypress
+/* Handle Keypress
  * int handle_keypress_test()
  * Prints all valid scancode characters to the screen asserts the correct final location on the
- * assumption we started from top-left Inputs: None Outputs: PASS/FAIl Side Effects: Prints all
- * valid keyboard characters Coverage: Tests large negative to large postiive scancode inputs
+ * assumption we started from top-left 
+ * Inputs: None 
+ * Outputs: PASS/FAIl 
+ * Side Effects: Prints all valid keyboard characters 
+ * Coverage: Tests large negative to large postiive scancode inputs
  */
 int handle_keypress_test() {
   int i;

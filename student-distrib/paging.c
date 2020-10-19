@@ -21,18 +21,21 @@ uint32_t page_table[PAGE_TABLE_SIZE] __attribute__((aligned(PTE_SIZE)));
  *           Initializes CR0, CR3, and CR4 to enable paging.
  */
 void init_paging() {
+  /* Make sure to flush TLB in the future when this function gets reused */ 
+
   /* Initialize page tables */
   uint32_t i;
 
   /* Page table set to i * 4096. R = 1 */
   for (i = 0; i < PAGE_TABLE_SIZE; ++i)
-    page_table[i] = (i * PTE_SIZE) | 0x2;
+    page_table[i] = (i * PTE_SIZE) | READ_WRITE;
+
 
   /* Set video memory. R = 1, P = 1 */
-  page_table[VIDEO_MEMORY_START] = (VIDEO_MEMORY_START * PTE_SIZE) | 0x3;
+  page_table[VIDEO_MEMORY_START] = (VIDEO_MEMORY_START * PTE_SIZE) | READ_WRITE | PRESENT; // We may want userspace access in the future
 
   /* Set first page_directory to page_table. R = 1, P = 1 */
-  page_directory[0] = ((uint32_t)page_table) | 0x3;
+  page_directory[0] = ((uint32_t)page_table) | READ_WRITE | PRESENT;
 
   /* Kernel page setup.
    * Address = 1
@@ -40,7 +43,7 @@ void init_paging() {
    * R       = 1 (R/W permissions)
    * P       = 1 (Present)
    */
-  page_directory[1] = 0x3 | (1 << 7) | (1 << 22);
+  page_directory[1] = FOUR_MEG_ADDRESS_ONE | PRESENT | READ_WRITE | FOUR_MEG_SIZE;
 
   /* Setup remaining page directories.
    * S = 1 (4MiB pages)
@@ -48,7 +51,7 @@ void init_paging() {
    * R = 1 (R/W permissions)
    */
   for (i = 2; i < PAGE_DIRECTORY_SIZE; ++i)
-    page_directory[i] = 0x6 | (1 << 7);
+    page_directory[i] = READ_WRITE | USER_ACCESS | FOUR_MEG_SIZE;
 
   /* Enable paging.
    * CR3     = page_directory
