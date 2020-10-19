@@ -25,7 +25,7 @@ void irqh_rtc() {
   sti();
 
   ack_rtc_int();
-#if RANDOM_TEXT
+#if RTC_RANDOM_TEXT
   test_interrupts();
 #endif
 }

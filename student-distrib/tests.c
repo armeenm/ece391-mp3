@@ -1,7 +1,9 @@
 #include "tests.h"
 #include "idt.h"
-#include "lib.h"
 #include "keyboard.h"
+#include "lib.h"
+#include "options.h"
+#include "paging.h"
 #include "x86_desc.h"
 
 #define PASS 1
@@ -68,11 +70,8 @@ int idt_test() {
  * Inputs: test - integer pointer
  * Return Value: integer value at that point
  * Side Effects: none
-*/
-int deref(int * test)
-{
-  return *test;
-}
+ */
+int deref(int* test) { return *test; }
 
 /* Paging Test
  * int page_test()
@@ -80,27 +79,52 @@ int deref(int * test)
  * Inputs: None
  * Outputs: PASS/FAIL
  * Side Effects: None
- * Coverage: Paging, null dereference, negative pointer deref, kernel space, userspace, 
+ * Coverage: Paging, null dereference, negative pointer deref, kernel space, userspace,
  */
-int page_test()
-{
+int page_test() {
   int result = PASS;
-  /* Access null pointer */
-  //deref((int *)0);
+
+  /* Access NULL pointer */
+#if NULL_PTR_TEST
+  deref((int*)0);
+#endif
+
   /* Access negative pointer */
-  //deref((int *)-100);
-  /* Access Video memory*/
-  //deref((int *)0xB8000);
-  /* Access pointer in kernel space (5mb) */
-  //deref((int *)0x4C4B40);
-  /* Access pointer in 8mb - 4gb range (userspace) */
-  //deref((int *)0x10000000);
+#if NEG_PTR_TEST
+  deref((int*)-100);
+#endif
 
-  int b = 391;
-  int * a = &b;
+  /* Access pointer in 8MiB - 4GiB range (userspace) */
+#if USERSPACE_PTR_TEST
+  deref((int*)0x10000000);
+#endif
 
-  if(b != deref(a))
+  /* Access pointer in kernel space (5MiB) */
+  deref((int*)0x4C4B40);
+
+  /* Access video memory */
+  deref((int*)0xB8000);
+
+  /* Check paging structures */
   {
+    uint32_t i;
+
+    for (i = 0; i < PAGE_TABLE_SIZE; ++i) {
+      if (i == VIDEO_MEMORY_START)
+        continue;
+
+      else if (page_table[i] != ((i * PTE_SIZE) | 0x2)) {
+        result = FAIL;
+        assertion_failure();
+      }
+    }
+  }
+
+  /* Memory sanity check */
+  int b = 391;
+  int* a = &b;
+
+  if (b != deref(a)) {
     result = FAIL;
     assertion_failure();
   }
@@ -110,43 +134,43 @@ int page_test()
 
 /* handle Keypress
  * int handle_keypress_test()
- * Prints all valid scancode characters to the screen asserts the correct final location on the assumption
- * we started from top-left
- * Inputs: None
- * Outputs: PASS/FAIl
- * Side Effects: Prints all valid keyboard characters
- * Coverage: Tests large negative to large postiive scancode inputs
+ * Prints all valid scancode characters to the screen asserts the correct final location on the
+ * assumption we started from top-left Inputs: None Outputs: PASS/FAIl Side Effects: Prints all
+ * valid keyboard characters Coverage: Tests large negative to large postiive scancode inputs
  */
 int handle_keypress_test() {
   int i;
   int result = PASS;
-  int start_x, start_y;
-
-  start_x = get_screen_x();
-  start_y = get_screen_y();
+  int const start_x = get_screen_x();
+  int const start_y = get_screen_y();
 
   putc(' ');
-  for (i = -391; i<391; i++) {
+
+  for (i = -391; i < 391; i++)
     handle_keypress(i);
-  }
-  // Last character postions from start postions, down 3 rows, 38 across corner
-  if (get_screen_x()-start_x != last_x_pos || get_screen_y()-start_y != last_y_pos) {
+
+  /* Last character positions from start postions, down 3 rows, 38 across corner */
+  if (get_screen_x() - start_x != last_x_pos || get_screen_y() - start_y != last_y_pos)
     result = FAIL;
-  }
-  printf("\n");
+
+  putc('\n');
+
   return result;
 }
 
-/* int div_zero_except_test() 
+/* int div_zero_except_test()
  *  force div by zero exception to occur, if not handled, test will fail
  * Inputs: None
  * Outputs: Exception handled or FAIL
  * Side Effects: compiler warning
  * Coverage: vector 0x0
  */
-int div_zero_except_test() {
-  int x = 391/0;
-  printf("%d", x);
+int div_zero_test() {
+  /* Fool the compiler warnings */
+  int y = 0;
+  int const x = 391 / y;
+  (void)x;
+
   return FAIL;
 }
 
@@ -154,10 +178,10 @@ int div_zero_except_test() {
  *  force invalid op-code exception to occur, if not handled, test will fail
  * Inputs: None
  * Outputs: Exception handled or FAIL
- * Side Effects: none
- * Coverage: vector 0x6
+ * Side Effects: Causes a CPU exception to be thrown
+ * Coverage: Vector 0x6
  */
-int invalid_opcode() {
+int invalid_opcode_test() {
   asm volatile("ud2");
   return FAIL;
 }
@@ -172,9 +196,14 @@ int invalid_opcode() {
 /* Test suite entry point */
 void launch_tests() {
   TEST_OUTPUT("idt_test", idt_test());
-  TEST_OUTPUT("Paging Test", page_test());
-  TEST_OUTPUT("Handle Keypress", handle_keypress_test());
-  // TEST_OUTPUT("Divide by zero", div_zero());
-  // TEST_OUTPUT("Invalid Ppcode", invalid_opcode());
-  // launch your tests here
+  TEST_OUTPUT("page_test", page_test());
+  TEST_OUTPUT("handle_keypress_test", handle_keypress_test());
+
+#if DIV_ZERO_TEST
+  TEST_OUTPUT("div_zero_test", div_zero_test());
+#endif
+
+#if INVALID_OPCODE_TEST
+  TEST_OUTPUT("invalid_opcode_test", invalid_opcode_test());
+#endif
 }

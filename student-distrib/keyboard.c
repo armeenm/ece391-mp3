@@ -74,7 +74,7 @@ char keycodes[SCS1_PRESSED_F12] = {[KEY_1] = '1',
  * Inputs: none
  * Return Value: none
  * Function: Enables the keyboard irq.
-*/
+ */
 void init_keyboard(void) { enable_irq(KEYBOARD_IRQ); }
 
 /* void irqh_keyboard(void);
@@ -83,7 +83,7 @@ void init_keyboard(void) { enable_irq(KEYBOARD_IRQ); }
  * Return Value: none
  * Function: Safely disables keyboard to avoid multi-input and prints
  *           the typed key to the virtual machine window.
-*/
+ */
 void irqh_keyboard(void) {
   send_eoi(KEYBOARD_IRQ);
   sti();
@@ -93,11 +93,11 @@ void irqh_keyboard(void) {
 }
 
 /* void handle_keypress(SCSet1 const scancode);
- * Description: 
+ * Description:
  * Inputs: none
  * Return Value: none
- * Function: 
-*/
+ * Function:
+ */
 void handle_keypress(SCSet1 const scancode) {
   if (scancode > 0 && scancode < SCS1_PRESSED_F12) {
     char const disp = keycodes[scancode];

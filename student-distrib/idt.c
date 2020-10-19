@@ -86,7 +86,7 @@ static const IntHandler int_handlers[] = {(IntHandler)exc_de,
 
 /* Various types used for make_idt_desc */
 typedef enum Dpl { DPL0 = 0, DPL3 = 3 } Dpl;
-typedef enum GateType { TASK = 5, INT = 6, EXC = 7 } GateType;
+typedef enum GateType { TASK = 5, INT = 6, TRAP = 7 } GateType;
 typedef union GateTypeU {
   GateType val;
 
@@ -140,7 +140,7 @@ void init_idt(void) {
    * Read Appendix D for more information
    */
   for (i = 0; i < EXCEPTION_CNT; ++i)
-    idt[i] = make_idt_desc(int_handlers[i], KERNEL_CS, EXC, DPL0);
+    idt[i] = make_idt_desc(int_handlers[i], KERNEL_CS, TRAP, DPL0);
 
   idt[PIT_IDT] = make_idt_desc(int_handlers[PIT_IDT], KERNEL_CS, INT, DPL0);
   idt[KEYBOARD_IDT] = make_idt_desc(int_handlers[KEYBOARD_IDT], KERNEL_CS, INT, DPL0);

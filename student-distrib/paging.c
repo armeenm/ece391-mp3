@@ -1,59 +1,70 @@
 #include "paging.h"
 
-/* define constants for Paging aligned to 4096 */
-unsigned int page_directory[PAGE_DIRECTORY_SIZE] __attribute__ ((aligned(4096))) = {0};
-unsigned int page_table[PAGE_TABLE_SIZE] __attribute__ ((aligned(4096))) = {0};
+/* Define constants for Paging aligned to 4096 */
+uint32_t page_directory[PAGE_DIRECTORY_SIZE] __attribute__((aligned(PTE_SIZE)));
+uint32_t page_table[PAGE_TABLE_SIZE] __attribute__((aligned(PTE_SIZE)));
 
-/* 
-   4MB to 8MB is kernel, 0MB to 4MB is 4KB pages 8MB to 4GB is 4MB
-   Differentiating 4MB and 4KB is bit 7 in PDE (0 = 4KB, 1 = 4MB)
-   
-   4KB C-Alignment: int some_variable __attribute__((aligned(4096)));
-   Video memory goes from 0xB8000 to 0xC0000.
-*/
+/*
+ * 4MB to 8MB is kernel, 0MB to 4MB is 4KB pages 8MB to 4GB is 4MB
+ * Differentiating 4MB and 4KB is bit 7 in PDE (0 = 4KB, 1 = 4MB)
+ *
+ * 4KB C-Alignment: int some_variable __attribute__((aligned(4096)));
+ * Video memory goes from 0xB8000 to 0xC0000.
+ */
 
 /* void init_paging();
- * Description: Initializes Paging
- * Inputs: none
- * Return Value: none
+ * Description: Initializes paging with PSE.
+ * Inputs: None
+ * Return Value: None
  * Function: Creates page table & page directories.
- *           Initializes cr0 and cr4 to enable paging.
-*/
-void init_paging() 
-{
-    /* Initialize page tables */
-    int i;
-    for (i = 0; i < PAGE_TABLE_SIZE; ++i) {
-        /* Page table set to i * 4096 and 0b11 is orded to set to
-         * R/W mode and not present
-         */
-        page_table[i] = (i * PTE_SIZE) | 0x2;
-    }
-    /* Set Video Memory to present and R/W */
-    page_table[VIDEO_MEMORY_START] = (VIDEO_MEMORY_START * PTE_SIZE) | 0x3;
-    /* Set first page_directory to page_table, set R/W, Present */
-    page_directory[0] = ((unsigned int)page_table) | 0x3;
-    /* Set up kernel page, address equals 1 (22nd bit), R/W Mode (0x3), 
-     * 4mb page (1 << 7)
-     */
-    page_directory[1] = (0x1 << 22) | 0x3 | (1 << 7);
+ *           Initializes CR0, CR3, and CR4 to enable paging.
+ */
+void init_paging() {
+  /* Initialize page tables */
+  uint32_t i;
 
-    /* Setup remaining page directories. Usermode, R/W, Not present (0x6)
-     * 4mb mode (1 << 7)
-     */
-    for (i = 2; i < PAGE_DIRECTORY_SIZE; ++i) {
-        page_directory[i] = 0x6 | (1 << 7);
-    }
-    
-    /* Enable paging. Set cr3 to page_directory address (cr3), enable PSE to enable
-     * 4kb and 4mb pages (cr4 bit 4), enable paging (cr0 bit 31)
-     */
-    asm volatile("mov %0, %%cr3\n\t"
-                 "mov %%cr4, %%eax\n\t"
-                 "or $0x10, %%eax\n\t"
-                 "mov %%eax, %%cr4\n\t"
-                 "mov %%cr0, %%eax\n\t"
-                 "or $0x80000000, %%eax\n\t"
-                 "mov %%eax, %%cr0\n\t"
-                 :: "r"(page_directory) : "eax");
+  /* Page table set to i * 4096. R = 1 */
+  for (i = 0; i < PAGE_TABLE_SIZE; ++i)
+    page_table[i] = (i * PTE_SIZE) | 0x2;
+
+  /* Set video memory. R = 1, P = 1 */
+  page_table[VIDEO_MEMORY_START] = (VIDEO_MEMORY_START * PTE_SIZE) | 0x3;
+
+  /* Set first page_directory to page_table. R = 1, P = 1 */
+  page_directory[0] = ((uint32_t)page_table) | 0x3;
+
+  /* Kernel page setup.
+   * Address = 1
+   * S       = 1 (4MiB pages)
+   * R       = 1 (R/W permissions)
+   * P       = 1 (Present)
+   */
+  page_directory[1] = 0x3 | (1 << 7) | (1 << 22);
+
+  /* Setup remaining page directories.
+   * S = 1 (4MiB pages)
+   * U = 1 (Userspace permissions)
+   * R = 1 (R/W permissions)
+   */
+  for (i = 2; i < PAGE_DIRECTORY_SIZE; ++i)
+    page_directory[i] = 0x6 | (1 << 7);
+
+  /* Enable paging.
+   * CR3     = page_directory
+   * CR4.PSE = 1 (Enable 4MiB pages)
+   * CR0.PG  = 1 (Enable paging)
+   */
+  asm volatile("mov %0, %%cr3;"
+
+               "mov %%cr4, %%eax;"
+               "or $0x10, %%eax;"
+               "mov %%eax, %%cr4;"
+
+               "mov %%cr0, %%eax;"
+               "or $0x80000000, %%eax;"
+               "mov %%eax, %%cr0;"
+
+               :
+               : "r"(page_directory)
+               : "eax");
 }
