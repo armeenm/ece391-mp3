@@ -102,7 +102,7 @@ static idt_desc_t NODISCARD CONST make_idt_desc(void const* handler, uint16_t se
                                                 GateType int_type, Dpl dpl) NONNULL(());
 
 /**
- * idt_desc_t
+ * make_idt_desc
  * Description: Creates an IDT descriptor entry with the specified parameters.
  * Inputs: handler      -- Handler function to call upon interrupt.
  *         seg_selector -- Segment selector.
@@ -132,6 +132,14 @@ static idt_desc_t make_idt_desc(void const* const handler, uint16_t const seg_se
   return ret;
 }
 
+/**
+ * init_idt
+ * Description: Initializes and loads the IDT array.
+ * Inputs: None
+ * Outputs: None
+ * Return: None
+ * Side Effects: Modified the `idt` array and loads it into the processor with `lidt`.
+ */
 void init_idt(void) {
   uint16_t i;
 

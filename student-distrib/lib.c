@@ -27,18 +27,13 @@ void clear(void) {
  * Inputs: void
  * Return Value: int
  * Function: get value of screen_x */
-int get_screen_x() {
-  return screen_x;
-}
+int get_screen_x() { return screen_x; }
 
 /* int get_screen_y();
  * Inputs: void
  * Return Value: int
  * Function: get value of screen_y */
-int get_screen_y() {
-  return screen_y;
-}
-
+int get_screen_y() { return screen_y; }
 
 /* Standard printf().
  * Only supports the following format strings:
@@ -186,15 +181,6 @@ void putc(uint8_t c) {
     screen_x %= NUM_COLS;
     screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
   }
-}
-
-void putc2(uint8_t c) {
-  *(uint8_t*)(video_mem) = c;
-  //*(uint8_t*)(video_mem + 1) = ATTRIB;
-  //*(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
-  // screen_x++;
-  // screen_x %= NUM_COLS;
-  // screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
 }
 
 /* int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix);
