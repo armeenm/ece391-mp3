@@ -119,15 +119,15 @@ static idt_desc_t make_idt_desc(void const* const handler, uint16_t const seg_se
   idt_desc_t ret;
 
   ret.seg_selector = seg_selector;
-  ret.reserved4 = 0;
-  ret.reserved3 = int_type_u.reserved3;
-  ret.reserved2 = int_type_u.reserved2;
-  ret.reserved1 = int_type_u.reserved1;
-  ret.size = 1;
-  ret.reserved0 = (int_type_u.val == TASK);
-  ret.dpl = dpl;
-  ret.present = 1;
-  SET_IDT_ENTRY(ret, handler);
+  ret.reserved4 = 0;                        /* Must always be 0 */
+  ret.reserved3 = int_type_u.reserved3;     /* Setting the gate type */
+  ret.reserved2 = int_type_u.reserved2;     /* ... */
+  ret.reserved1 = int_type_u.reserved1;     /* ... */
+  ret.size = 1;                             /* Always 32-bit */
+  ret.reserved0 = (int_type_u.val == TASK); /* Gate type cont. */
+  ret.dpl = dpl;                            /* Descriptor Privilege Level */
+  ret.present = 1;                          /* Set to present */
+  SET_IDT_ENTRY(ret, handler);              /* Set function address */
 
   return ret;
 }
