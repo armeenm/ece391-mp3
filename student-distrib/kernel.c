@@ -8,10 +8,11 @@
 #include "keyboard.h"
 #include "lib.h"
 #include "multiboot.h"
+#include "paging.h"
 #include "rtc.h"
+#include "syscall.h"
 #include "tests.h"
 #include "x86_desc.h"
-#include "paging.h"
 #define RUN_TESTS
 
 /* Macros. */
@@ -154,6 +155,8 @@ void entry(unsigned long magic, unsigned long addr) {
    * IDT correctly otherwise QEMU will triple fault and simple close
    * without showing you any output */
   printf("Enabling Interrupts\n");
+  asm volatile("int $0x80" ::"a"(SYSC_CLOSE));
+
   sti();
 
 #ifdef RUN_TESTS

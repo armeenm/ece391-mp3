@@ -3,9 +3,7 @@
 #undef IDT_C
 
 #include "idt.h"
-#include "keyboard.h"
 #include "lib.h"
-#include "rtc.h"
 #include "util.h"
 #include "x86_desc.h"
 
@@ -53,12 +51,6 @@ EXC_DFL(exc_sx, "Security Exception")
 
 /* TODO: These need to be legitimate handlers */
 EXC_DFL(irqh_pit, "PIT event!")
-
-void irqh_syscall(void) {
-  printf("Handling syscall...\n");
-  for (;;)
-    ;
-}
 
 typedef void (*IntHandler)(void);
 static const IntHandler int_handlers[] = {asm_exc_de,
