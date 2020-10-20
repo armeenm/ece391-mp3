@@ -47,14 +47,14 @@ int idt_test() {
 
   /* Check the first 20 entires, skipping 15 (reserved) */
   for (i = 0; i < 21; ++i) {
-    if (idt_test_helper(i, 1, 0)) {
+    if (idt_test_helper(i, 0, 0)) {
       result = FAIL;
       assertion_failure();
     }
   }
 
   /* Only ones left are 30 (#SX), PIT, keyboard, RTC, and syscall entries */
-  if (idt_test_helper(30, 1, 0) || idt_test_helper(PIT_IDT, 0, 0) ||
+  if (idt_test_helper(30, 0, 0) || idt_test_helper(PIT_IDT, 0, 0) ||
       idt_test_helper(KEYBOARD_IDT, 0, 0) || idt_test_helper(RTC_IDT, 0, 0) ||
       idt_test_helper(SYSCALL_IDT, 0, 3)) {
 

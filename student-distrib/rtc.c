@@ -34,13 +34,13 @@ void init_rtc() {
  * Side Effects: Writes to RTC ports, sends EOI.
  */
 void irqh_rtc() {
-  send_eoi(RTC_IRQ);
-  sti();
-
   ack_rtc_int();
+
 #if RTC_RANDOM_TEXT
   test_interrupts();
 #endif
+
+  send_eoi(RTC_IRQ);
 }
 
 /* ack_rtc_int

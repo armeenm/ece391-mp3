@@ -18,11 +18,10 @@ void init_keyboard(void) { enable_irq(KEYBOARD_IRQ); }
  *               the typed key to the virtual machine window.
  */
 void irqh_keyboard(void) {
-  send_eoi(KEYBOARD_IRQ);
-  sti();
-
   if (inb(KEYBOARD_STATUS_PORT) & KEYBOARD_OUTBUF_FULL)
     handle_keypress(inb(KEYBOARD_DATA_PORT));
+
+  send_eoi(KEYBOARD_IRQ);
 }
 
 /* handle_keypress

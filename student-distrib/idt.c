@@ -1,3 +1,7 @@
+#define IDT_C
+#include "idt_asm.S"
+#undef IDT_C
+
 #include "idt.h"
 #include "keyboard.h"
 #include "lib.h"
@@ -48,41 +52,41 @@ EXC_DFL(exc_ve, "Virtualization Exception")
 EXC_DFL(exc_sx, "Security Exception")
 
 /* TODO: These need to be legitimate handlers */
-EXC_DFL(pit_handler, "PIT event!")
+EXC_DFL(irqh_pit, "PIT event!")
 
-void syscall_handler(void) {
+void irqh_syscall(void) {
   printf("Handling syscall...\n");
   for (;;)
     ;
 }
 
 typedef void (*IntHandler)(void);
-static const IntHandler int_handlers[] = {(IntHandler)exc_de,
-                                          (IntHandler)exc_db,
-                                          (IntHandler)exc_nmi,
-                                          (IntHandler)exc_bp,
-                                          (IntHandler)exc_of,
-                                          (IntHandler)exc_br,
-                                          (IntHandler)exc_ud,
-                                          (IntHandler)exc_nm,
-                                          (IntHandler)exc_df,
-                                          (IntHandler)exc_cso,
-                                          (IntHandler)exc_ts,
-                                          (IntHandler)exc_np,
-                                          (IntHandler)exc_ss,
-                                          (IntHandler)exc_gp,
-                                          (IntHandler)exc_pf,
-                                          (IntHandler)exc_af,
-                                          (IntHandler)exc_mf,
-                                          (IntHandler)exc_ac,
-                                          (IntHandler)exc_mc,
-                                          (IntHandler)exc_xf,
-                                          (IntHandler)exc_ve,
-                                          [0x1E] = (IntHandler)exc_sx,
-                                          [PIT_IDT] = (IntHandler)pit_handler,
-                                          [KEYBOARD_IDT] = irqh_keyboard,
-                                          [RTC_IDT] = irqh_rtc,
-                                          [SYSCALL_IDT] = syscall_handler};
+static const IntHandler int_handlers[] = {asm_exc_de,
+                                          asm_exc_db,
+                                          asm_exc_nmi,
+                                          asm_exc_bp,
+                                          asm_exc_of,
+                                          asm_exc_br,
+                                          asm_exc_ud,
+                                          asm_exc_nm,
+                                          asm_exc_df,
+                                          asm_exc_cso,
+                                          asm_exc_ts,
+                                          asm_exc_np,
+                                          asm_exc_ss,
+                                          asm_exc_gp,
+                                          asm_exc_pf,
+                                          asm_exc_af,
+                                          asm_exc_mf,
+                                          asm_exc_ac,
+                                          asm_exc_mc,
+                                          asm_exc_xf,
+                                          asm_exc_ve,
+                                          [0x1E] = asm_exc_sx,
+                                          [PIT_IDT] = asm_irqh_pit,
+                                          [KEYBOARD_IDT] = asm_irqh_keyboard,
+                                          [RTC_IDT] = asm_irqh_rtc,
+                                          [SYSCALL_IDT] = asm_irqh_syscall};
 
 /* Various types used for make_idt_desc */
 typedef enum Dpl { DPL0 = 0, DPL3 = 3 } Dpl;
@@ -148,7 +152,7 @@ void init_idt(void) {
    * Read Appendix D for more information
    */
   for (i = 0; i < EXCEPTION_CNT; ++i)
-    idt[i] = make_idt_desc(int_handlers[i], KERNEL_CS, TRAP, DPL0);
+    idt[i] = make_idt_desc(int_handlers[i], KERNEL_CS, INT, DPL0);
 
   idt[PIT_IDT] = make_idt_desc(int_handlers[PIT_IDT], KERNEL_CS, INT, DPL0);
   idt[KEYBOARD_IDT] = make_idt_desc(int_handlers[KEYBOARD_IDT], KERNEL_CS, INT, DPL0);
@@ -157,3 +161,4 @@ void init_idt(void) {
 
   lidt(&idt_desc_ptr);
 }
+
