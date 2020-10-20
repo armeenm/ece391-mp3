@@ -1,6 +1,7 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
+#include "keycodes.h"
 #include "lib.h"
 #include "scancodes.h"
 #include "util.h"
@@ -23,6 +24,72 @@ typedef struct KeyDiff {
   uint8_t keycode;
   uint8_t pressed;
 } KeyDiff;
+
+static char const keycodes[SCS1_PRESSED_F12] = {[KEY_1] = '1',
+                                                '2',
+                                                '3',
+                                                '4',
+                                                '5',
+                                                '6',
+                                                '7',
+                                                '8',
+                                                '9',
+                                                '0',
+                                                '-',
+                                                '=',
+                                                10,
+                                                '\t',
+                                                'q',
+                                                'w',
+                                                'e',
+                                                'r',
+                                                't',
+                                                'y',
+                                                'u',
+                                                'i',
+                                                'o',
+                                                'p',
+                                                '[',
+                                                ']',
+                                                '\n',
+                                                [KEY_A] = 'a',
+                                                's',
+                                                'd',
+                                                'f',
+                                                'g',
+                                                'h',
+                                                'j',
+                                                'k',
+                                                'l',
+                                                ';',
+                                                '\'',
+                                                '`',
+                                                [KEY_BACKSLASH] = '\\',
+                                                'z',
+                                                'x',
+                                                'c',
+                                                'v',
+                                                'b',
+                                                'n',
+                                                'm',
+                                                ',',
+                                                '.',
+                                                '/',
+                                                [KEY_KPASTERISK] = '*',
+                                                [KEY_SPACE] = ' ',
+                                                '7',
+                                                '8',
+                                                '9',
+                                                '-',
+                                                '4',
+                                                '5',
+                                                '6',
+                                                '+',
+                                                '1',
+                                                '2',
+                                                '3',
+                                                '0',
+                                                '.'};
 
 void init_keyboard(void);
 void irqh_keyboard(void);
