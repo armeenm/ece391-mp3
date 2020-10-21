@@ -7,19 +7,19 @@
 #include "util.h"
 #include "x86_desc.h"
 
-#define PASS 1
-#define FAIL 0
+enum { FAIL, PASS };
 
 /* format these macros as you see fit */
 #define TEST_HEADER                                                                                \
   printf("[TEST %s] Running %s at %s:%d\n", __FUNCTION__, __FUNCTION__, __FILE__, __LINE__)
-#define TEST_OUTPUT(name, result)                                                                  \
-  printf("[TEST %s] Result = %s\n", name, (result) ? "PASS" : "FAIL");
+
+#define TEST_PASS printf("[TEST %s] PASS\n", __FUNCTION__);
+
 #define TEST_FAIL_MSG(str, ...)                                                                    \
   do {                                                                                             \
     clear();                                                                                       \
     printf("[TEST %s] FAIL: %s:%d; " str "\n", __FUNCTION__, __FILE__, __LINE__, ##__VA_ARGS__);   \
-    /*asm volatile("int $15");*/                                                                   \
+    asm volatile("int $15");                                                                       \
   } while (0)
 #define TEST_FAIL TEST_FAIL_MSG("")
 
@@ -50,9 +50,8 @@ int idt_test_helper(int const i, GateType const gate_type, Dpl const dpl) {
  * Files: x86_desc.h/S
  */
 
-int idt_test() {
+void idt_test() {
   int i;
-  int result = PASS;
 
   TEST_HEADER;
 
@@ -67,7 +66,7 @@ int idt_test() {
       idt_test_helper(IDT_SYSCALL, INT, DPL3))
     TEST_FAIL;
 
-  return result;
+  TEST_PASS;
 }
 
 /* int deref(int * test)
@@ -86,8 +85,10 @@ int deref(uint32_t test) { return *(int*)test; }
  * Side Effects: None
  * Coverage: Paging, null dereference, negative pointer deref, kernel space, userspace,
  */
-int page_test() {
+void page_test() {
   uint32_t i;
+
+  TEST_HEADER;
 
   /* Access NULL pointer */
 #if NULLPTR_TEST
@@ -145,7 +146,7 @@ int page_test() {
   if (b != *a)
     TEST_FAIL;
 
-  return PASS;
+  TEST_PASS;
 }
 
 /* Handle Keypress
@@ -157,24 +158,28 @@ int page_test() {
  * Side Effects: Prints all valid keyboard characters
  * Coverage: Tests large negative to large postiive scancode inputs
  */
-int handle_keypress_test() {
+void handle_keypress_test() {
   int i;
-  int result = PASS;
-  int const start_x = get_screen_x();
-  int const start_y = get_screen_y();
 
-  putc(' ');
+  TEST_HEADER;
 
-  for (i = -391; i < 391; i++)
-    handle_keypress(i);
+  {
+    int const start_x = get_screen_x();
+    int const start_y = get_screen_y();
 
-  /* Last character positions from start postions, down 3 rows, 38 across corner */
-  if (get_screen_x() - start_x != last_x_pos || get_screen_y() - start_y != last_y_pos)
-    result = FAIL;
+    putc(' ');
+
+    for (i = -391; i < 391; i++)
+      handle_keypress(i);
+
+    /* Last character positions from start postions, down 3 rows, 38 across corner */
+    if (get_screen_x() - start_x != last_x_pos || get_screen_y() - start_y != last_y_pos)
+      TEST_FAIL;
+  }
 
   putc('\n');
 
-  return result;
+  TEST_PASS;
 }
 
 /* int div_zero_except_test()
@@ -184,13 +189,17 @@ int handle_keypress_test() {
  * Side Effects: compiler warning
  * Coverage: vector 0x0
  */
-int div_zero_test() {
-  /* Fool the compiler warnings */
-  int y = 0;
-  int const x = 391 / y;
-  (void)x;
+void div_zero_test() {
+  TEST_HEADER;
 
-  return FAIL;
+  {
+    /* Fool the compiler warnings */
+    int y = 0;
+    int const x = 391 / y;
+    (void)x;
+  }
+
+  TEST_FAIL;
 }
 
 /* int invalid_opcode()
@@ -200,9 +209,12 @@ int div_zero_test() {
  * Side Effects: Causes a CPU exception to be thrown
  * Coverage: Vector 0x6
  */
-int invalid_opcode_test() {
+void invalid_opcode_test() {
+  TEST_HEADER;
+
   asm volatile("ud2");
-  return FAIL;
+
+  TEST_FAIL;
 }
 
 // add more tests here
@@ -214,15 +226,15 @@ int invalid_opcode_test() {
 
 /* Test suite entry point */
 void launch_tests() {
-  TEST_OUTPUT("idt_test", idt_test());
-  TEST_OUTPUT("page_test", page_test());
-  TEST_OUTPUT("handle_keypress_test", handle_keypress_test());
+  idt_test();
+  page_test();
+  handle_keypress_test();
 
 #if DIV_ZERO_TEST
-  TEST_OUTPUT("div_zero_test", div_zero_test());
+  div_zero_test();
 #endif
 
 #if INVALID_OPCODE_TEST
-  TEST_OUTPUT("invalid_opcode_test", invalid_opcode_test());
+  invalid_opcode_test();
 #endif
 }

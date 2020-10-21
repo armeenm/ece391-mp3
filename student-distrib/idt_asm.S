@@ -2,7 +2,40 @@
 #ifndef IDT_ASM_S
 #define IDT_ASM_S
 
-#ifndef IDT_C
+#ifdef IDT_C
+
+#include "lib.h"
+
+#define ASM_EXC(name) void asm_##name(void);
+
+#define CLR_true clear();
+#define CLR_false
+
+#define I_EXC_DFL(name, str, clear)                                                                \
+  ASM_EXC(name)                                                                                    \
+  void name(int eip, int UNUSED(cs), int eflags) {                                                 \
+    cli();                                                                                         \
+    CLR_##clear                                                                                    \
+    printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", eip, eflags);                                \
+    HLTLOOP;                                                                                       \
+  }
+
+#define I_EXC_DFL_ERRC(name, str, clear)                                                           \
+  ASM_EXC(name)                                                                                    \
+  void name(int errc, int eip, int UNUSED(cs), int eflags) {                                       \
+    cli();                                                                                         \
+    CLR_##clear                                                                                    \
+    printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n", errc, eip, eflags);              \
+    HLTLOOP;                                                                                       \
+  }
+
+#define EXC_DFL(name, str) I_EXC_DFL(name, str, true)
+#define EXC_DFL_NOCLR(name, str) I_EXC_DFL(name, str, false)
+
+#define EXC_DFL_ERRC(name, str) I_EXC_DFL_ERRC(name, str, true)
+#define EXC_DFL_ERRC_NOCLR(name, str) I_EXC_DFL_ERRC(name, str, false)
+
+#else
 
 #define ASM 1
 
@@ -11,35 +44,11 @@
   asm_##name: call name; iret
 
 #define EXC_DFL(name, str) ASM_EXC(name)
-#define EXC_DFL_ERRC(name, str) ASM_EXC(name)
+#define EXC_DFL_ERRC EXC_DFL
+#define EXC_DFL_NOCLR EXC_DFL
+#define EXC_DFL_ERRC_NOCLR EXC_DFL
 
 .align 4
-
-#else
-
-#include "lib.h"
-
-#define ASM_EXC(name) void asm_##name(void);
-
-#define EXC_DFL(name, str)                                                                         \
-  ASM_EXC(name)                                                                                    \
-  void name(int eip, int UNUSED(cs), int eflags) {                                                 \
-    cli();                                                                                         \
-    clear();                                                                                       \
-    printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", eip, eflags);                                \
-    for (;;)                                                                                       \
-      ;                                                                                            \
-  }
-
-#define EXC_DFL_ERRC(name, str)                                                                    \
-  ASM_EXC(name)                                                                                    \
-  void name(int errc, int eip, int UNUSED(cs), int eflags) {                                       \
-    cli();                                                                                         \
-    clear();                                                                                       \
-    printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n", errc, eip, eflags);              \
-    for (;;)                                                                                       \
-      ;                                                                                            \
-  }
 
 #endif
 
@@ -58,7 +67,7 @@ EXC_DFL(exc_np, "Segment Not Present")
 EXC_DFL(exc_ss, "Stack-Segment Fault")
 EXC_DFL_ERRC(exc_gp, "General Protection Fault")
 EXC_DFL(exc_pf, "Page Fault")
-EXC_DFL(exc_af, "(Debug) Assertion Failure")
+EXC_DFL_NOCLR(exc_af, "(Debug) Assertion Failure")
 EXC_DFL(exc_mf, "x87 Floating-Point Exception")
 EXC_DFL(exc_ac, "Alignment Check")
 EXC_DFL(exc_mc, "Machine Check")

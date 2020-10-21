@@ -8,5 +8,6 @@
 #define NOINLINE __attribute__((noinline))
 #define UNUSED(x) x##_UNUSED __attribute__((unused))
 #define NONNULL(x) __attribute__((nonnull x))
+#define HLTLOOP asm volatile("1: hlt; jmp 1b")
 
 #endif /* UTIL_H */
