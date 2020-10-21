@@ -10,7 +10,7 @@
 static int screen_x;
 static int screen_y;
 static char* video_mem = (char*)VIDEO;
-
+static uint8_t size_history[NUM_ROWS];
 /* void clear(void);
  * Inputs: void
  * Return Value: none
@@ -20,21 +20,104 @@ void clear(void) {
   for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
     *(uint8_t*)(video_mem + (i << 1)) = ' ';
     *(uint8_t*)(video_mem + (i << 1) + 1) = ATTRIB;
+    /* On clear screen reset size history for all Rows */
+    if(i % NUM_COLS == 0)
+    {
+      size_history[i/NUM_COLS] = 0;
+    }
   }
+}
+
+/* void clear_screen_xy();
+ * Inputs: none
+ * Return Value: none
+ * Function: clears the screen position at the current location
+ */
+void clear_screen_xy()
+{
+  /* Sets char to ' ' at the current screen location */
+  *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = ' ';
+  /* sets attribute to ATTRIB at the current location */
+  *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
+}
+/* void set_cursor_location(int x, int y)
+ * Inputs:  x - x position to set cursor to
+ *          y - y position to set cursor to
+ * Return Value: none
+ * Function: sets the VGA cursor location
+ */
+void set_cursor_location(int x, int y)
+{
+  uint16_t vga_position = y * NUM_COLS + x;
+
+  outb(VGA_CURSOR_HIGH_REGISTER, 0x3D4);
+  outb((vga_position >> 8), VGA_DATA_REGISTER);
+
+  outb(VGA_CURSOR_LOW_REGISTER, VGA_ADDRESS_REGISTER);
+  outb(vga_position, VGA_DATA_REGISTER);
 }
 /* void setscreen_x(int x);
  * Inputs: x - position to set screen_x to
  * Return Value: none
  * Function: set value of screen_x to x
  */
-void set_screen_x(int x) { screen_x = x; }
+void set_screen_x(int x)
+{ 
+  if(x >= 0 && x < NUM_COLS)
+  {
+    /* If valid position set x position to x and set the cursor */
+    screen_x = x;
+    set_cursor_location(x, screen_y); 
+  }
+}
 /* void setscreen_y(int y);
  * Inputs: y - position to set screen_y to
  * Return Value: none
  * Function: set value of screen_y to y
  */
-void set_screen_y(int y) { screen_y = y; }
+void set_screen_y(int y)
+{
+  if(y >= 0 && y < NUM_ROWS)
+  {
+     /* If valid position set y position to y and set the cursor */
+    screen_y = y;
+    set_cursor_location(screen_x, y);
 
+  }
+}
+
+/* void setscreen_xy(int x, int y);
+ * Inputs:  y - position to set screen_y to
+ *          x - position to set screen_x to
+ * Return Value: none
+ * Function: set value of screen_y to y, screen_x to x
+ */
+void set_screen_xy(int x, int y)
+{
+  if(y >= 0 && y < NUM_ROWS && x >= 0 && x < NUM_COLS)
+  {
+     /* If valid position set y position to y and set the cursor */
+    screen_y = y;
+    screen_x = x;
+    set_cursor_location(x, y);
+
+  }
+}
+
+
+/* void setscreen_y(int y);
+ * Inputs: y - position to set screen_y to
+ * Return Value: 0 if fails, size of history otherwise
+ * Function: set value of screen_y to y
+ */
+uint8_t get_size_history(int index) {
+  if(index >= 0 && index < NUM_ROWS)
+  {
+    /* If valid index return size of history */
+    return size_history[index];
+  }
+  return 0;
+}
 
 /* int get_screen_x();
  * Inputs: void
@@ -184,6 +267,8 @@ int32_t puts(int8_t* s) {
  * Return Value: void
  *  Function: Output a character to the console */
 void putc(uint8_t c) {
+    /* Set size to the current position before newline */
+    size_history[screen_y] = screen_x;
   if (c == '\n' || c == '\r') {
     screen_y++;
     screen_x = 0;
@@ -191,9 +276,11 @@ void putc(uint8_t c) {
     *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
     *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
     screen_x++;
-    screen_x %= NUM_COLS;
     screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+    screen_x %= NUM_COLS;
   }
+  /* Set location of the cursor based on new screen_x and screen_y */
+  set_cursor_location(screen_x, screen_y);
 }
 
 /* int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix);

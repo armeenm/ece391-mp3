@@ -233,10 +233,11 @@ int invalid_opcode_test() {
 
 /* Test suite entry point */
 void launch_tests() {
+#if TESTS_ENABLED
   TEST_OUTPUT("idt_test", idt_test());
   TEST_OUTPUT("page_test", page_test());
   TEST_OUTPUT("handle_keypress_test", handle_keypress_test());
-
+#endif
 #if DIV_ZERO_TEST
   TEST_OUTPUT("div_zero_test", div_zero_test());
 #endif

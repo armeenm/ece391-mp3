@@ -1,6 +1,8 @@
 #ifndef OPTIONS_H
 #define OPTIONS_H
 
+#define TESTS_ENABLED 0
+
 #define RTC_RANDOM_TEXT 0
 
 /* Should BSOD */

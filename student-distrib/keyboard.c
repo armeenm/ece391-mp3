@@ -48,7 +48,25 @@ void handle_keypress(SCSet1 const scancode) {
       set_screen_x(0);
       set_screen_y(0);
     }
-      
+    else if(key_state[SCS1_PRESSED_BACKSPACE] == 1)
+    {
+      int x = get_screen_x();
+      int y = get_screen_y();
+
+      if(x > 0) {
+        set_screen_x(x - 1);
+      }
+      else {
+        
+        if(y > 0) {
+          set_screen_xy(get_size_history(y - 1), y - 1);
+        }
+        else {
+          set_screen_x(0);
+        }
+      }
+      clear_screen_xy();
+    } 
     else if (disp)
       putc(disp);
   }
