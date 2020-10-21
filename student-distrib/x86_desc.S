@@ -1,7 +1,8 @@
 # x86_desc.S - Set up x86 segment descriptors, descriptor tables
 
-#define ASM     1
+#define ASM 1
 #include "x86_desc.h"
+#include "paging.h"
 
 .text
 
@@ -10,26 +11,26 @@
 .globl tss, tss_desc_ptr, ldt, ldt_desc_ptr
 .globl gdt_ptr
 .globl idt_desc_ptr, idt
+.globl pgdir, pgtbl
 
 .align 4
-
 ldt_size:
   .long ldt_bottom - ldt - 1
 
 tss_size:
   .long tss_bottom - tss - 1
 
-  .word 0 # Padding
+.word 0
 gdt_desc:
   .word gdt_bottom - gdt - 1
   .long gdt
 
-  .word 0 # Padding
+.word 0
 ldt_desc:
   .word KERNEL_LDT
   .long ldt
 
-  .align 4
+.align 4
 tss:
 _tss:
   .rept 104
@@ -37,7 +38,7 @@ _tss:
   .endr
 tss_bottom:
 
-  .align 16
+.align 16
 gdt:
 _gdt:
 
@@ -87,26 +88,31 @@ ldt_desc_ptr:
 
 gdt_bottom:
 
-  .align 16
+.align 16
 ldt:
   .rept 4
   .quad 0
   .endr
 ldt_bottom:
 
-  .align 4
-  
-  .word  0 # Padding
+.align 4
+.word  0
 idt_desc_ptr:
   .word idt_bottom - idt - 1
   .long idt
 
-
-  .align 16
+.align 16
 idt:
 _idt:
   .rept NUM_VEC
   .quad 0
   .endr
-
 idt_bottom:
+
+.align PTE_SIZE_MCR
+pgdir:
+  .fill PGDIR_LEN_MCR, 4, 0
+
+.align PTE_SIZE_MCR
+pgtbl:
+  .fill PGTBL_LEN_MCR, 4, 0

@@ -4,6 +4,7 @@
 #include "lib.h"
 #include "options.h"
 #include "paging.h"
+#include "util.h"
 #include "x86_desc.h"
 
 #define PASS 1
@@ -14,17 +15,27 @@
   printf("[TEST %s] Running %s at %s:%d\n", __FUNCTION__, __FUNCTION__, __FILE__, __LINE__)
 #define TEST_OUTPUT(name, result)                                                                  \
   printf("[TEST %s] Result = %s\n", name, (result) ? "PASS" : "FAIL");
-
-static inline void assertion_failure() {
-  /* Use exception #15 for assertions, otherwise reserved by Intel */
-  asm volatile("int $15");
-}
+#define TEST_FAIL_MSG(str, ...)                                                                    \
+  do {                                                                                             \
+    clear();                                                                                       \
+    printf("[TEST %s] FAIL: %s:%d; " str "\n", __FUNCTION__, __FILE__, __LINE__, ##__VA_ARGS__);   \
+    /*asm volatile("int $15");*/                                                                   \
+  } while (0)
+#define TEST_FAIL TEST_FAIL_MSG("")
 
 /* Checkpoint 1 tests */
 
-int idt_test_helper(int const i, int const reserved3, int const dpl) {
+enum {
+  PDE_USED = PG_PRESENT | PG_RW | PG_USPACE | PG_SIZE,
+  PDE_USED_4K = PDE_USED | 0xFFFFF000,
+  PDE_USED_4M = PDE_USED | 0xFFC00000
+};
+
+int idt_test_helper(int const i, GateType const gate_type, Dpl const dpl) {
+  GateTypeU const gate_type_u = {.val = gate_type};
+
   return (!idt[i].offset_15_00 && !idt[i].offset_31_16) || (idt[i].seg_selector != KERNEL_CS) ||
-         idt[i].reserved4 || (idt[i].reserved3 != reserved3) || !idt[i].reserved2 ||
+         idt[i].reserved4 || (idt[i].reserved3 != gate_type_u.reserved3) || !idt[i].reserved2 ||
          !idt[i].reserved1 || !idt[i].size || idt[i].reserved0 || (idt[i].dpl != dpl) ||
          !idt[i].present;
 }
@@ -45,22 +56,16 @@ int idt_test() {
 
   TEST_HEADER;
 
-  /* Check the first 20 entires, skipping 15 (reserved) */
-  for (i = 0; i < 21; ++i) {
-    if (idt_test_helper(i, 0, 0)) {
-      result = FAIL;
-      assertion_failure();
-    }
-  }
+  /* Check the first 21 entires */
+  for (i = 0; i < 21; ++i)
+    if (idt_test_helper(i, INT, DPL0))
+      TEST_FAIL;
 
   /* Only ones left are 30 (#SX), PIT, keyboard, RTC, and syscall entries */
-  if (idt_test_helper(30, 0, 0) || idt_test_helper(PIT_IDT, 0, 0) ||
-      idt_test_helper(KEYBOARD_IDT, 0, 0) || idt_test_helper(RTC_IDT, 0, 0) ||
-      idt_test_helper(SYSCALL_IDT, 0, 3)) {
-
-    result = FAIL;
-    assertion_failure();
-  }
+  if (idt_test_helper(30, INT, DPL0) || idt_test_helper(IDT_PIT, INT, DPL0) ||
+      idt_test_helper(IDT_KEYBOARD, INT, DPL0) || idt_test_helper(IDT_RTC, INT, DPL0) ||
+      idt_test_helper(IDT_SYSCALL, INT, DPL3))
+    TEST_FAIL;
 
   return result;
 }
@@ -71,7 +76,7 @@ int idt_test() {
  * Return Value: integer value at that point
  * Side Effects: none
  */
-int deref(int* test) { return *test; }
+int deref(uint32_t test) { return *(int*)test; }
 
 /* Paging Test
  * int page_test()
@@ -82,89 +87,65 @@ int deref(int* test) { return *test; }
  * Coverage: Paging, null dereference, negative pointer deref, kernel space, userspace,
  */
 int page_test() {
-  int result = PASS;
+  uint32_t i;
 
   /* Access NULL pointer */
-#if NULL_PTR_TEST
-  deref((int*)0);
-#endif
-
-  /* Access negative pointer */
-#if NEG_PTR_TEST
-  deref((int*)-100);
+#if NULLPTR_TEST
+  deref(0);
 #endif
 
   /* Access pointer in 8MiB - 4GiB range (userspace) */
-#if USERSPACE_PTR_TEST
-  deref((int*)0x10000000);
+#if USPACE_PTR_TEST
+  deref(0x10000000);
 #endif
 
-#if VID_MEM_EDGE_CASE_TEST
+#if VIDMEM_EDGE_TEST
   /* Access video memory */
-  deref((int*)0xB7FFF);
+  deref(0xB7FFF);
 #endif
 
   /* Access pointer in kernel space (5MiB) */
-  deref((int*)0x4C4B40);
+  deref(0x4C4B40);
 
   /* Access video memory */
-  deref((int*)0xB8000);
+  deref(0xB8000);
 
   /* Check paging structures */
-  {
-    uint32_t i;
+  /* Check 4KB page directory entry for valid address + permission bits (because the CPU can set
+   * other bits) */
 
-    // Check 4KB page directory entry for valid address + permission bis (because the CPU can set
-    // other bits)
-    if (!(page_directory[0] & PRESENT) || !(page_directory[0] & READ_WRITE) ||
-        (page_directory[0] & USER_ACCESS) ||
-        ((int)page_table | page_directory[0]) != page_directory[0]) {
-      result = FAIL;
-      assertion_failure();
+  if ((pgdir[0] & PDE_USED_4K) != (PG_PRESENT | PG_RW | (uint32_t)pgtbl))
+    TEST_FAIL;
+
+  /* Check kernel entry for valid address + permission bits */
+  if ((pgdir[1] & PDE_USED_4M) != (PG_PRESENT | PG_RW | PG_SIZE | PG_4M_START))
+    TEST_FAIL;
+
+  /* Check the page table entry including video memory */
+  for (i = 0; i < PGTBL_LEN; ++i)
+    if (i == PG_VIDMEM_START) {
+      if ((pgtbl[i] & PDE_USED) != (PG_PRESENT | PG_RW))
+        TEST_FAIL_MSG("i: %u", i);
     }
 
-    // Check kernel entry for valid address + permission bits
-    if (!(page_directory[1] & PRESENT) || !(page_directory[1] & READ_WRITE) ||
-        (page_directory[1] & USER_ACCESS) || !(page_directory[1] & FOUR_MEG_SIZE) ||
-        !(page_directory[1] & FOUR_MEG_ADDRESS_ONE)) {
-      result = FAIL;
-      assertion_failure();
-    }
+    /* We can only assume this because the CPU should not touch non-present locations */
+    else if (pgtbl[i] != ((i * PTE_SIZE) | PG_RW))
+      TEST_FAIL_MSG("i: %u", i);
 
-    // Check the page table entry including video memory
-    for (i = 0; i < PAGE_TABLE_SIZE; ++i) {
-      if (i == VIDEO_MEMORY_START) {
-        if (!(page_table[i] & PRESENT) || !(page_table[i] & READ_WRITE)) {
-          result = FAIL;
-          assertion_failure();
-        }
-        // We can only assume this because the CPU should not touch non-present locations
-      } else if (page_table[i] != ((i * PTE_SIZE) | READ_WRITE)) {
-        result = FAIL;
-        assertion_failure();
-      }
-    }
-
-    // Check that the 4MB to 4GB range has the correct bits set (4MB entries, not present), no
-    // adddress yet
-    for (i = 2; i < PAGE_DIRECTORY_SIZE; i++) {
-      if (page_directory[i] != (READ_WRITE | USER_ACCESS | FOUR_MEG_SIZE)) {
-        result = FAIL;
-        assertion_failure();
-      }
-    }
-  }
+  /* Check that the 4MB to 4GB range has the correct bits set (4MB entries, not present), no
+   * address yet */
+  for (i = 2; i < PGDIR_LEN; ++i)
+    if (pgdir[i] != (PG_RW | PG_USPACE | PG_SIZE))
+      TEST_FAIL_MSG("i: %u", i);
 
   /* Memory sanity check */
   int b = 391;
   int* a = &b;
 
-  if (b != deref(a)) {
-    result = FAIL;
-    assertion_failure();
-  }
+  if (b != *a)
+    TEST_FAIL;
 
-  return result;
+  return PASS;
 }
 
 /* Handle Keypress
@@ -172,7 +153,7 @@ int page_test() {
  * Prints all valid scancode characters to the screen asserts the correct final location on the
  * assumption we started from top-left
  * Inputs: None
- * Outputs: PASS/FAIl
+ * Outputs: PASS/FAIL
  * Side Effects: Prints all valid keyboard characters
  * Coverage: Tests large negative to large postiive scancode inputs
  */

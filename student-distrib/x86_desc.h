@@ -24,6 +24,8 @@
 
 #ifndef ASM
 
+#include "paging.h"
+
 /* This structure is used to load descriptor base registers
  * like the GDTR and IDTR */
 typedef struct x86_desc {
@@ -123,6 +125,9 @@ extern uint32_t ldt;
 extern uint32_t tss_size;
 extern seg_desc_t tss_desc_ptr;
 extern tss_t tss;
+
+extern uint32_t pgdir[PGDIR_LEN];
+extern uint32_t pgtbl[PGTBL_LEN];
 
 /* Sets runtime-settable parameters in the GDT entry for the LDT */
 #define SET_LDT_PARAMS(str, addr, lim)                                                             \

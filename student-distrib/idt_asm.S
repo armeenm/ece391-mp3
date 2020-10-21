@@ -3,20 +3,23 @@
 #define IDT_ASM_S
 
 #ifndef IDT_C
+
 #define ASM 1
+
 #define ASM_EXC(name)                                                                              \
   .global asm_##name;                                                                              \
   asm_##name: call name; iret
-#define ASM_EXC_2(name, unused) ASM_EXC(name)
-#define EXC_DFL ASM_EXC_2
-#define EXC_DFL_ERRC ASM_EXC_2
+
+#define EXC_DFL(name, str) ASM_EXC(name)
+#define EXC_DFL_ERRC(name, str) ASM_EXC(name)
 
 .align 4
+
 #else
+
 #include "lib.h"
 
-#define ASM_EXC(name) \
-  void asm_##name(void);
+#define ASM_EXC(name) void asm_##name(void);
 
 #define EXC_DFL(name, str)                                                                         \
   ASM_EXC(name)                                                                                    \
