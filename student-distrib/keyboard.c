@@ -3,8 +3,9 @@
 #include "lib.h"
 
 /* lshift, rshift, lcontrol, rcontrol, capslock, backspace*/
- uint8_t key_state[SCS1_PRESSED_F12];
-
+uint8_t key_state[SCS1_PRESSED_F12];
+int caps_lock_repeat = 0;
+int multi_byte = 0;
 
 /* init_keyboard
  * Description: Initializes the keyboard
@@ -12,7 +13,12 @@
  * Return Value: None
  * Side Effects: Enables the keyboard IRQ.
  */
-void init_keyboard(void) { enable_irq(KEYBOARD_IRQ); }
+void init_keyboard(void)
+{
+  enable_irq(KEYBOARD_IRQ);
+  multi_byte = 0;
+  caps_lock_repeat = 0;
+}
 
 /* irqh_keyboard
  * Description: Takes care of typed keys.
@@ -36,10 +42,26 @@ void irqh_keyboard(void) {
  * Side Effects: Writes to the video buffer
  */
 void handle_keypress(SCSet1 const scancode) {
-  if (scancode > 0 && scancode < SCS1_PRESSED_F12) {
-
-    key_state[scancode] = 1;
-
+  if(scancode == SCS1_MULTIBYTE)
+  {
+    multi_byte = 1;
+  }
+  else if(multi_byte == 1)
+  {
+    multi_byte = 0;
+  }
+  else if (scancode > 0 && scancode < SCS1_PRESSED_F12)
+  {
+    if(scancode == SCS1_PRESSED_CAPSLOCK && caps_lock_repeat == 0)
+    {
+      key_state[scancode] ^= 1;
+      caps_lock_repeat = 1;
+    }
+    else
+    {
+      key_state[scancode] = 1;
+    }
+    
     char disp = handle_disp(keycodes[scancode]);
 
     if((key_state[SCS1_PRESSED_LEFTCTRL] == 1 && scancode == SCS1_PRESSED_L) || (key_state[SCS1_PRESSED_L] == 1 && scancode == SCS1_PRESSED_LEFTCTRL))
@@ -68,16 +90,40 @@ void handle_keypress(SCSet1 const scancode) {
       clear_screen_xy();
     } 
     else if (disp)
-      putc(disp);
+    {
+        if(disp =='\t')
+        {
+          int i;
+          int space_to_add = (4 - (get_screen_x() % 4));
+          for(i = 0; i < space_to_add; i++)
+          {
+            putc(' ');
+          }
+        }
+        else
+        {
+          putc(disp);
+        }
+        
+    }
+      
   }
   else if (scancode > 0x81 && scancode <= SCS1_RELEASED_F12) {
-    key_state[scancode - 0x80] = 0;
+    if(scancode == SCS1_RELEASED_CAPSLOCK)
+    {
+      caps_lock_repeat = 0;
+    }
+    else {
+      key_state[scancode - 0x80] = 0;
+    } 
   }
 }
 
 char handle_disp(char disp)
 {
-  if(key_state[SCS1_PRESSED_LEFTSHIFT] == 1 || key_state[SCS1_PRESSED_RIGHTSHIFT] == 1)
+  if(key_state[SCS1_PRESSED_LEFTSHIFT] == 1
+  || key_state[SCS1_PRESSED_RIGHTSHIFT] == 1
+  || key_state[SCS1_PRESSED_CAPSLOCK] == 1)
   {
     if(disp >= 'a' && disp <= 'z')
     {
@@ -156,8 +202,14 @@ char handle_disp(char disp)
     }
       
   }
-      
-  
-
   return disp;
+}
+
+int write() {
+
+}
+
+const char * read()
+{
+  
 }

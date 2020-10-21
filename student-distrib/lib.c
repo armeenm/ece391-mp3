@@ -267,11 +267,12 @@ int32_t puts(int8_t* s) {
  * Return Value: void
  *  Function: Output a character to the console */
 void putc(uint8_t c) {
-    /* Set size to the current position before newline */
-    size_history[screen_y] = screen_x;
+  /* Set size to the current position before newline */
+  size_history[screen_y] = screen_x;
   if (c == '\n' || c == '\r') {
     screen_y++;
     screen_x = 0;
+    screen_y %= NUM_ROWS;
   } else {
     *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
     *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
