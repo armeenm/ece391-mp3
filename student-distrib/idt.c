@@ -151,6 +151,6 @@ void init_idt(void) {
   idt[RTC_IDT] = make_idt_desc(int_handlers[RTC_IDT], KERNEL_CS, INT, DPL0);
   idt[SYSCALL_IDT] = make_idt_desc(int_handlers[SYSCALL_IDT], KERNEL_CS, INT, DPL3);
 
-  lidt(&idt_desc_ptr);
+  lidt(idt_desc_ptr);
 }
 

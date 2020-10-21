@@ -26,7 +26,7 @@ void init_rtc() {
   outb(prev | PIE_MASK, RTC_DATA_PORT);
 
   /* Set to max frequency since we virtualize the interrupts */
-  set_freq_rtc(HZ1024);
+  set_freq_rtc(HZ2);
 
   /* TODO: We may want to renable NMI's here, see OSDev */
 }

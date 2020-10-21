@@ -3,13 +3,16 @@
 
 void irqh_syscall() {
   SyscallType type;
+  uint32_t arg1, arg2, arg3;
 
   /* Read the syscall type from EAX */
-  asm volatile("" : "=a"(type));
+  asm volatile("" : "=a"(type), "=b"(arg1), "=c"(arg2), "=d"(arg3));
+
+  printf("Handling syscall...\n");
 
   switch (type) {
   case SYSC_HALT:
-    printf("HALT!\n");
+    printf("HALTING!\n");
     break;
 
   case SYSC_EXEC:
@@ -40,5 +43,5 @@ void irqh_syscall() {
     break;
   };
 
-  printf("Handling syscall...\n");
+  asm volatile("" ::"a"(type), "c"(arg2), "d"(arg3));
 }
