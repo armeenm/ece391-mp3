@@ -180,7 +180,7 @@ extern x86_desc_t idt_desc_ptr;
  * into the task register */
 #define ltr(desc)                                                                                  \
   do {                                                                                             \
-    asm volatile("ltr %w0" : : "r"(desc) : "memory", "cc");                                        \
+    asm volatile("ltr %w0" ::"r"(desc) : "memory");                                                \
   } while (0)
 
 /* Load the interrupt descriptor table (IDT).  This macro takes a 32-bit
