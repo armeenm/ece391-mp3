@@ -190,7 +190,7 @@ extern x86_desc_t idt_desc_ptr;
  * the base address of the IDT. */
 #define lidt(desc)                                                                                 \
   do {                                                                                             \
-    asm volatile("lidt (%0)" : : "g"(desc) : "memory");                                            \
+    asm volatile("lidt %0" ::"g"(desc) : "memory");                                                \
   } while (0)
 
 /* Load the local descriptor table (LDT) register.  This macro takes a
