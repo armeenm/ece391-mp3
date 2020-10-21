@@ -7,51 +7,6 @@
 #include "util.h"
 #include "x86_desc.h"
 
-/* Default exception handler */
-#define EXC_DFL(name, str)                                                                         \
-  void name(int eip, int UNUSED(cs), int eflags) {                                                 \
-    cli();                                                                                         \
-    clear();                                                                                       \
-    printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", eip, eflags);                                \
-    for (;;)                                                                                       \
-      ;                                                                                            \
-  }
-
-#define EXC_DFL_ERRC(name, str)                                                                    \
-  void name(int errc, int eip, int UNUSED(cs), int eflags) {                                       \
-    cli();                                                                                         \
-    clear();                                                                                       \
-    printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n", errc, eip, eflags);              \
-    for (;;)                                                                                       \
-      ;                                                                                            \
-  }
-
-EXC_DFL(exc_de, "Divide-by-zero Error")
-EXC_DFL(exc_db, "Debug")
-EXC_DFL(exc_nmi, "Non-maskable Interrupt")
-EXC_DFL(exc_bp, "Breakpoint")
-EXC_DFL(exc_of, "Overflow")
-EXC_DFL(exc_br, "Bound Range Exceeded")
-EXC_DFL(exc_ud, "Invalid Opcode")
-EXC_DFL(exc_nm, "Device Not Available")
-EXC_DFL(exc_df, "Double Fault")
-EXC_DFL(exc_cso, "Coprocessor Segment Overrun")
-EXC_DFL(exc_ts, "Invalid TSS")
-EXC_DFL(exc_np, "Segment Not Present")
-EXC_DFL(exc_ss, "Stack-Segment Fault")
-EXC_DFL_ERRC(exc_gp, "General Protection Fault")
-EXC_DFL(exc_pf, "Page Fault")
-EXC_DFL(exc_af, "(Debug) Assertion Failure")
-EXC_DFL(exc_mf, "x87 Floating-Point Exception")
-EXC_DFL(exc_ac, "Alignment Check")
-EXC_DFL(exc_mc, "Machine Check")
-EXC_DFL(exc_xf, "SIMD Floating-Point Exception")
-EXC_DFL(exc_ve, "Virtualization Exception")
-EXC_DFL(exc_sx, "Security Exception")
-
-/* TODO: These need to be legitimate handlers */
-EXC_DFL(irqh_pit, "PIT event!")
-
 typedef void (*IntHandler)(void);
 static const IntHandler int_handlers[] = {asm_exc_de,
                                           asm_exc_db,
