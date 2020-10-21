@@ -22,6 +22,19 @@ void clear(void) {
     *(uint8_t*)(video_mem + (i << 1) + 1) = ATTRIB;
   }
 }
+/* void setscreen_x(int x);
+ * Inputs: x - position to set screen_x to
+ * Return Value: none
+ * Function: set value of screen_x to x
+ */
+void set_screen_x(int x) { screen_x = x; }
+/* void setscreen_y(int y);
+ * Inputs: y - position to set screen_y to
+ * Return Value: none
+ * Function: set value of screen_y to y
+ */
+void set_screen_y(int y) { screen_y = y; }
+
 
 /* int get_screen_x();
  * Inputs: void

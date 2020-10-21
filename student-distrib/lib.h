@@ -32,7 +32,8 @@ int32_t safe_strncpy(int8_t* dest, const int8_t* src, int32_t n);
 void test_interrupts(void);
 int get_screen_x();
 int get_screen_y();
-
+void set_screen_x(int x);
+void set_screen_y(int y);
 
 /* Port read functions */
 /* Inb reads a byte and returns its value as a zero-extended 32-bit
