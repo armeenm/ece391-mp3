@@ -4,7 +4,7 @@
 #include "lib.h"
 #include "util.h"
 
-enum { FS_MAX_DIR_ENTRIES = 63, FS_FILENAME_LENGTH = 32, FS_INODE_DATA_LENGTH = 1023 };
+enum { FS_MAX_DIR_ENTRIES = 63, FS_FNAME_LEN = 32, FS_INODE_DATA_LEN = 1023, FS_BLK_SIZE = 4096 };
 
 typedef enum FileType { FT_RTC, FT_DIR, FT_REG } FileType;
 
@@ -16,7 +16,7 @@ typedef struct FsStats {
 } FsStats;
 
 typedef struct DirEntry {
-  int8_t filename[FS_FILENAME_LENGTH];
+  int8_t filename[FS_FNAME_LEN];
   FileType filetype;
   uint32_t inode_idx;
   uint8_t reserved[24];
@@ -24,8 +24,15 @@ typedef struct DirEntry {
 
 typedef struct INode {
   uint32_t size;
-  uint32_t data[FS_INODE_DATA_LENGTH];
+  uint32_t data[FS_INODE_DATA_LEN];
 } INode;
+
+typedef struct Bootblk {
+  FsStats fs_stats;
+  DirEntry direntries[63];
+} Bootblk;
+
+void fs_init(Bootblk* bootblk);
 
 int32_t read_dentry_by_name(uint8_t const* fname, DirEntry* dentry);
 int32_t read_dentry_by_index(uint32_t index, DirEntry* dentry);

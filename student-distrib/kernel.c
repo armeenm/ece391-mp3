@@ -12,7 +12,9 @@
 #include "rtc.h"
 #include "syscall.h"
 #include "tests.h"
+#include "util.h"
 #include "x86_desc.h"
+
 #define RUN_TESTS
 
 /* Macros. */
@@ -136,25 +138,14 @@ void entry(unsigned long magic, unsigned long addr) {
     ltr(KERNEL_TSS);
   }
 
-  /* Init the PIC */
   init_i8259();
-
-  /* Initialize devices, memory, filesystem, enable device interrupts on the
-   * PIC, any other initialization stuff... */
-
   init_keyboard();
   init_rtc();
   init_paging();
+  init_idt();
 
   clear();
 
-  /* Enable interrupts */
-  init_idt();
-
-  /* Do not enable the following until after you have set up your
-   * IDT correctly otherwise QEMU will triple fault and simple close
-   * without showing you any output */
-  printf("Enabling Interrupts\n");
   asm volatile("int $0x80" ::"a"(SYSC_CLOSE));
 
   sti();
