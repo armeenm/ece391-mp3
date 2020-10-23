@@ -34,6 +34,16 @@ typedef struct Bootblk {
 
 void fs_init(Bootblk* bootblk);
 
+int32_t file_open(void);
+int32_t file_close(void);
+int32_t file_read(uint8_t const* fname, uint8_t* buf, int32_t length, uint32_t offset);
+int32_t file_write(void);
+
+int32_t dir_open(void);
+int32_t dir_close(void);
+int32_t dir_read(int8_t* buf);
+int32_t dir_write(void);
+
 int32_t read_dentry_by_name(uint8_t const* fname, DirEntry* dentry);
 int32_t read_dentry_by_index(uint32_t index, DirEntry* dentry);
 int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length);
