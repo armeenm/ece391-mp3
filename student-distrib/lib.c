@@ -285,10 +285,15 @@ void putc(uint8_t c) {
   size_history[screen_y] = screen_x;
   if (c == '\n' || c == '\r') {
     if(screen_y < NUM_ROWS - 1)
+    {
       screen_y++;
+    }
+    else
+    {
+      scroll_up();
+    }
     screen_x = 0;
-
-    scroll_up();
+    
   }
   else if(c =='\b')
   {
