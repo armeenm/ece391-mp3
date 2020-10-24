@@ -19,6 +19,7 @@ void irqh_syscall() {
     break;
 
   case SYSC_READ:
+
     break;
 
   case SYSC_WRITE:
@@ -44,4 +45,10 @@ void irqh_syscall() {
   };
 
   asm volatile("" ::"a"(type), "c"(arg2), "d"(arg3));
+}
+
+
+int32_t __ece391_read(int32_t fd, void* buf, int32_t nbytes)
+{
+  
 }

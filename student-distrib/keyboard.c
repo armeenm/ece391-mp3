@@ -6,6 +6,49 @@
 uint8_t key_state[SCS1_PRESSED_F12];
 int caps_lock_repeat = 0;
 int multi_byte = 0;
+char line_buffer[LINE_BUFFER_SIZE];
+int line_buffer_index = 0;
+
+
+int contains_newline(char * buf, int32_t size)
+{
+  int index = 0;
+  for(index = 0; index < size; index++)
+  {
+    if(buf[index] == '\n')
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+int32_t get_line_buffer(char * buffer, int32_t nbytes)
+{
+  int index = 0, continue_flag = 1;
+  while(contains_newline(line_buffer, LINE_BUFFER_SIZE) != 1);
+  while(index < nbytes && continue_flag == 1)
+  {
+    buffer[index] = line_buffer[index];
+    
+    if(line_buffer[index] == '\n' || line_buffer[index] == '\r')
+    {
+      continue_flag = 0;
+    }
+    index++;
+  }
+  int sizeofstring = index;
+  while(index < LINE_BUFFER_SIZE)
+  {
+    buffer[index] = 0;
+    index++;
+  }
+
+  clear_line_buffer();
+  return sizeofstring;
+}
+
+
 
 /* init_keyboard
  * Description: Initializes the keyboard
@@ -18,6 +61,7 @@ void init_keyboard(void)
   enable_irq(KEYBOARD_IRQ);
   multi_byte = 0;
   caps_lock_repeat = 0;
+  clear_line_buffer();
 }
 
 /* irqh_keyboard
@@ -67,45 +111,34 @@ void handle_keypress(SCSet1 const scancode) {
     if((key_state[SCS1_PRESSED_LEFTCTRL] == 1 && scancode == SCS1_PRESSED_L) || (key_state[SCS1_PRESSED_L] == 1 && scancode == SCS1_PRESSED_LEFTCTRL))
     {
       clear();
-      set_screen_x(0);
-      set_screen_y(0);
+      clear_line_buffer();
+      set_screen_xy(0, 0);
     }
     else if(key_state[SCS1_PRESSED_BACKSPACE] == 1)
     {
-      int x = get_screen_x();
-      int y = get_screen_y();
-
-      if(x > 0) {
-        set_screen_x(x - 1);
+      if(line_buffer_index > 0)
+      {
+        line_buffer_index--;
+        line_buffer[line_buffer_index] = 0;
+        putc('\b');
       }
-      else {
-        
-        if(y > 0) {
-          set_screen_xy(get_size_history(y - 1), y - 1);
-        }
-        else {
-          set_screen_x(0);
-        }
-      }
-      clear_screen_xy();
-    } 
+    }
     else if (disp)
     {
-        if(disp =='\t')
-        {
-          int i;
-          int space_to_add = (4 - (get_screen_x() % 4));
-          for(i = 0; i < space_to_add; i++)
-          {
-            putc(' ');
-          }
-        }
-        else
-        {
-          putc(disp);
-        }
-        
+      if(line_buffer_index < LINE_BUFFER_SIZE - 1)
+      {
+        putc(disp);
+        line_buffer[line_buffer_index] = disp;
+        line_buffer_index++;
+      }
+      else if(disp == '\n')
+      {
+        putc(disp);
+        line_buffer[line_buffer_index] = disp;
+        line_buffer_index++;
+      }
     }
+
       
   }
   else if (scancode > 0x81 && scancode <= SCS1_RELEASED_F12) {
@@ -123,7 +156,7 @@ char handle_disp(char disp)
 {
   if(key_state[SCS1_PRESSED_LEFTSHIFT] == 1
   || key_state[SCS1_PRESSED_RIGHTSHIFT] == 1
-  || key_state[SCS1_PRESSED_CAPSLOCK] == 1)
+  || (key_state[SCS1_PRESSED_CAPSLOCK] == 1 && disp >= 'a' && disp <= 'z'))
   {
     if(disp >= 'a' && disp <= 'z')
     {
@@ -205,11 +238,12 @@ char handle_disp(char disp)
   return disp;
 }
 
-int write() {
-
-}
-
-const char * read()
+void clear_line_buffer()
 {
-  
+  int i;
+  for(i = 0; i < LINE_BUFFER_SIZE; i++)
+  {
+    line_buffer[i] = 0;
+  }
+  line_buffer_index = 0;
 }

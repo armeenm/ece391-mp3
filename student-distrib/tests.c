@@ -5,6 +5,7 @@
 #include "options.h"
 #include "paging.h"
 #include "x86_desc.h"
+#include "terminal_driver.h"
 
 #define PASS 1
 #define FAIL 0
@@ -196,6 +197,22 @@ int handle_keypress_test() {
   return result;
 }
 
+int terminal_test()
+{
+  terminal_open();
+  char buf[128];
+  while(1==1)
+  {
+    terminal_write("ece391> ", 8);
+    int size = terminal_read(buf,128);
+    terminal_write("Input was : ", 12);
+    terminal_write(buf, size);
+  }
+
+  terminal_close();
+}
+
+
 /* int div_zero_except_test()
  *  force div by zero exception to occur, if not handled, test will fail
  * Inputs: None
@@ -238,6 +255,7 @@ void launch_tests() {
   TEST_OUTPUT("page_test", page_test());
   TEST_OUTPUT("handle_keypress_test", handle_keypress_test());
 #endif
+TEST_OUTPUT("terminal_test", terminal_test());
 #if DIV_ZERO_TEST
   TEST_OUTPUT("div_zero_test", div_zero_test());
 #endif

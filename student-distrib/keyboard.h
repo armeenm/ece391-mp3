@@ -19,7 +19,7 @@
 
 #define KEYBOARD_IRQ 0x1
 
-#define CHAR_BUFFER_SIZE 128
+#define LINE_BUFFER_SIZE 128
 /* pressed = 1 if pressed, 0 if released */
 typedef struct KeyDiff {
   uint8_t keycode;
@@ -39,7 +39,7 @@ static char const keycodes[SCS1_PRESSED_F12] = {[KEY_1] = '1',
                                                 '-',
                                                 '=',
                                                 10,
-                                                '\t',
+                                                ' ',
                                                 'q',
                                                 'w',
                                                 'e',
@@ -83,4 +83,6 @@ void init_keyboard(void);
 void irqh_keyboard(void);
 void handle_keypress(SCSet1 scancode);
 char handle_disp(char disp);
+void clear_line_buffer();
+int32_t get_line_buffer(char * buffer, int32_t nbytes);
 #endif

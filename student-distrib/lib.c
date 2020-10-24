@@ -5,7 +5,7 @@
 #define VIDEO 0xB8000
 #define NUM_COLS 80
 #define NUM_ROWS 25
-#define ATTRIB 0x7
+#define ATTRIB 0x2
 
 static int screen_x;
 static int screen_y;
@@ -27,6 +27,18 @@ void clear(void) {
     }
   }
 }
+
+void scroll_up()
+{
+  video_mem = (char*)memmove(video_mem, video_mem + ((NUM_COLS * 1) << 1), (NUM_COLS * (NUM_ROWS - 1) << 1));
+  int i = 0;
+  for(i = 0; i < NUM_COLS; i++)
+  {
+    *(uint8_t*)(video_mem + ((NUM_COLS * (NUM_ROWS - 1) + i) << 1)) = ' ';
+    *(uint8_t*)(video_mem + ((NUM_COLS * (NUM_ROWS - 1) + i) << 1) + 1) = ATTRIB;
+  }
+}
+
 
 /* void clear_screen_xy();
  * Inputs: none
@@ -267,18 +279,48 @@ int32_t puts(int8_t* s) {
  * Return Value: void
  *  Function: Output a character to the console */
 void putc(uint8_t c) {
+  if(c == 0)
+    return;
   /* Set size to the current position before newline */
   size_history[screen_y] = screen_x;
   if (c == '\n' || c == '\r') {
-    screen_y++;
+    if(screen_y < NUM_ROWS - 1)
+      screen_y++;
     screen_x = 0;
-    screen_y %= NUM_ROWS;
-  } else {
+
+    scroll_up();
+  }
+  else if(c =='\b')
+  {
+      int x = get_screen_x();
+      int y = get_screen_y();
+      set_screen_x(x - 1);
+      clear_screen_xy();
+  }
+  else if(c == '\t')
+  {
+    putc(' ');
+    return;
+  }
+  else {
     *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
     *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
     screen_x++;
-    screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+    if((screen_x / NUM_COLS) > 0)
+    {
+      if(screen_y == NUM_ROWS - 1)
+      {
+        scroll_up();
+      }
+      else
+      {
+        screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+      }
+      
+      
+    }
     screen_x %= NUM_COLS;
+    
   }
   /* Set location of the cursor based on new screen_x and screen_y */
   set_cursor_location(screen_x, screen_y);
