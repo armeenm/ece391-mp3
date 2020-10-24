@@ -44,6 +44,11 @@ int32_t get_line_buffer(char * buffer, int32_t nbytes)
     index++;
   }
 
+  if(nbytes < LINE_BUFFER_SIZE)
+  {
+    buffer[nbytes - 1] = '\n';
+  }
+
   clear_line_buffer();
   return sizeofstring;
 }
