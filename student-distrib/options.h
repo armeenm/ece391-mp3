@@ -7,10 +7,9 @@
 
 /* Should BSOD */
 #define DIV_ZERO_TEST 0
-#define INVALID_OPCODE_TEST 0
-#define NULL_PTR_TEST 0
-#define NEG_PTR_TEST 0
-#define USERSPACE_PTR_TEST 0
-#define VID_MEM_EDGE_CASE_TEST 0
+#define INVLD_OPCODE_TEST 0
+#define NULLPTR_TEST 0
+#define USPACE_PTR_TEST 0
+#define VIDMEM_EDGE_TEST 0
 
 #endif

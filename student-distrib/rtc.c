@@ -26,8 +26,10 @@ void init_rtc() {
   outb(prev | PIE_MASK, RTC_DATA_PORT);
 
   /* Set to max frequency since we virtualize the interrupts */
-  set_freq_rtc(HZ2);
-
+  set_real_freq_rtc(HZ1024);
+  set_virtual_freq_rtc(RTC_DEFAULT_VIRT_FREQ);
+  virtual_rtc_instance.int_count = 0;
+  virtual_rtc_instance.flag = 0;
   /* TODO: We may want to renable NMI's here, see OSDev */
 }
 
@@ -40,13 +42,42 @@ void init_rtc() {
  */
 void irqh_rtc() {
   ack_rtc_int();
-
+  virtual_rtc_instance.int_count++;
+  // We only set the flag to indicate a virtualized interrupt occured
+  virtual_rtc_instance.flag = (virtual_rtc_instance.real_freq/virtual_rtc_instance.int_count == virtual_rtc_instance.virt_freq);
+  if (virtual_rtc_instance.flag) {
+    virtual_rtc_instance.int_count = 0;
+  }
 #if RTC_RANDOM_TEXT
   test_interrupts();
 #endif
 
   send_eoi(RTC_IRQ);
 }
+
+int32_t rtc_read(void* buf, int32_t nbytes) {
+  while (!virtual_rtc_instance.flag) {
+    //spin while we wait for flag to be set by IRQh
+  }
+  // reset the flag so future reads require a future IRQH set
+  virtual_rtc_instance.flag = 0;
+  return 0;
+}
+
+
+int32_t rtc_write(const void* buf, int32_t nbytes) {
+  // try to set the freq, if it's not valid, this returns -1 and it's failed
+  if (set_virtual_freq_rtc(*(uint32_t*)buf)) {
+    return -1;
+  }
+  return sizeof(uint32_t);
+}
+
+int32_t rtc_open(const uint8_t* filename) {
+  set_virtual_freq_rtc(RTC_DEFAULT_VIRT_FREQ);
+  return 0;
+}
+
 
 /* ack_rtc_int
  * Description: ACKs an RTC interrupt.
@@ -63,12 +94,12 @@ uint8_t ack_rtc_int() {
 
 /* set_freq_rtc
  * Description: Sets the frequency of the RTC's interrupts.
- * Inputs: freq -- Desired frequency
+ * Inputs: rate -- Desired frequency in terms of rate
  * Outputs: None
  * Return Value: None
  * Side Effects: Writes to RTC ports.
  */
-void set_freq_rtc(RTCFreq const freq) {
+void set_real_freq_rtc(RTCRate const rate) {
   uint8_t prev;
 
   outb(RTC_REG_A | RTC_DIS_NMI, RTC_SEL_PORT);
@@ -76,5 +107,19 @@ void set_freq_rtc(RTCFreq const freq) {
 
   outb(RTC_REG_A | RTC_DIS_NMI, RTC_SEL_PORT);
   /* Set rate via the bottom 4 bits */
-  outb((prev & 0xF0) | (uint8_t)freq, RTC_DATA_PORT);
+  outb((prev & 0xF0) | (uint8_t)rate, RTC_DATA_PORT);
+
+  // This is formula to derivce frequency from rate
+  virtual_rtc_instance.real_freq = RTC_BASE_FREQ >> (rate - 1);
+}
+
+
+int set_virtual_freq_rtc(uint32_t freq) {
+  // if freq = 0 or > RTC freq or it's not a power of 2, this in an invalid frequency
+  if (freq == 0 || freq > virtual_rtc_instance.real_freq || (freq & (freq - 1)) != 0) {
+    return -1;
+  }
+  virtual_rtc_instance.int_count = 0;
+  virtual_rtc_instance.virt_freq = freq;
+  return 0;
 }

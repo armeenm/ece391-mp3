@@ -3,6 +3,7 @@
  */
 
 #include "debug.h"
+#include "fs.h"
 #include "i8259.h"
 #include "idt.h"
 #include "keyboard.h"
@@ -12,7 +13,9 @@
 #include "rtc.h"
 #include "syscall.h"
 #include "tests.h"
+#include "util.h"
 #include "x86_desc.h"
+
 #define RUN_TESTS
 
 /* Macros. */
@@ -136,26 +139,18 @@ void entry(unsigned long magic, unsigned long addr) {
     ltr(KERNEL_TSS);
   }
 
-  /* Init the PIC */
-  i8259_init();
-
-  /* Initialize devices, memory, filesystem, enable device interrupts on the
-   * PIC, any other initialization stuff... */
-
+  init_i8259();
   init_keyboard();
   init_rtc();
   init_paging();
+  init_idt();
+
+  module_t* const mod = (module_t*)mbi->mods_addr;
+  open_fs(mod->mod_start, mod->mod_end);
 
   clear();
 
-  /* Enable interrupts */
-  init_idt();
-
-  /* Do not enable the following until after you have set up your
-   * IDT correctly otherwise QEMU will triple fault and simple close
-   * without showing you any output */
-  printf("Enabling Interrupts\n");
-  asm volatile("int $0x80" ::"a"(SYSC_CLOSE));
+  // asm volatile("int $0x80" ::"a"(SYSC_CLOSE));
 
   sti();
 
@@ -166,5 +161,5 @@ void entry(unsigned long magic, unsigned long addr) {
   /* Execute the first program ("shell") ... */
 
   /* Spin (nicely, so we don't chew up cycles) */
-  asm volatile(".1: hlt; jmp .1;");
+  HLTLOOP;
 }

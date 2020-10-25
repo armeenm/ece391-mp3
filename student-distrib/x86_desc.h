@@ -24,6 +24,8 @@
 
 #ifndef ASM
 
+#include "paging.h"
+
 /* This structure is used to load descriptor base registers
  * like the GDTR and IDTR */
 typedef struct x86_desc {
@@ -124,6 +126,9 @@ extern uint32_t tss_size;
 extern seg_desc_t tss_desc_ptr;
 extern tss_t tss;
 
+extern uint32_t pgdir[PGDIR_LEN];
+extern uint32_t pgtbl[PGTBL_LEN];
+
 /* Sets runtime-settable parameters in the GDT entry for the LDT */
 #define SET_LDT_PARAMS(str, addr, lim)                                                             \
   do {                                                                                             \
@@ -180,7 +185,7 @@ extern x86_desc_t idt_desc_ptr;
  * into the task register */
 #define ltr(desc)                                                                                  \
   do {                                                                                             \
-    asm volatile("ltr %w0" : : "r"(desc) : "memory", "cc");                                        \
+    asm volatile("ltr %w0" ::"r"(desc) : "memory");                                                \
   } while (0)
 
 /* Load the interrupt descriptor table (IDT).  This macro takes a 32-bit
@@ -190,7 +195,7 @@ extern x86_desc_t idt_desc_ptr;
  * the base address of the IDT. */
 #define lidt(desc)                                                                                 \
   do {                                                                                             \
-    asm volatile("lidt (%0)" : : "g"(desc) : "memory");                                            \
+    asm volatile("lidt %0" ::"g"(desc) : "memory");                                                \
   } while (0)
 
 /* Load the local descriptor table (LDT) register.  This macro takes a

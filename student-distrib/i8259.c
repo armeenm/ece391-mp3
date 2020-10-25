@@ -13,7 +13,7 @@ uint8_t slave_mask = 0xFF;  /* IRQs 8-15 */
 /* Initialize the 8259 PIC
  * See 8259 datasheet for more information
  */
-void i8259_init(void) {
+void init_i8259(void) {
   /* ICW1: Start init process */
   outb(ICW1, MASTER_8259_PORT);
   outb(ICW1, SLAVE_8259_PORT);

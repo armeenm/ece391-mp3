@@ -7,17 +7,19 @@
 #include "util.h"
 
 /* Intel 8042 PS/2 Controller */
-#define KEYBOARD_DATA_PORT 0x60
-#define KEYBOARD_STATUS_PORT 0x64
+enum {
+  KEYBOARD_DATA_PORT = 0x60,
+  KEYBOARD_STATUS_PORT = 0x64,
 
-#define KEYBOARD_OUTBUF_FULL 0x1
-#define KEYBOARD_INBUF_FULL 0x2
-#define KEYBOARD_SYSFLAG 0x4
-#define KEYBOARD_CMDSEL 0x8
-#define KEYBOARD_TIMEOUT_ERR 0x40
-#define KEYBOARD_PARITY_ERR 0x80
+  KEYBOARD_OUTBUF_FULL = 1,
+  KEYBOARD_INBUF_FULL = 1 << 1,
+  KEYBOARD_SYSFLAG = 1 << 2,
+  KEYBOARD_CMDSEL = 1 << 3,
+  KEYBOARD_TIMEOUT_ERR = 1 << 6,
+  KEYBOARD_PARITY_ERR = 1 << 7,
 
-#define KEYBOARD_IRQ 0x1
+  KEYBOARD_IRQ = 0x1
+};
 
 #define LINE_BUFFER_SIZE 128
 /* pressed = 1 if pressed, 0 if released */

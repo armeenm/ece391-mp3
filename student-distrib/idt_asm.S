@@ -2,41 +2,81 @@
 #ifndef IDT_ASM_S
 #define IDT_ASM_S
 
-#ifndef IDT_C
+#ifdef IDT_C
+
+#include "lib.h"
+
+#define ASM_EXC(name) void asm_##name(void);
+
+#define CLR_true clear();
+#define CLR_false
+
+#define I_EXC_DFL(name, str, clear)                                                                \
+  ASM_EXC(name)                                                                                    \
+  void name(int eip, int UNUSED(cs), int eflags) {                                                 \
+    cli();                                                                                         \
+    CLR_##clear                                                                                    \
+    printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", eip, eflags);                                \
+    HLTLOOP;                                                                                       \
+  }
+
+#define I_EXC_DFL_ERRC(name, str, clear)                                                           \
+  ASM_EXC(name)                                                                                    \
+  void name(int errc, int eip, int UNUSED(cs), int eflags) {                                       \
+    cli();                                                                                         \
+    CLR_##clear                                                                                    \
+    printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n", errc, eip, eflags);              \
+    HLTLOOP;                                                                                       \
+  }
+
+#define EXC_DFL(name, str) I_EXC_DFL(name, str, true)
+#define EXC_DFL_NOCLR(name, str) I_EXC_DFL(name, str, false)
+
+#define EXC_DFL_ERRC(name, str) I_EXC_DFL_ERRC(name, str, true)
+#define EXC_DFL_ERRC_NOCLR(name, str) I_EXC_DFL_ERRC(name, str, false)
+
+#else
+
 #define ASM 1
-#define ASM_EXC(name)         \
-  .global asm_##name;         \
+
+#define ASM_EXC(name)                                                                              \
+  .global asm_##name;                                                                              \
   asm_##name: call name; iret
 
+#define EXC_DFL(name, str) ASM_EXC(name)
+#define EXC_DFL_ERRC EXC_DFL
+#define EXC_DFL_NOCLR EXC_DFL
+#define EXC_DFL_ERRC_NOCLR EXC_DFL
+
 .align 4
-#else
-#define ASM_EXC(name) \
-  void asm_##name(void);
+
 #endif
 
-ASM_EXC(exc_de)
-ASM_EXC(exc_db)
-ASM_EXC(exc_nmi)
-ASM_EXC(exc_bp)
-ASM_EXC(exc_of)
-ASM_EXC(exc_br)
-ASM_EXC(exc_ud)
-ASM_EXC(exc_nm)
-ASM_EXC(exc_df)
-ASM_EXC(exc_cso)
-ASM_EXC(exc_ts)
-ASM_EXC(exc_np)
-ASM_EXC(exc_ss)
-ASM_EXC(exc_gp)
-ASM_EXC(exc_pf)
-ASM_EXC(exc_af)
-ASM_EXC(exc_mf)
-ASM_EXC(exc_ac)
-ASM_EXC(exc_mc)
-ASM_EXC(exc_xf)
-ASM_EXC(exc_ve)
-ASM_EXC(exc_sx)
-ASM_EXC(irqh_pit)
+EXC_DFL(exc_de, "Divide-by-zero Error")
+EXC_DFL(exc_db, "Debug")
+EXC_DFL(exc_nmi, "Non-maskable Interrupt")
+EXC_DFL(exc_bp, "Breakpoint")
+EXC_DFL(exc_of, "Overflow")
+EXC_DFL(exc_br, "Bound Range Exceeded")
+EXC_DFL(exc_ud, "Invalid Opcode")
+EXC_DFL(exc_nm, "Device Not Available")
+EXC_DFL(exc_df, "Double Fault")
+EXC_DFL(exc_cso, "Coprocessor Segment Overrun")
+EXC_DFL(exc_ts, "Invalid TSS")
+EXC_DFL(exc_np, "Segment Not Present")
+EXC_DFL(exc_ss, "Stack-Segment Fault")
+EXC_DFL_ERRC(exc_gp, "General Protection Fault")
+EXC_DFL(exc_pf, "Page Fault")
+EXC_DFL_NOCLR(exc_af, "(Debug) Assertion Failure")
+EXC_DFL(exc_mf, "x87 Floating-Point Exception")
+EXC_DFL(exc_ac, "Alignment Check")
+EXC_DFL(exc_mc, "Machine Check")
+EXC_DFL(exc_xf, "SIMD Floating-Point Exception")
+EXC_DFL(exc_ve, "Virtualization Exception")
+EXC_DFL(exc_sx, "Security Exception")
+
+EXC_DFL(irqh_pit, "PIT event!")
+
 ASM_EXC(irqh_keyboard)
 ASM_EXC(irqh_rtc)
 ASM_EXC(irqh_syscall)
