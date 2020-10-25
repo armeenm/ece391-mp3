@@ -8,6 +8,7 @@
 #include "rtc.h"
 #include "util.h"
 #include "x86_desc.h"
+#include "terminal_driver.h"
 
 enum { FAIL, PASS };
 
@@ -183,6 +184,22 @@ void handle_keypress_test() {
 
   TEST_PASS;
 }
+
+int terminal_test()
+{
+  terminal_open();
+  char buf[128];
+  while(1==1)
+  {
+    terminal_write("ece391> ", 8);
+    int size = terminal_read(buf,128);
+    terminal_write("Input was : ", 12);
+    terminal_write(buf, size);
+  }
+
+  terminal_close();
+}
+
 
 /* int div_zero_except_test()
  *  force div by zero exception to occur, if not handled, test will fail

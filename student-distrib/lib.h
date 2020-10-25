@@ -7,6 +7,13 @@
 #include "types.h"
 #include "util.h"
 
+#define VGA_DATA_REGISTER 0x3D5
+#define VGA_ADDRESS_REGISTER 0x3D4
+#define VGA_CURSOR_HIGH_REGISTER 0x0E
+#define VGA_CURSOR_LOW_REGISTER 0x0F
+
+
+
 int32_t printf(int8_t* format, ...);
 void putc(uint8_t c);
 void putc2(uint8_t c);
@@ -32,8 +39,12 @@ int32_t safe_strncpy(int8_t* dest, const int8_t* src, int32_t n);
 void test_interrupts(void);
 int get_screen_x();
 int get_screen_y();
-
-
+void set_screen_x(int x);
+void set_screen_y(int y);
+void scroll_up();
+void clear_screen_xy();
+void set_screen_xy(int x, int y);
+uint8_t get_size_history(int index);
 /* Port read functions */
 /* Inb reads a byte and returns its value as a zero-extended 32-bit
  * unsigned int */
