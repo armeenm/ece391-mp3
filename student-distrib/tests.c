@@ -185,6 +185,7 @@ void handle_keypress_test() {
   TEST_PASS;
 }
 
+<<<<<<< HEAD
 int terminal_test() {
   terminal_open();
   char buf[128];
@@ -193,9 +194,20 @@ int terminal_test() {
     int size = terminal_read(buf, 128);
     terminal_write("Input was : ", 12);
     terminal_write(buf, size);
+=======
+int terminal_test() {
+  terminal_open(0);
+  char buf[128];
+  while (1 == 1) {
+    terminal_write(0, TERMINAL_TEXT, TERMINAL_TEXT_SIZE);
+    terminal_read(0, buf, 128);
+    // int size = terminal_read(0, buf,128);
+    // terminal_write("Input was : ", 12);
+    // terminal_write(buf, size);
+>>>>>>> origin/master
   }
 
-  terminal_close();
+  terminal_close(0);
 }
 
 /* int div_zero_except_test()
@@ -289,6 +301,9 @@ void launch_tests() {
   // page_test();
   // handle_keypress_test();
   // rtc_test();
+#if TERMINAL_TEST
+  terminal_test();
+#endif
 #if DIV_ZERO_TEST
   div_zero_test();
 #endif

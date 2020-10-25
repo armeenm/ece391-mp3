@@ -20,7 +20,8 @@ enum {
 
   KEYBOARD_IRQ = 0x1
 };
-
+#define SCS1_UPPERCASE_OFFSET 0x20
+#define SCS1_KEYPRESS_RELEASE_OFFSET 0x80
 #define LINE_BUFFER_SIZE 128
 /* pressed = 1 if pressed, 0 if released */
 typedef struct KeyDiff {
@@ -81,6 +82,7 @@ static char const keycodes[SCS1_PRESSED_F12] = {[KEY_1] = '1',
                                                 [KEY_KPASTERISK] = '*',
                                                 [KEY_SPACE] = ' ',};
 
+/* Declare helper functions for keyboard */
 void init_keyboard(void);
 void irqh_keyboard(void);
 void handle_keypress(SCSet1 scancode);
