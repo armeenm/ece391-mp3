@@ -45,9 +45,7 @@ void init_paging() {
 
   /* Set up remaining page directories. */
   for (i = 2; i < PGDIR_LEN; ++i)
-    pgdir[i] = PG_RW | PG_USPACE | PG_SIZE;
-
-  pgdir[0x20] |= PG_PRESENT;
+    pgdir[i] = (i * PG_4M_START) | PG_RW | PG_USPACE | PG_SIZE;
 
   /* Enable paging.
    * CR3     = pgdir

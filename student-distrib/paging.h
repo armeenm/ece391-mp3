@@ -13,12 +13,13 @@ enum {
   PGDIR_LEN = PGDIR_LEN_MCR,
   PGTBL_LEN = PGTBL_LEN_MCR,
   PTE_SIZE = PTE_SIZE_MCR,
+  PG_4M_ADDR_OFFSET = 22,
   PG_VIDMEM_START = VIDMEM_START >> 12,
   PG_PRESENT = 1,
   PG_RW = 1 << 1,
   PG_USPACE = 1 << 2,
   PG_SIZE = 1 << 7,
-  PG_4M_START = 1 << 22
+  PG_4M_START = 1 << PG_4M_ADDR_OFFSET
 };
 
 /* Enable paging and setup page directory and page table */

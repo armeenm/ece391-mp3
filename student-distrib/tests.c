@@ -6,9 +6,9 @@
 #include "options.h"
 #include "paging.h"
 #include "rtc.h"
+#include "terminal_driver.h"
 #include "util.h"
 #include "x86_desc.h"
-#include "terminal_driver.h"
 
 enum { FAIL, PASS };
 
@@ -287,7 +287,6 @@ void terminal_test()
   
 }
 
-
 /* int div_zero_except_test()
  *  force div by zero exception to occur, if not handled, test will fail
  * Inputs: None
@@ -376,8 +375,13 @@ void launch_tests() {
   /* CP2 */
   //ls_test();
   idt_test();
+<<<<<<< HEAD
   //page_test();
   handle_keypress_test();
+=======
+  // page_test();
+  // handle_keypress_test();
+>>>>>>> 553acbc2da560e0f86927b0792c1e67426ef1a6c
   // rtc_test();
 
   terminal_test();
