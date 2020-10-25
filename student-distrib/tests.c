@@ -258,10 +258,11 @@ void rtc_test() {
     freq = 1 << j;
     // print 8 chars for 2hz, print 16 for 4hz (4 seconds per RTC)
     clear();
-    rtc_write(&freq, sizeof(int));
+    set_screen_xy(0, 0);
+    rtc_write(0, &freq, sizeof(int));
     for (i = 0; i < 1 << (2 + j); i++) {
-      printf("%d ", i);
-      rtc_read(0, 0);
+      printf("%d ", 1);
+      rtc_read(0, 0, 0);
     }
   }
 }
