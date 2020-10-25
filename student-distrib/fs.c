@@ -1,10 +1,16 @@
 #include "fs.h"
 #include "debug.h"
+#include "paging.h"
+#include "util.h"
+#include "x86_desc.h"
 
 static Bootblk* bootblk = NULL;
 static uint32_t dir_reads = 0;
 
-void open_fs(uint32_t const start, uint32_t const end) { bootblk = (Bootblk*)start; }
+void open_fs(uint32_t const start, uint32_t const UNUSED(end)) {
+  bootblk = (Bootblk*)start;
+  pgdir[start >> PG_4M_ADDR_OFFSET] |= PG_PRESENT;
+}
 
 int32_t file_open() { return 0; }
 
