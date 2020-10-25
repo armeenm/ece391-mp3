@@ -8,12 +8,12 @@ static Bootblk* bootblk = NULL;
 static uint32_t dir_reads = 0;
 
 /* open_fs
- * Description: 
- * Inputs: start -- 
- *         UNUSED(end)?
+ * Description: Opens filesystem
+ * Inputs: start -- The beginning 
+ *         UNUSED(end) -- NOT USED
  * Outputs: none
- * Return Value: 
- * Function: 
+ * Return Value: none
+ * Function: Opens the filesystem and sets the page directory to present
  */
 void open_fs(uint32_t const start, uint32_t const UNUSED(end)) {
   bootblk = (Bootblk*)start;
@@ -21,29 +21,29 @@ void open_fs(uint32_t const start, uint32_t const UNUSED(end)) {
 }
 
 /* file_open
- * Description:
+ * Description: Opens file
  * Inputs: none
  * Outputs: none
- * Return Value:
- * Function:
+ * Return Value: 0
+ * Function: none currently
  */
 int32_t file_open() { return 0; }
 
 /* file_close
- * Description:
+ * Description: Closes file
  * Inputs: none
  * Outputs: none
- * Return Value:
- * Function:
+ * Return Value: 0
+ * Function: none currently
  */
 int32_t file_close() { return 0; }
 
 /* file_read
- * Description:
- * Inputs: fname --
+ * Description: Reads file
+ * Inputs: fname -- Name of file to read
  *         buf -- 
- *         length --
- *         offset --
+ *         length -- Length of the file
+ *         offset -- 
  * Outputs: 
  * Return Value:
  * Function:
@@ -58,38 +58,38 @@ int32_t file_read(uint8_t const* const fname, uint8_t* const buf, int32_t const 
 }
 
 /* file_write
- * Description:
+ * Description: Writes file
  * Inputs: none
  * Outputs: none
- * Return Value:
- * Function:
+ * Return Value: -1
+ * Function: none currently
  */
 int32_t file_write() { return -1; }
 
 /* dir_open
- * Description:
+ * Description: Opens directory
  * Inputs: none
  * Outputs: none
- * Return Value:
- * Function:
+ * Return Value: 0
+ * Function: none currently
  */
 int32_t dir_open() { return 0; }
 
 /* dir_close
- * Description:
+ * Description: Closes directory
  * Inputs: none
  * Outputs: none
- * Return Value:
- * Function:
+ * Return Value: 0
+ * Function: none currently
  */
 int32_t dir_close() { return 0; }
 
 /* dir_read
- * Description:
- * Inputs: buf -- 
+ * Description: Reads diretory
+ * Inputs: buf -- Buffer to read from directory
  * Outputs: none
- * Return Value:
- * Function:
+ * Return Value: Length of the buffer
+ * Function: Reads the directory and ...            ####################
  */
 int32_t dir_read(int8_t* const buf) {
   memcpy(buf, bootblk->direntries[dir_reads].filename, FS_FNAME_LEN);
@@ -101,21 +101,22 @@ int32_t dir_read(int8_t* const buf) {
 }
 
 /* dir_write
- * Description:
+ * Description: Writes directory
  * Inputs: none
  * Outputs: none
- * Return Value:
- * Function:
+ * Return Value: -1
+ * Function: none currently
  */
 int32_t dir_write() { return -1; }
 
 /* read_dentry_by_name
- * Description:
- * Inputs: ufname -- 
- *         dentry -- 
+ * Description: Reads directory entry by name
+ * Inputs: ufname -- name of the entry
+ *         dentry -- Directory entry struct
  * Outputs: none
- * Return Value:
- * Function:
+ * Return Value: returns -1 if failed, 0 if succeeds
+ * Function: Reads the directory entry by name and places it in the directory
+ *           entry memory.
  */
 int32_t read_dentry_by_name(uint8_t const* const ufname, DirEntry* const dentry) {
   int8_t const* const fname = (int8_t const*)ufname;
@@ -132,12 +133,13 @@ int32_t read_dentry_by_name(uint8_t const* const ufname, DirEntry* const dentry)
 }
 
 /* read_dentry_by_index
- * Description: 
- * Inputs: index --
- *         dentry --
+ * Description: Reads directory entry by index
+ * Inputs: index -- index of the entry
+ *         dentry -- Directory entry struct
  * Outputs: none
- * Return Value:
- * Function:
+ * Return Value: returns -1 if failed, 0 if succeeds
+ * Function: Reads the directory entry by index and places it in the directory
+ *           entry memory.
  */
 int32_t read_dentry_by_index(uint32_t const index, DirEntry* const dentry) {
   if (index >= FS_MAX_DIR_ENTRIES || !dentry)
@@ -148,10 +150,11 @@ int32_t read_dentry_by_index(uint32_t const index, DirEntry* const dentry) {
   return 0;
 }
 
-/* read_dentry_by_index
+/* read_data
  * Description:
  * Inputs: inode -- 
  *         offset -- 
+ *         buf -- 
  *         length -- 
  * Outputs: none
  * Return Value:
