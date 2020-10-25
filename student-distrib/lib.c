@@ -10,7 +10,7 @@
 static int screen_x;
 static int screen_y;
 static char* video_mem = (char*)VIDEO;
-static uint8_t size_history[NUM_ROWS];
+
 /* void clear(void);
  * Inputs: void
  * Return Value: none
@@ -20,18 +20,19 @@ void clear(void) {
   for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
     *(uint8_t*)(video_mem + (i << 1)) = ' ';
     *(uint8_t*)(video_mem + (i << 1) + 1) = ATTRIB;
-    /* On clear screen reset size history for all Rows */
-    if(i % NUM_COLS == 0)
-    {
-      size_history[i/NUM_COLS] = 0;
-    }
   }
 }
-
+/* void scroll_up
+ * Inputs: none
+ * Return Value: none
+ * Function: Scrolls up the video memory
+ */
 void scroll_up()
 {
+  /* Copy the rows except the first one into the start of video memory */
   video_mem = (char*)memmove(video_mem, video_mem + ((NUM_COLS * 1) << 1), (NUM_COLS * (NUM_ROWS - 1) << 1));
   int i = 0;
+  /* For the last row set it all to spaces to clear it */
   for(i = 0; i < NUM_COLS; i++)
   {
     *(uint8_t*)(video_mem + ((NUM_COLS * (NUM_ROWS - 1) + i) << 1)) = ' ';
@@ -114,21 +115,6 @@ void set_screen_xy(int x, int y)
     set_cursor_location(x, y);
 
   }
-}
-
-
-/* void setscreen_y(int y);
- * Inputs: y - position to set screen_y to
- * Return Value: 0 if fails, size of history otherwise
- * Function: set value of screen_y to y
- */
-uint8_t get_size_history(int index) {
-  if(index >= 0 && index < NUM_ROWS)
-  {
-    /* If valid index return size of history */
-    return size_history[index];
-  }
-  return 0;
 }
 
 /* int get_screen_x();
@@ -281,29 +267,41 @@ int32_t puts(int8_t* s) {
 void putc(uint8_t c) {
   if(c == 0)
     return;
-  /* Set size to the current position before newline */
-  size_history[screen_y] = screen_x;
   if (c == '\n' || c == '\r') {
+    /* If there is still screenspace left then go to next line */
     if(screen_y < NUM_ROWS - 1)
     {
       screen_y++;
     }
     else
     {
+      /* If there is no screenspace left scroll up */
       scroll_up();
     }
+    /* Reset to the start of the line */
     screen_x = 0;
     
   }
   else if(c =='\b')
   {
-      int x = get_screen_x();
-      int y = get_screen_y();
+    /* Get x and y pos  */
+    int x = get_screen_x();
+    int y = get_screen_y();
+    /* if x is zero go to previous line */
+    if(x == 0 && y > 0)
+    {
+      set_screen_xy(NUM_COLS - 1, y - 1);
+    }
+    else {
+      /* Otherwise go back one */
       set_screen_x(x - 1);
-      clear_screen_xy();
+    }
+    /* clear the character at the current location */
+    clear_screen_xy();
   }
   else if(c == '\t')
   {
+    /* if tab use a space */
     putc(' ');
     return;
   }
@@ -311,19 +309,21 @@ void putc(uint8_t c) {
     *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
     *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
     screen_x++;
+    /* if it is a newline then go to the next line */
     if((screen_x / NUM_COLS) > 0)
     {
+      /* At the top of the screen scroll up */
       if(screen_y == NUM_ROWS - 1)
       {
         scroll_up();
       }
       else
       {
+        /* Otherwise go to the next row */
         screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
       }
-      
-      
     }
+    /* Make sure x is bounded by the columns */
     screen_x %= NUM_COLS;
     
   }

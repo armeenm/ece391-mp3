@@ -44,7 +44,6 @@ void set_screen_y(int y);
 void scroll_up();
 void clear_screen_xy();
 void set_screen_xy(int x, int y);
-uint8_t get_size_history(int index);
 /* Port read functions */
 /* Inb reads a byte and returns its value as a zero-extended 32-bit
  * unsigned int */
