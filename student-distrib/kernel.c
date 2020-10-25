@@ -3,6 +3,7 @@
  */
 
 #include "debug.h"
+#include "fs.h"
 #include "i8259.h"
 #include "idt.h"
 #include "keyboard.h"
@@ -144,9 +145,12 @@ void entry(unsigned long magic, unsigned long addr) {
   init_paging();
   init_idt();
 
+  module_t* const mod = (module_t*)mbi->mods_addr;
+  open_fs(mod->mod_start, mod->mod_end);
+
   clear();
 
-  asm volatile("int $0x80" ::"a"(SYSC_CLOSE));
+  // asm volatile("int $0x80" ::"a"(SYSC_CLOSE));
 
   sti();
 

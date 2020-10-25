@@ -32,7 +32,7 @@ typedef struct Bootblk {
   DirEntry direntries[63];
 } Bootblk;
 
-void fs_init(Bootblk* bootblk);
+void open_fs(uint32_t start, uint32_t end);
 
 int32_t file_open(void);
 int32_t file_close(void);

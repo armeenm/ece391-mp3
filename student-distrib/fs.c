@@ -4,7 +4,7 @@
 static Bootblk* bootblk = NULL;
 static uint32_t dir_reads = 0;
 
-void fs_init(Bootblk* const bootblk_) { bootblk = bootblk_; }
+void open_fs(uint32_t const start, uint32_t const end) { bootblk = (Bootblk*)start; }
 
 int32_t file_open() { return 0; }
 

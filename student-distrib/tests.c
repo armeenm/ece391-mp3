@@ -1,4 +1,5 @@
 #include "tests.h"
+#include "fs.h"
 #include "idt.h"
 #include "keyboard.h"
 #include "lib.h"
@@ -217,24 +218,40 @@ void invalid_opcode_test() {
   TEST_FAIL;
 }
 
-// add more tests here
-
 /* Checkpoint 2 tests */
+
+void ls_test() {
+  int8_t buf[32];
+
+  TEST_HEADER;
+
+  dir_read(buf);
+  printf("%s\n", buf);
+
+  TEST_PASS;
+}
+
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
 
 /* Test suite entry point */
 void launch_tests() {
-  idt_test();
-  page_test();
-  handle_keypress_test();
+  /* CP1 */
+  /*
+    idt_test();
+    page_test();
+    handle_keypress_test();
 
-#if DIV_ZERO_TEST
-  div_zero_test();
-#endif
+  #if DIV_ZERO_TEST
+    div_zero_test();
+  #endif
 
-#if INVALID_OPCODE_TEST
-  invalid_opcode_test();
-#endif
+  #if INVALID_OPCODE_TEST
+    invalid_opcode_test();
+  #endif
+  */
+
+  /* CP2 */
+  ls_test();
 }
