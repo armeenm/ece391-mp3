@@ -5,6 +5,7 @@
 #include "lib.h"
 #include "options.h"
 #include "paging.h"
+#include "rtc.h"
 #include "util.h"
 #include "x86_desc.h"
 
@@ -231,6 +232,21 @@ void ls_test() {
   TEST_PASS;
 }
 
+void rtc_test() {
+  int i;
+  int j;
+  int freq;
+  for (j = 1; j <= 10; j++) {
+    freq = 1 << j;
+    // print 8 chars for 2hz, print 16 for 4hz (4 seconds per RTC)
+    clear();
+    rtc_write(&freq, sizeof(int));
+    for (i = 0; i < 1 << (2 + j); i++) {
+      printf("%d ", i);
+      rtc_read(0, 0);
+    }
+  }
+}
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
@@ -254,4 +270,15 @@ void launch_tests() {
 
   /* CP2 */
   ls_test();
+  idt_test();
+  page_test();
+  handle_keypress_test();
+  // rtc_test();
+#if DIV_ZERO_TEST
+  div_zero_test();
+#endif
+
+#if INVALID_OPCODE_TEST
+  invalid_opcode_test();
+#endif
 }
