@@ -46,13 +46,15 @@ int contains_newline(char * buf, int32_t size)
  */
 int32_t get_line_buffer(char * buffer, int32_t nbytes)
 {
+  if(nbytes <= 0)
+    return -1;
   terminal_read_flag = 1;
   /* Wait while the line_buffer does not contain a \n */
   while(contains_newline(line_buffer, LINE_BUFFER_SIZE) != 1);
 
   /* Loop through the buffer until there is a newline */
   int index = 0, continue_flag = 1;
-  while(index < nbytes && continue_flag == 1)
+  while(index < nbytes && index < LINE_BUFFER_SIZE && continue_flag == 1)
   {
     /* set the buffer to the line_buffer */
     buffer[index] = line_buffer[index];
@@ -78,6 +80,12 @@ int32_t get_line_buffer(char * buffer, int32_t nbytes)
   if(nbytes < LINE_BUFFER_SIZE)
   {
     buffer[nbytes - 1] = '\n';
+  }
+
+  /* If the size is greater than line_buffer_size then set the last char to \n */
+  if(nbytes > LINE_BUFFER_SIZE)
+  {
+    buffer[LINE_BUFFER_SIZE - 1] = '\n';
   }
 
   /* clear the line buffer and return the size of the buffer written to */

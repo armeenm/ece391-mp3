@@ -162,22 +162,93 @@ void page_test() {
  * Coverage: Tests large negative to large postiive scancode inputs
  */
 void handle_keypress_test() {
-  int i;
 
   TEST_HEADER;
-
   {
-    int const start_x = get_screen_x();
-    int const start_y = get_screen_y();
+
+    int NUM_COLS = 80;
+    char* video_mem = (char*)(0xB8000);
 
     putc(' ');
 
-    for (i = -391; i < 391; i++)
-      handle_keypress(i);
+    int start_x = get_screen_x();
+    int start_y = get_screen_y();
 
-    /* Last character positions from start postions, down 3 rows, 38 across corner */
-    if (get_screen_x() - start_x != last_x_pos || get_screen_y() - start_y != last_y_pos)
+    handle_keypress(-1);
+
+    if(start_x != get_screen_x())
       TEST_FAIL;
+
+    if(*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != ' ')
+      TEST_FAIL;
+
+    terminal_read_flag = 1;
+
+    handle_keypress(SCS1_PRESSED_A);
+    handle_keypress(SCS1_RELEASED_A);
+
+    if(start_x + 1 != get_screen_x())
+    {
+      TEST_FAIL;
+    }
+      
+    if(*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'a')
+    {
+       TEST_FAIL;
+    }
+    
+    handle_keypress(SCS1_PRESSED_LEFTSHIFT);
+
+    start_x = get_screen_x();
+    start_y = get_screen_y();
+
+    handle_keypress(SCS1_PRESSED_A);
+    handle_keypress(SCS1_RELEASED_A);
+
+    if(*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'A')
+      TEST_FAIL;
+
+    handle_keypress(SCS1_RELEASED_LEFTSHIFT);
+
+
+    handle_keypress(SCS1_PRESSED_LEFTSHIFT);
+
+    start_x = get_screen_x();
+    start_y = get_screen_y();
+
+    handle_keypress(SCS1_PRESSED_1);
+    handle_keypress(SCS1_RELEASED_1);
+
+    if(*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != '!')
+      TEST_FAIL;
+
+    handle_keypress(SCS1_RELEASED_LEFTSHIFT);
+
+
+
+    handle_keypress(SCS1_PRESSED_CAPSLOCK);
+    handle_keypress(SCS1_RELEASED_CAPSLOCK);
+
+    handle_keypress(SCS1_PRESSED_CAPSLOCK);
+    handle_keypress(SCS1_RELEASED_CAPSLOCK);
+
+    handle_keypress(SCS1_PRESSED_CAPSLOCK);
+    handle_keypress(SCS1_RELEASED_CAPSLOCK);
+
+    start_x = get_screen_x();
+    start_y = get_screen_y();
+
+    handle_keypress(SCS1_PRESSED_C);
+    handle_keypress(SCS1_RELEASED_C);
+
+    if(*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'C')
+      TEST_FAIL;
+
+
+
+
+    terminal_read_flag = 0;
+
   }
 
   putc('\n');
@@ -185,20 +256,35 @@ void handle_keypress_test() {
   TEST_PASS;
 }
 
-int terminal_test()
+void terminal_test()
 {
   terminal_open(0);
   char buf[128];
+
+  TEST_HEADER;
+
+  {
+
+    if(terminal_read(0, buf, -1) != -1)
+      TEST_FAIL;
+    if(terminal_write(0, "TEST", -1) != -1)
+      TEST_FAIL;
+
+    TEST_PASS;
+  }
+
+
+  #if TERMINAL_TEST
   while(1==1)
   {
     terminal_write(0, TERMINAL_TEXT, TERMINAL_TEXT_SIZE);
-    terminal_read(0, buf,128);
-    //int size = terminal_read(0, buf,128);
-    //terminal_write("Input was : ", 12);
-    //terminal_write(buf, size);
+    int size = terminal_read(0, buf, 128);
+    terminal_write(0,"Input was : ", 12);
+    terminal_write(0,buf, size);
   }
-
+  #endif
   terminal_close(0);
+  
 }
 
 
@@ -288,14 +374,13 @@ void launch_tests() {
   */
 
   /* CP2 */
-  ls_test();
+  //ls_test();
   idt_test();
   //page_test();
-  //handle_keypress_test();
+  handle_keypress_test();
   // rtc_test();
-#if TERMINAL_TEST
+
   terminal_test();
-#endif
 #if DIV_ZERO_TEST
   div_zero_test();
 #endif

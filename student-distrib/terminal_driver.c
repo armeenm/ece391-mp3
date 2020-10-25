@@ -35,7 +35,7 @@ int32_t terminal_write(int32_t UNUSED(fd), const void* buf, int32_t nbytes)
     char * buffer = (char *)buf;
 
     /* If params are invalid return -1 */
-    if(nbytes <= 0 || (uint32_t)nbytes > strlen(buffer) || nbytes > LINE_BUFFER_SIZE)
+    if(nbytes <= 0)
         return -1;
 
     /* Write all bytes to the screen via putc */
