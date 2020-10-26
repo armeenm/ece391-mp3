@@ -347,6 +347,17 @@ void ls_test() {
   TEST_PASS;
 }
 
+void cat_test() {
+  char buf[10] = {0};
+
+  TEST_HEADER;
+
+  file_read("frame0.txt", NULL, (uint8_t*)buf, 9, 0);
+  printf("frame0.txt: %s\n", buf);
+
+  TEST_PASS;
+}
+
 void rtc_test() {
   int i, j;
   int freq;
@@ -433,14 +444,12 @@ void launch_tests() {
 
   idt_test();
   page_test();
-  ls_test();
-
-  /*
   handle_keypress_test();
   terminal_test();
   rtc_write_test();
   rtc_read_test();
-  */
+  ls_test();
+  cat_test();
 
 #if RTC_FREQ_CHANGE_DEMO
   rtc_test();

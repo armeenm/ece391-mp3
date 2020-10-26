@@ -163,9 +163,8 @@ int32_t read_dentry_by_index(uint32_t const idx, DirEntry* const dentry) {
 int32_t read_data(uint32_t const inode, uint32_t const offset, uint32_t* const fsize, uint8_t* const buf,
                   uint32_t const length) {
 
-  INode const* const inodes = (INode*)((void*)bootblk + FS_BLK_SIZE);
-  Datablk const* const datablks =
-      (Datablk*)((void*)bootblk + (1 + bootblk->fs_stats.inode_cnt) * FS_BLK_SIZE);
+  INode const* const inodes = (INode*)&bootblk[1];
+  Datablk const* const datablks = (Datablk*)&inodes[bootblk->fs_stats.inode_cnt];
 
   uint32_t datablk_idx = offset / FS_INODE_DATA_LEN;
   uint32_t datablk_offset = offset % FS_BLK_SIZE;
