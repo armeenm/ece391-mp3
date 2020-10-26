@@ -253,6 +253,7 @@ void rtc_test() {
   int i;
   int j;
   int freq;
+  rtc_open(0);
   for (j = 1; j <= 10; j++) {
     freq = 1 << j;
     // print 8 chars for 2hz, print 16 for 4hz (4 seconds per RTC)
@@ -261,10 +262,60 @@ void rtc_test() {
     rtc_write(0, &freq, sizeof(int));
     for (i = 0; i < 1 << (2 + j); i++) {
       printf("%d ", 1);
-      rtc_read(0, 0, 0);
+      rtc_read(0, 0, 4);
     }
   }
 }
+
+void rtc_write_test() {
+  int i;
+  TEST_HEADER;
+
+  rtc_open(0);
+  // This also checks against set_virt_freq because it's just a wrapper
+  if (rtc_write(0, 0, sizeof(int32_t)) != -1) // Null pointer rtc_write
+    TEST_FAIL;
+  
+  i = -128;
+  if (rtc_write(0, &i, sizeof(int32_t)) != -1) // negative freq
+    TEST_FAIL;
+
+  i = 2048;
+  if (rtc_write(0, &i, sizeof(int32_t)) != -1) // higher than max
+    TEST_FAIL;
+
+  i = 391;
+  if (rtc_write(0, &i, sizeof(int32_t)) != -1) // Valid range, not power of 2
+    TEST_FAIL;
+  
+  i = 256;
+  if (rtc_write(0, &i, sizeof(int32_t)) != sizeof(int32_t)) // valid range and power of 2
+    TEST_FAIL;
+
+  i = 256;
+  if (set_virtual_freq_rtc(i) != 0) // valid range and power of 2
+    TEST_FAIL;
+
+  i = 391;
+  if (set_virtual_freq_rtc(i) != -1) // valid range and power of 2
+    TEST_FAIL;
+
+  TEST_PASS;
+}
+
+
+void rtc_read_test() {
+  TEST_HEADER;
+
+  rtc_open(0);
+  if (rtc_read(0, 0, 0) != 0) // read always works, 2hz
+    TEST_FAIL;
+
+  TEST_PASS;
+}
+
+
+
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
@@ -287,11 +338,18 @@ void launch_tests() {
   */
 
   /* CP2 */
-  ls_test();
-  idt_test();
-  page_test();
-  handle_keypress_test();
-  // rtc_test();
+  // ls_test();
+  // idt_test();
+  // page_test();
+  // handle_keypress_test();
+
+  rtc_write_test();
+  rtc_read_test();
+
+#if RTC_FREQ_CHANGE_DEMO
+  rtc_test();
+#endif
+
 #if DIV_ZERO_TEST
   div_zero_test();
 #endif

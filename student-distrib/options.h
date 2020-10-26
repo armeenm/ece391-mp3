@@ -5,6 +5,8 @@
 
 #define RTC_RANDOM_TEXT 0
 
+#define RTC_FREQ_CHANGE_DEMO 0
+
 /* Should BSOD */
 #define DIV_ZERO_TEST 0
 #define INVLD_OPCODE_TEST 0

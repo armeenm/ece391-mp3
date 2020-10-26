@@ -77,15 +77,15 @@ int32_t rtc_read(int32_t UNUSED(fd), void* UNUSED(buf), int32_t UNUSED(nbytes)) 
 
 /* rtc_write
  * Description: Set the virtual frequency from buffer if it is a vliad poweer of 2 freq.
- * Inputs: int32_t fd, void* buf (the pointer to an int holding frequency requested), int32_t nbytes
+ * Inputs: int32_t fd, void* buf (the pointer to an int holding frequency requested), int32_t nbytes (can only be 4 bytes)
  * Outputs: none
  * Return Value: int32_t, -1 on invalid freq, sizeof(int) when working
  * Side Effects: none
  */
-int32_t rtc_write(int32_t UNUSED(fd), const void* buf, int32_t UNUSED(nbytes)) {
+int32_t rtc_write(int32_t UNUSED(fd), const void* buf, int32_t nbytes) {
   // Todo: VALIDATE buf location in memory to prevent ring 0 memory access
   // try to set the freq, if it's not valid, this returns -1 and it's failed
-  if (!buf)
+  if (!buf || nbytes != sizeof(uint32_t))
     return -1;
   return (set_virtual_freq_rtc(*(uint32_t*)buf)) ? -1 : (int32_t)sizeof(uint32_t);
 }
