@@ -116,7 +116,7 @@ int32_t dir_read(uint32_t UNUSED(fd), void * buf, int32_t nbytes) {
   int bytes = MIN(MIN(nbytes, 32), (int32_t)strlen(d.filename));
   if (bytes < 0)
     return -1;
-  
+
   memcpy(buf, d.filename, bytes);
   return i ? 0 : bytes;
 }
@@ -194,6 +194,8 @@ int32_t read_data(uint32_t const inode, uint32_t const offset, uint8_t* const bu
   // This is the for determining the start address in actual data block
   uint32_t datablk_offset = offset % FS_BLK_SIZE;
 
+  if (!buf)
+    return 0;
 
   // Ensure we're in bounds for inode
   if (inode >= bootblk->fs_stats.inode_cnt)
@@ -210,9 +212,6 @@ int32_t read_data(uint32_t const inode, uint32_t const offset, uint8_t* const bu
   // Check that the first array position is actually in the datablock size range
   if (inodes[inode].data[datablk_idx] >= bootblk->fs_stats.datablk_cnt)
     return -1;
-
-  if (!buf)
-    return 0;
 
   {
     // How many bytes we've read

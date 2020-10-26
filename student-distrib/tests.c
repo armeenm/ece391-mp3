@@ -395,7 +395,7 @@ void rtc_test() {
     rtc_write(0, &freq, sizeof(int));
 
     for (i = 0; i < 1 << (2 + j); ++i) {
-      printf("%d ", 1);
+      printf("%d", 1);
       rtc_read(0, 0, 4);
     }
   }
@@ -448,6 +448,45 @@ void rtc_read_test() {
   TEST_PASS;
 }
 
+void fs_test() {
+  TEST_HEADER;
+
+  if (file_open(0))
+    TEST_FAIL;
+  if (dir_open(0))
+    TEST_FAIL;
+
+  if (file_close(0))
+    TEST_FAIL;
+
+  if (dir_close(0))
+    TEST_FAIL;
+
+  if (file_write(0, 0, 0) != -1)
+    TEST_FAIL;
+
+  if (dir_write(0, 0, 0) != -1)
+    TEST_FAIL;
+
+  if (file_read(0, 0, 0) != -1)
+    TEST_FAIL;
+
+  if (dir_read(0, 0, -1) != -1)
+    TEST_FAIL;
+
+  if (read_dentry_by_name(0, 0) != -1)
+    TEST_FAIL;
+
+  if (read_dentry_by_index(0, 0) != -1)
+    TEST_FAIL;
+  
+  if (read_data(0, 0, 0, 0))
+    TEST_FAIL;
+
+  TEST_PASS;
+
+}
+
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
@@ -465,9 +504,11 @@ void launch_tests() {
   idt_test();
   page_test();
   handle_keypress_test();
-  terminal_test();
+  fs_test();
   rtc_write_test();
   rtc_read_test();
+  terminal_test();
+
 
 #if LS_TEST
   ls_test();
