@@ -35,12 +35,7 @@ void init_paging() {
   /* Set first pgdir to pgtbl */
   pgdir[0] = (uint32_t)pgtbl | PG_RW | PG_PRESENT;
 
-  /* Kernel page setup.
-   * Address = 1
-   * S       = 1 (4MiB pages)
-   * R       = 1 (R/W permissions)
-   * P       = 1 (Present)
-   */
+  /* Kernel page setup.  */
   pgdir[1] = PG_4M_START | PG_PRESENT | PG_RW | PG_SIZE;
 
   /* Set up remaining page directories. */

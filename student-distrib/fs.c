@@ -91,10 +91,10 @@ int32_t dir_close() { return 0; }
  * Function: Reads the directory and ...            ####################
  */
 int32_t dir_read(int8_t* const buf, uint8_t const idx) {
-  memcpy(buf, bootblk->direntries[idx].filename, FS_FNAME_LEN);
-
   if (idx >= bootblk->fs_stats.direntry_cnt)
     return -1;
+
+  memcpy(buf, bootblk->direntries[idx].filename, FS_FNAME_LEN);
 
   return 0;
 }

@@ -148,11 +148,11 @@ void entry(unsigned long magic, unsigned long addr) {
   module_t* const mod = (module_t*)mbi->mods_addr;
   open_fs(mod->mod_start, mod->mod_end);
 
-  clear();
-
   // asm volatile("int $0x80" ::"a"(SYSC_CLOSE));
 
   sti();
+
+  clear();
 
 #ifdef RUN_TESTS
   /* Run tests */

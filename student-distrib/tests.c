@@ -320,6 +320,8 @@ void ls_test() {
   int8_t buf[33];
   uint8_t idx = 0;
 
+  clear();
+
   TEST_HEADER;
 
   while (!dir_read(buf, idx++)) {
@@ -334,14 +336,17 @@ void rtc_test() {
   int i;
   int j;
   int freq;
+
   rtc_open(0);
+
   for (j = 1; j <= 10; j++) {
     freq = 1 << j;
     // print 8 chars for 2hz, print 16 for 4hz (4 seconds per RTC)
     clear();
     set_screen_xy(0, 0);
     rtc_write(0, &freq, sizeof(int));
-    for (i = 0; i < 1 << (2 + j); i++) {
+
+    for (i = 0; i < 1 << (2 + j); ++i) {
       printf("%d ", 1);
       rtc_read(0, 0, 4);
     }
