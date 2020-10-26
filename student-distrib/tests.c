@@ -415,32 +415,22 @@ void rtc_read_test() {
 
 /* Test suite entry point */
 void launch_tests() {
-  /* CP1 */
-  /*
-    idt_test();
-    page_test();
-    handle_keypress_test();
+#if DIV_ZERO_TEST
+  div_zero_test();
+#endif
 
-  #if DIV_ZERO_TEST
-    div_zero_test();
-  #endif
+#if INVALID_OPCODE_TEST
+  invalid_opcode_test();
+#endif
 
-  #if INVALID_OPCODE_TEST
-    invalid_opcode_test();
-  #endif
-  */
-
-  /* CP2 */
   idt_test();
   page_test();
   ls_test();
 
   handle_keypress_test();
   terminal_test();
-  /*
   rtc_write_test();
   rtc_read_test();
-  */
 
 #if RTC_FREQ_CHANGE_DEMO
   rtc_test();
