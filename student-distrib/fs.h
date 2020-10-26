@@ -41,7 +41,7 @@ int32_t file_write(void);
 
 int32_t dir_open(void);
 int32_t dir_close(void);
-int32_t dir_read(int8_t* buf);
+int32_t dir_read(int8_t* buf, uint8_t idx);
 int32_t dir_write(void);
 
 int32_t read_dentry_by_name(uint8_t const* fname, DirEntry* dentry);

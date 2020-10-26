@@ -176,10 +176,10 @@ void handle_keypress_test() {
 
     handle_keypress(-1);
 
-    if(start_x != get_screen_x())
+    if (start_x != get_screen_x())
       TEST_FAIL;
 
-    if(*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != ' ')
+    if (*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != ' ')
       TEST_FAIL;
 
     terminal_read_flag = 1;
@@ -187,16 +187,14 @@ void handle_keypress_test() {
     handle_keypress(SCS1_PRESSED_A);
     handle_keypress(SCS1_RELEASED_A);
 
-    if(start_x + 1 != get_screen_x())
-    {
+    if (start_x + 1 != get_screen_x()) {
       TEST_FAIL;
     }
-      
-    if(*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'a')
-    {
-       TEST_FAIL;
+
+    if (*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'a') {
+      TEST_FAIL;
     }
-    
+
     handle_keypress(SCS1_PRESSED_LEFTSHIFT);
 
     start_x = get_screen_x();
@@ -205,11 +203,10 @@ void handle_keypress_test() {
     handle_keypress(SCS1_PRESSED_A);
     handle_keypress(SCS1_RELEASED_A);
 
-    if(*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'A')
+    if (*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'A')
       TEST_FAIL;
 
     handle_keypress(SCS1_RELEASED_LEFTSHIFT);
-
 
     handle_keypress(SCS1_PRESSED_LEFTSHIFT);
 
@@ -219,12 +216,10 @@ void handle_keypress_test() {
     handle_keypress(SCS1_PRESSED_1);
     handle_keypress(SCS1_RELEASED_1);
 
-    if(*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != '!')
+    if (*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != '!')
       TEST_FAIL;
 
     handle_keypress(SCS1_RELEASED_LEFTSHIFT);
-
-
 
     handle_keypress(SCS1_PRESSED_CAPSLOCK);
     handle_keypress(SCS1_RELEASED_CAPSLOCK);
@@ -241,9 +236,8 @@ void handle_keypress_test() {
     handle_keypress(SCS1_PRESSED_C);
     handle_keypress(SCS1_RELEASED_C);
 
-    if(*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'C')
+    if (*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'C')
       TEST_FAIL;
-
 
     handle_keypress(SCS1_PRESSED_CAPSLOCK);
     handle_keypress(SCS1_RELEASED_CAPSLOCK);
@@ -251,7 +245,6 @@ void handle_keypress_test() {
     clear_line_buffer();
 
     terminal_read_flag = 0;
-
   }
 
   putc('\n');
@@ -259,8 +252,7 @@ void handle_keypress_test() {
   TEST_PASS;
 }
 
-void terminal_test()
-{
+void terminal_test() {
   terminal_open(0);
   char buf[128];
 
@@ -268,26 +260,23 @@ void terminal_test()
 
   {
 
-    if(terminal_read(0, buf, -1) != -1)
+    if (terminal_read(0, buf, -1) != -1)
       TEST_FAIL;
-    if(terminal_write(0, "TEST", -1) != -1)
+    if (terminal_write(0, "TEST", -1) != -1)
       TEST_FAIL;
 
     TEST_PASS;
   }
 
-
-  #if TERMINAL_TEST
-  while(1==1)
-  {
+#if TERMINAL_TEST
+  while (1 == 1) {
     terminal_write(0, TERMINAL_TEXT, TERMINAL_TEXT_SIZE);
     int size = terminal_read(0, buf, 128);
-    terminal_write(0,"Input was : ", 12);
-    terminal_write(0,buf, size);
+    terminal_write(0, "Input was : ", 12);
+    terminal_write(0, buf, size);
   }
-  #endif
+#endif
   terminal_close(0);
-  
 }
 
 /* int div_zero_except_test()
@@ -328,12 +317,15 @@ void invalid_opcode_test() {
 /* Checkpoint 2 tests */
 
 void ls_test() {
-  int8_t buf[32];
+  int8_t buf[33];
+  uint8_t idx = 0;
 
   TEST_HEADER;
 
-  dir_read(buf);
-  printf("%s\n", buf);
+  while (!dir_read(buf, idx++)) {
+    buf[32] = '\0';
+    printf("file_name: %s\n", buf);
+  }
 
   TEST_PASS;
 }
@@ -364,7 +356,7 @@ void rtc_write_test() {
   // This also checks against set_virt_freq because it's just a wrapper
   if (rtc_write(0, 0, sizeof(int32_t)) != -1) // Null pointer rtc_write
     TEST_FAIL;
-  
+
   i = -128;
   if (rtc_write(0, &i, sizeof(int32_t)) != -1) // negative freq
     TEST_FAIL;
@@ -376,7 +368,7 @@ void rtc_write_test() {
   i = 391;
   if (rtc_write(0, &i, sizeof(int32_t)) != -1) // Valid range, not power of 2
     TEST_FAIL;
-  
+
   i = 256;
   if (rtc_write(0, &i, sizeof(int32_t)) != sizeof(int32_t)) // valid range and power of 2
     TEST_FAIL;
@@ -392,7 +384,6 @@ void rtc_write_test() {
   TEST_PASS;
 }
 
-
 void rtc_read_test() {
   TEST_HEADER;
 
@@ -402,8 +393,6 @@ void rtc_read_test() {
 
   TEST_PASS;
 }
-
-
 
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
@@ -427,7 +416,7 @@ void launch_tests() {
   */
 
   /* CP2 */
-  // ls_test();
+  ls_test();
   idt_test();
   // page_test();
   handle_keypress_test();

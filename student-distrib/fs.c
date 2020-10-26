@@ -5,11 +5,10 @@
 #include "x86_desc.h"
 
 static Bootblk* bootblk = NULL;
-static uint32_t dir_reads = 0;
 
 /* open_fs
  * Description: Opens filesystem
- * Inputs: start -- The beginning 
+ * Inputs: start -- The beginning
  *         UNUSED(end) -- NOT USED
  * Outputs: none
  * Return Value: none
@@ -41,10 +40,10 @@ int32_t file_close() { return 0; }
 /* file_read
  * Description: Reads file
  * Inputs: fname -- Name of file to read
- *         buf -- 
+ *         buf --
  *         length -- Length of the file
- *         offset -- 
- * Outputs: 
+ *         offset --
+ * Outputs:
  * Return Value:
  * Function:
  */
@@ -91,13 +90,13 @@ int32_t dir_close() { return 0; }
  * Return Value: Length of the buffer
  * Function: Reads the directory and ...            ####################
  */
-int32_t dir_read(int8_t* const buf) {
-  memcpy(buf, bootblk->direntries[dir_reads].filename, FS_FNAME_LEN);
+int32_t dir_read(int8_t* const buf, uint8_t const idx) {
+  memcpy(buf, bootblk->direntries[idx].filename, FS_FNAME_LEN);
 
-  if (++dir_reads >= bootblk->fs_stats.direntry_cnt)
-    dir_reads = 0;
+  if (idx >= bootblk->fs_stats.direntry_cnt)
+    return -1;
 
-  return strlen(buf);
+  return 0;
 }
 
 /* dir_write
@@ -152,10 +151,10 @@ int32_t read_dentry_by_index(uint32_t const index, DirEntry* const dentry) {
 
 /* read_data
  * Description:
- * Inputs: inode -- 
- *         offset -- 
- *         buf -- 
- *         length -- 
+ * Inputs: inode --
+ *         offset --
+ *         buf --
+ *         length --
  * Outputs: none
  * Return Value:
  * Function:
