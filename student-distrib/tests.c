@@ -331,6 +331,8 @@ void ls_test() {
 
   TEST_HEADER;
 
+  dir_open(0);
+
   while (dir_read(0, fname_buf, 32) > 0) {
     printf("file_name: %s\n", fname_buf);
     memset(fname_buf, 0, 32);
