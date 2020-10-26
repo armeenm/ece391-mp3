@@ -83,11 +83,11 @@ static char const keycodes[SCS1_PRESSED_F12] = {
 /* Declare helper functions for keyboard */
 void init_keyboard(void);
 void irqh_keyboard(void);
-uint32_t contains_newline(int8_t const* buf, uint32_t size);
+int32_t contains_newline(int8_t const* buf, int32_t size);
 void handle_keypress(SCSet1 scancode);
 char handle_disp(char disp);
 void clear_line_buffer();
-int32_t get_line_buffer(int8_t* buffer, uint32_t nbytes);
+int32_t get_line_buffer(int8_t* buffer, int32_t nbytes);
 int32_t capslock_pressed();
 int32_t shift_pressed();
 

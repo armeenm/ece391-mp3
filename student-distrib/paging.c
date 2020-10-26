@@ -30,7 +30,7 @@ void init_paging() {
     pgtbl[i] = (i * PTE_SIZE) | PG_RW | PG_PRESENT;
 
   /* Set video memory. R = 1, P = 1; We may want userspace access in the future */
-  /* pgtbl[PG_VIDMEM_START] = (PG_VIDMEM_START * PTE_SIZE) | PG_RW | PG_PRESENT; */
+  /* pgtbl[PG_VIDMEM_START] |= PG_USPACE; */
 
   /* Set first pgdir to pgtbl */
   pgdir[0] = (uint32_t)pgtbl | PG_RW | PG_PRESENT;

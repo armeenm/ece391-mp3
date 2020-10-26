@@ -19,18 +19,17 @@ uint32_t line_buffer_index = 0;
  *                1 - if the buffer contains a newline
  * Function: To determine if \n or \r is present in a buffer
  */
-uint32_t contains_newline(int8_t const* const buf, uint32_t const size) {
-  /* Loop through the entire buffer */
-  uint32_t i;
+int32_t contains_newline(int8_t const* const buf, int32_t const size) {
+  int32_t i;
 
+  /* If the buffer contains a newline, return its index */
   for (i = 0; i < size; ++i) {
-    /* If the buffer contains a newline return 1 */
-    if (buf[i] == '\n' || buf[i] == '\r')
-      return 1;
+    if (buf[i] == '\n')
+      return i;
   }
 
   /* No newline is present - return 0 */
-  return 0;
+  return -1;
 }
 
 /* get_line_buffer
@@ -42,9 +41,9 @@ uint32_t contains_newline(int8_t const* const buf, uint32_t const size) {
  * Function: Gets a linebuffer, returns the size of it, and clears
  * the current line buffer
  */
-int32_t get_line_buffer(char* const buffer, uint32_t const nbytes) {
-  uint32_t continue_flag = 1;
+int32_t get_line_buffer(char* const buffer, int32_t const nbytes) {
   uint32_t strlen;
+  int32_t nl_idx;
 
   if (nbytes <= 0)
     return -1;
@@ -52,41 +51,24 @@ int32_t get_line_buffer(char* const buffer, uint32_t const nbytes) {
   terminal_read_flag = 1;
 
   /* Wait while the line_buffer does not contain a \n */
-  while (contains_newline(line_buffer, LINE_BUFFER_SIZE) != 1)
+  while ((nl_idx = contains_newline(line_buffer, LINE_BUFFER_SIZE)) == -1)
     ;
+
+  /* TODO: What should we do if nl_idx > nbytes? */
 
   /* Loop through the buffer until there is a newline */
   {
-    /* for the remaining characters set them to empty */
-    uint32_t const limit = MIN(LINE_BUFFER_SIZE, nbytes);
-    uint32_t i = 0;
+    uint32_t const limit = MIN(nl_idx + 1, nbytes);
 
-    while (i < limit && continue_flag == 1) {
+    /* Copy from the line buffer to the buffer */
+    memcpy(buffer, line_buffer, limit);
 
-      /* Set the buffer to the line_buffer */
-      buffer[i] = line_buffer[i];
-
-      /* If there is a newline then do not continue */
-      if (line_buffer[i] == '\n' || line_buffer[i] == '\r')
-        continue_flag = 0;
-
-      ++i;
-    }
-
-    /* set the size of the string to the current index */
-    strlen = i;
-
-    for (; i < limit; ++i)
-      buffer[i] = 0;
+    /* Set the size of the string */
+    strlen = limit;
   }
 
-  /* make sure that the last character is a newline */
-  if (nbytes < LINE_BUFFER_SIZE)
-    buffer[nbytes - 1] = '\n';
-
-  /* If the size is greater than line_buffer_size then set the last char to \n */
-  else if (nbytes > LINE_BUFFER_SIZE)
-    buffer[LINE_BUFFER_SIZE - 1] = '\n';
+  /* Make sure that the last character is a newline */
+  buffer[MIN(nbytes, LINE_BUFFER_SIZE)] = '\n';
 
   /* clear the line buffer and return the size of the buffer written to */
   clear_line_buffer();
@@ -160,8 +142,7 @@ void handle_keypress(SCSet1 const scancode) {
     }
 
     /* If the command ctrl + l is pressed clear the screen */
-    if ((key_state[SCS1_PRESSED_LEFTCTRL] == 1 && scancode == SCS1_PRESSED_L) ||
-        (key_state[SCS1_PRESSED_L] == 1 && scancode == SCS1_PRESSED_LEFTCTRL)) {
+    if (key_state[SCS1_PRESSED_LEFTCTRL] && scancode == SCS1_PRESSED_L) {
 
       /* Clear screen and reset terminal */
       clear();
@@ -172,7 +153,7 @@ void handle_keypress(SCSet1 const scancode) {
         terminal_write(0, TERMINAL_TEXT, TERMINAL_TEXT_SIZE);
 
         /* Write what's in the input buffer */
-        for (i = 0; i < line_buffer_index; i++)
+        for (i = 0; i < line_buffer_index; ++i)
           putc(line_buffer[i]);
       }
 

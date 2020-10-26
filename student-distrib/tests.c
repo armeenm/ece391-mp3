@@ -125,21 +125,25 @@ void page_test() {
   if ((pgdir[1] & PDE_USED_4M) != (PG_PRESENT | PG_RW | PG_SIZE | PG_4M_START))
     TEST_FAIL;
 
+  /* Check nullptr region */
+  if ((pgtbl[0] & PDE_USED_4K) != PG_RW)
+    TEST_FAIL;
+
   /* Check the page table entry including video memory */
-  for (i = 0; i < PGTBL_LEN; ++i)
+  for (i = 1; i < PGTBL_LEN; ++i)
     if (i == PG_VIDMEM_START) {
       if ((pgtbl[i] & PDE_USED) != (PG_PRESENT | PG_RW))
         TEST_FAIL_MSG("i: %u", i);
     }
 
     /* We can only assume this because the CPU should not touch non-present locations */
-    else if (pgtbl[i] != ((i * PTE_SIZE) | PG_RW))
+    else if ((pgtbl[i] & PDE_USED_4K) != ((i * PTE_SIZE) | PG_RW | PG_PRESENT))
       TEST_FAIL_MSG("i: %u", i);
 
   /* Check that the 4MB to 4GB range has the correct bits set (4MB entries, not present), no
    * address yet */
   for (i = 2; i < PGDIR_LEN; ++i)
-    if (pgdir[i] != (PG_RW | PG_USPACE | PG_SIZE))
+    if ((pgdir[i] & PDE_USED_4M & ~0x1) != ((i * PG_4M_START) | PG_RW | PG_USPACE | PG_SIZE))
       TEST_FAIL_MSG("i: %u", i);
 
   /* Memory sanity check */
@@ -317,12 +321,12 @@ void invalid_opcode_test() {
 /* Checkpoint 2 tests */
 
 void ls_test() {
-  int8_t buf[33];
-  uint8_t idx = 0;
+  char buf[33];
+  uint32_t i = 0;
 
   TEST_HEADER;
 
-  while (!dir_read(buf, idx++)) {
+  while (!dir_read(buf, i++)) {
     buf[32] = '\0';
     printf("file_name: %s\n", buf);
   }
@@ -356,6 +360,7 @@ void rtc_write_test() {
   TEST_HEADER;
 
   rtc_open(0);
+
   // This also checks against set_virt_freq because it's just a wrapper
   if (rtc_write(0, 0, sizeof(int32_t)) != -1) // Null pointer rtc_write
     TEST_FAIL;
@@ -391,7 +396,7 @@ void rtc_read_test() {
   TEST_HEADER;
 
   rtc_open(0);
-  if (rtc_read(0, 0, 0) != 0) // read always works, 2hz
+  if (rtc_read(0, 0, 0)) // Read always works, 2Hz
     TEST_FAIL;
 
   TEST_PASS;
@@ -419,13 +424,16 @@ void launch_tests() {
   */
 
   /* CP2 */
-  ls_test();
   idt_test();
-  // page_test();
+  page_test();
+  ls_test();
+
+  /*
   handle_keypress_test();
   terminal_test();
   rtc_write_test();
   rtc_read_test();
+  */
 
 #if RTC_FREQ_CHANGE_DEMO
   rtc_test();

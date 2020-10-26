@@ -7,8 +7,8 @@
 #define NUM_ROWS 25
 #define ATTRIB 0x2
 
-static int screen_x;
-static int screen_y;
+static uint32_t screen_x;
+static uint32_t screen_y;
 static char* video_mem = (char*)VIDEO;
 
 /* void clear(void);
@@ -16,86 +16,84 @@ static char* video_mem = (char*)VIDEO;
  * Return Value: none
  * Function: Clears video memory */
 void clear(void) {
-  int32_t i;
-  for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
-    *(uint8_t*)(video_mem + (i << 1)) = ' ';
-    *(uint8_t*)(video_mem + (i << 1) + 1) = ATTRIB;
+  uint32_t i;
+
+  for (i = 0; i < NUM_ROWS * NUM_COLS; ++i) {
+    video_mem[i << 1] = ' ';
+    video_mem[(i << 1) + 1] = ATTRIB;
   }
+
+  set_screen_xy(0, 0);
 }
 /* void scroll_up
  * Inputs: none
  * Return Value: none
  * Function: Scrolls up the video memory
  */
-void scroll_up()
-{
+void scroll_up() {
   /* Copy the rows except the first one into the start of video memory */
-  video_mem = (char*)memmove(video_mem, video_mem + ((NUM_COLS * 1) << 1), (NUM_COLS * (NUM_ROWS - 1) << 1));
-  int i = 0;
+  video_mem = (char*)memmove(video_mem, video_mem + ((NUM_COLS * 1) << 1),
+                             (NUM_COLS * (NUM_ROWS - 1) << 1));
+  uint32_t i;
+
   /* For the last row set it all to spaces to clear it */
-  for(i = 0; i < NUM_COLS; i++)
-  {
-    *(uint8_t*)(video_mem + ((NUM_COLS * (NUM_ROWS - 1) + i) << 1)) = ' ';
-    *(uint8_t*)(video_mem + ((NUM_COLS * (NUM_ROWS - 1) + i) << 1) + 1) = ATTRIB;
+  for (i = 0; i < NUM_COLS; ++i) {
+    video_mem[(NUM_COLS * (NUM_ROWS - 1) + i) << 1] = ' ';
+    video_mem[((NUM_COLS * (NUM_ROWS - 1) + i) << 1) + 1] = ATTRIB;
   }
 }
-
 
 /* void clear_screen_xy();
  * Inputs: none
  * Return Value: none
  * Function: clears the screen position at the current location
  */
-void clear_screen_xy()
-{
+void clear_screen_xy() {
   /* Sets char to ' ' at the current screen location */
-  *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = ' ';
+  video_mem[(NUM_COLS * screen_y + screen_x) << 1] = ' ';
   /* sets attribute to ATTRIB at the current location */
-  *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
+  video_mem[((NUM_COLS * screen_y + screen_x) << 1) + 1] = ATTRIB;
 }
+
 /* void set_cursor_location(int x, int y)
  * Inputs:  x - x position to set cursor to
  *          y - y position to set cursor to
  * Return Value: none
  * Function: sets the VGA cursor location
  */
-void set_cursor_location(int x, int y)
-{
-  uint16_t vga_position = y * NUM_COLS + x;
+void set_cursor_location(uint32_t const x, uint32_t const y) {
+  uint16_t const vga_position = y * NUM_COLS + x;
 
   outb(VGA_CURSOR_HIGH_REGISTER, 0x3D4);
-  outb((vga_position >> 8), VGA_DATA_REGISTER);
+  outb(vga_position >> 8, VGA_DATA_REGISTER);
 
   outb(VGA_CURSOR_LOW_REGISTER, VGA_ADDRESS_REGISTER);
   outb(vga_position, VGA_DATA_REGISTER);
 }
+
 /* void setscreen_x(int x);
  * Inputs: x - position to set screen_x to
  * Return Value: none
  * Function: set value of screen_x to x
  */
-void set_screen_x(int x)
-{ 
-  if(x >= 0 && x < NUM_COLS)
-  {
+void set_screen_x(uint32_t const x) {
+  if (x < NUM_COLS) {
     /* If valid position set x position to x and set the cursor */
     screen_x = x;
-    set_cursor_location(x, screen_y); 
+    set_cursor_location(x, screen_y);
   }
 }
+
 /* void setscreen_y(int y);
  * Inputs: y - position to set screen_y to
  * Return Value: none
  * Function: set value of screen_y to y
  */
-void set_screen_y(int y)
-{
-  if(y >= 0 && y < NUM_ROWS)
-  {
-     /* If valid position set y position to y and set the cursor */
+void set_screen_y(uint32_t const y) {
+  if (y < NUM_ROWS) {
+    /* If valid position set y position to y and set the cursor */
     screen_y = y;
     set_cursor_location(screen_x, y);
-
   }
 }
 
@@ -105,15 +103,12 @@ void set_screen_y(int y)
  * Return Value: none
  * Function: set value of screen_y to y, screen_x to x
  */
-void set_screen_xy(int x, int y)
-{
-  if(y >= 0 && y < NUM_ROWS && x >= 0 && x < NUM_COLS)
-  {
-     /* If valid position set y position to y and set the cursor */
+void set_screen_xy(uint32_t const x, uint32_t const y) {
+  if (y < NUM_ROWS && x < NUM_COLS) {
+    /* If valid position set y position to y and set the cursor */
     screen_y = y;
     screen_x = x;
     set_cursor_location(x, y);
-
   }
 }
 
@@ -265,67 +260,52 @@ int32_t puts(int8_t* s) {
  * Return Value: void
  *  Function: Output a character to the console */
 void putc(uint8_t c) {
-  if(c == 0)
+  if (c == 0)
     return;
   if (c == '\n' || c == '\r') {
     /* If there is still screenspace left then go to next line */
-    if(screen_y < NUM_ROWS - 1)
-    {
+    if (screen_y < NUM_ROWS - 1) {
       screen_y++;
-    }
-    else
-    {
+    } else {
       /* If there is no screenspace left scroll up */
       scroll_up();
     }
     /* Reset to the start of the line */
     screen_x = 0;
-    
-  }
-  else if(c =='\b')
-  {
+
+  } else if (c == '\b') {
     /* Get x and y pos  */
     int x = get_screen_x();
     int y = get_screen_y();
     /* if x is zero go to previous line */
-    if(x == 0 && y > 0)
-    {
+    if (x == 0 && y > 0) {
       set_screen_xy(NUM_COLS - 1, y - 1);
-    }
-    else {
+    } else {
       /* Otherwise go back one */
       set_screen_x(x - 1);
     }
     /* clear the character at the current location */
     clear_screen_xy();
-  }
-  else if(c == '\t')
-  {
+  } else if (c == '\t') {
     /* if tab use a space */
     putc(' ');
     return;
-  }
-  else {
+  } else {
     *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
     *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
     screen_x++;
     /* if it is a newline then go to the next line */
-    if((screen_x / NUM_COLS) > 0)
-    {
+    if ((screen_x / NUM_COLS) > 0) {
       /* At the top of the screen scroll up */
-      if(screen_y == NUM_ROWS - 1)
-      {
+      if (screen_y == NUM_ROWS - 1) {
         scroll_up();
-      }
-      else
-      {
+      } else {
         /* Otherwise go to the next row */
         screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
       }
     }
     /* Make sure x is bounded by the columns */
     screen_x %= NUM_COLS;
-    
   }
   /* Set location of the cursor based on new screen_x and screen_y */
   set_cursor_location(screen_x, screen_y);
