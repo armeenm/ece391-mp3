@@ -89,4 +89,6 @@ void handle_keypress(SCSet1 scancode);
 char handle_disp(char disp);
 void clear_line_buffer();
 int32_t get_line_buffer(char * buffer, int32_t nbytes);
+int capslock_pressed();
+int shift_pressed();
 #endif

@@ -245,7 +245,10 @@ void handle_keypress_test() {
       TEST_FAIL;
 
 
+    handle_keypress(SCS1_PRESSED_CAPSLOCK);
+    handle_keypress(SCS1_RELEASED_CAPSLOCK);
 
+    clear_line_buffer();
 
     terminal_read_flag = 0;
 

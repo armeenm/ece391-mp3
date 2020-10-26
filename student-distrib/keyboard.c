@@ -176,7 +176,7 @@ void handle_keypress(SCSet1 const scancode) {
         terminal_write(0, TERMINAL_TEXT, TERMINAL_TEXT_SIZE);
         int i = 0;
         /* Write what's in the input buffer */
-        for(i == 0; i < line_buffer_index; i++)
+        for(i = 0; i < line_buffer_index; i++)
         {
           putc(line_buffer[i]);
         }
