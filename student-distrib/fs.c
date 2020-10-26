@@ -11,12 +11,20 @@ static Bootblk* bootblk = NULL;
  * Inputs: start -- The beginning
  *         UNUSED(end) -- NOT USED
  * Outputs: none
- * Return Value: none
+ * Return Value: 0 on success, -1 on failure
  * Function: Opens the filesystem and sets the page directory to present
  */
-void open_fs(uint32_t const start, uint32_t const UNUSED(end)) {
+int32_t open_fs(uint32_t const start, uint32_t const UNUSED(end)) {
   bootblk = (Bootblk*)start;
   pgdir[start >> PG_4M_ADDR_OFFSET] |= PG_PRESENT;
+
+  /* TODO: Sanity checks */
+  if (bootblk->fs_stats.direntry_cnt >= FS_MAX_DIR_ENTRIES) {
+    pgdir[start >> PG_4M_ADDR_OFFSET] &= ~1;
+    return -1;
+  }
+
+  return 0;
 }
 
 /* file_open
@@ -90,14 +98,7 @@ int32_t dir_close() { return 0; }
  * Return Value: Length of the buffer
  * Function: Reads the directory and ...            ####################
  */
-int32_t dir_read(int8_t* const buf, uint8_t const idx) {
-  if (idx >= bootblk->fs_stats.direntry_cnt)
-    return -1;
-
-  memcpy(buf, bootblk->direntries[idx].filename, FS_FNAME_LEN);
-
-  return 0;
-}
+int32_t dir_read(uint32_t const idx, DirEntry* const buf) { return read_dentry_by_index(idx, buf); }
 
 /* dir_write
  * Description: Writes directory
@@ -140,11 +141,11 @@ int32_t read_dentry_by_name(uint8_t const* const ufname, DirEntry* const dentry)
  * Function: Reads the directory entry by index and places it in the directory
  *           entry memory.
  */
-int32_t read_dentry_by_index(uint32_t const index, DirEntry* const dentry) {
-  if (index >= FS_MAX_DIR_ENTRIES || !dentry)
+int32_t read_dentry_by_index(uint32_t const idx, DirEntry* const dentry) {
+  if (idx >= bootblk->fs_stats.direntry_cnt || !dentry)
     return -1;
 
-  memcpy(dentry, &bootblk->direntries[index], sizeof(DirEntry));
+  memcpy(dentry, &bootblk->direntries[idx], sizeof(DirEntry));
 
   return 0;
 }
@@ -163,7 +164,10 @@ int32_t read_data(uint32_t const inode, uint32_t const offset, uint8_t* const bu
                   uint32_t const length) {
 
   INode const* const inodes = (INode*)(bootblk + FS_BLK_SIZE);
-  uint32_t data_blk = offset / FS_INODE_DATA_LEN;
+  Datablk const* const datablks =
+      (Datablk*)(bootblk + (1 + bootblk->fs_stats.inode_cnt) * FS_BLK_SIZE);
+
+  uint32_t datablk = offset / FS_INODE_DATA_LEN;
 
   if (inode >= bootblk->fs_stats.inode_cnt)
     return -1;
@@ -171,30 +175,31 @@ int32_t read_data(uint32_t const inode, uint32_t const offset, uint8_t* const bu
   if (offset >= inodes[inode].size)
     return -1;
 
-  if (offset + length >= FS_BLK_SIZE * bootblk->fs_stats.direntry_cnt)
+  if (offset + length >= bootblk->fs_stats.direntry_cnt * FS_BLK_SIZE)
     return -1;
 
-  if (inodes[inode].data[data_blk] >= bootblk->fs_stats.datablk_cnt)
+  if (inodes[inode].data[datablk] >= bootblk->fs_stats.datablk_cnt)
     return -1;
 
   {
-    uint32_t data_blk_offset = offset % FS_BLK_SIZE;
-    uint8_t const* read_addr = (uint8_t*)((data_blk + 1) * FS_BLK_SIZE + data_blk_offset);
+    uint32_t datablk_offset = offset % FS_BLK_SIZE;
     uint32_t reads = 0;
 
     while (reads < length) {
-      buf[reads++] = *(read_addr++);
+      uint8_t const* read_addr = &datablks[datablk].data[datablk_offset];
+      buf[reads++] = *read_addr;
 
       if (reads + offset >= inodes[inode].size)
         return reads;
 
-      if (++data_blk_offset >= FS_BLK_SIZE) {
-        if (inodes[inode].data[++data_blk] >= bootblk->fs_stats.datablk_cnt)
+      if (++datablk_offset >= FS_BLK_SIZE) {
+        if (inodes[inode].data[++datablk] >= bootblk->fs_stats.datablk_cnt)
           return -1;
         else
-          data_blk_offset = 0;
+          datablk_offset = 0;
       }
     }
+
     return reads;
   }
 }

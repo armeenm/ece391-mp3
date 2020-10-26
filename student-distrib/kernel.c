@@ -148,7 +148,10 @@ void entry(unsigned long magic, unsigned long addr) {
   init_idt();
 
   module_t* const mod = (module_t*)mbi->mods_addr;
-  open_fs(mod->mod_start, mod->mod_end);
+  if (open_fs(mod->mod_start, mod->mod_end)) {
+    printf("Failed to open filesystem!\n");
+    asm volatile("int $15");
+  }
 
   // asm volatile("int $0x80" ::"a"(SYSC_CLOSE));
 

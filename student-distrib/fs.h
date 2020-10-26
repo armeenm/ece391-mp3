@@ -32,7 +32,11 @@ typedef struct Bootblk {
   DirEntry direntries[63];
 } Bootblk;
 
-void open_fs(uint32_t start, uint32_t end);
+typedef struct Datablk {
+  uint8_t data[FS_BLK_SIZE];
+} Datablk;
+
+int32_t open_fs(uint32_t start, uint32_t end);
 
 int32_t file_open(void);
 int32_t file_close(void);
@@ -41,7 +45,7 @@ int32_t file_write(void);
 
 int32_t dir_open(void);
 int32_t dir_close(void);
-int32_t dir_read(int8_t* buf, uint8_t idx);
+int32_t dir_read(uint32_t idx, DirEntry* dentry);
 int32_t dir_write(void);
 
 int32_t read_dentry_by_name(uint8_t const* fname, DirEntry* dentry);

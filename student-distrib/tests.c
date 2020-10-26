@@ -326,31 +326,34 @@ void invalid_opcode_test() {
 /* Checkpoint 2 tests */
 
 void ls_test() {
-  char buf[33];
-  uint32_t i = 0;
+  char fname_buf[33] = {0};
+  DirEntry dentry;
+  uint32_t i = 0, fsize;
 
   TEST_HEADER;
 
-  while (!dir_read(buf, i++)) {
-    buf[32] = '\0';
-    printf("file_name: %s\n", buf);
+  while (!dir_read(i++, &dentry)) {
+    memcpy(fname_buf, dentry.filename, FS_FNAME_LEN);
+    read_data(dentry.inode_idx, 0, (uint8_t*)&fsize, 4);
+
+    printf("file_name: %s, file_type: %d\n", fname_buf, dentry.filetype);
   }
 
   TEST_PASS;
 }
 
 void rtc_test() {
-  int i;
-  int j;
+  int i, j;
   int freq;
 
   TEST_HEADER;
 
   rtc_open(0);
 
-  for (j = 1; j <= 10; j++) {
+  for (j = 1; j <= 10; ++j) {
     freq = 1 << j;
-    // print 8 chars for 2hz, print 16 for 4hz (4 seconds per RTC)
+
+    /* Print 8 chars for 2Hz, print 16 for 4Hz (4 seconds per RTC) */
     clear();
     set_screen_xy(0, 0);
     rtc_write(0, &freq, sizeof(int));
@@ -427,10 +430,12 @@ void launch_tests() {
   page_test();
   ls_test();
 
+  /*
   handle_keypress_test();
   terminal_test();
   rtc_write_test();
   rtc_read_test();
+  */
 
 #if RTC_FREQ_CHANGE_DEMO
   rtc_test();
