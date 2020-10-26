@@ -6,13 +6,13 @@
 #define RTC_RANDOM_TEXT 0
 
 #define RTC_FREQ_CHANGE_DEMO 0
-#define TERMINAL_TEST 0
+#define TERMINAL_TEST 1
 
-#define LS_TEST 1
+#define LS_TEST 0
 
 /* Enable this to use any of the cat tests */
-#define CAT_TEST 1
-#define FRAME0_CAT_TEST 1
+#define CAT_TEST 0
+#define FRAME0_CAT_TEST 0
 #define VLTWVLN_CAT_TEST 0
 #define HELLO_CAT_TEST 0
 

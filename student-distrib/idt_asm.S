@@ -2,12 +2,14 @@
 #ifndef IDT_ASM_S
 #define IDT_ASM_S
 
+/* Macros to use when included in C code */
 #ifdef IDT_C
 
 #include "lib.h"
 
 #define ASM_EXC(name) void asm_##name(void);
 
+/* Some macro magic to choose whether we clear or not */
 #define CLR_true clear();
 #define CLR_false
 
@@ -29,16 +31,20 @@
     HLTLOOP;                                                                                       \
   }
 
+/* Separate versions for whether we should clear the screen or not */
 #define EXC_DFL(name, str) I_EXC_DFL(name, str, true)
 #define EXC_DFL_NOCLR(name, str) I_EXC_DFL(name, str, false)
 
+/* Certain versions for accepting an error code at the top of the stack -- mainly for GPF */
 #define EXC_DFL_ERRC(name, str) I_EXC_DFL_ERRC(name, str, true)
 #define EXC_DFL_ERRC_NOCLR(name, str) I_EXC_DFL_ERRC(name, str, false)
 
+/* Macros to use when compiled standalone */
 #else
 
 #define ASM 1
 
+/* Save/restore registers and call the C code */
 #define ASM_EXC(name)                                                                              \
   .global asm_##name;                                                                              \
   asm_##name:                                                                                      \
@@ -51,6 +57,7 @@
   popl %eax;                                                                                       \
   iret;
 
+/* These all use the above macro when we're compiling this file standalone */
 #define EXC_DFL(name, str) ASM_EXC(name)
 #define EXC_DFL_ERRC EXC_DFL
 #define EXC_DFL_NOCLR EXC_DFL
@@ -60,6 +67,7 @@
 
 #endif
 
+/* Define processor exceptions */
 EXC_DFL(exc_de, "Divide-by-zero Error")
 EXC_DFL(exc_db, "Debug")
 EXC_DFL(exc_nmi, "Non-maskable Interrupt")
@@ -83,8 +91,10 @@ EXC_DFL(exc_xf, "SIMD Floating-Point Exception")
 EXC_DFL(exc_ve, "Virtualization Exception")
 EXC_DFL(exc_sx, "Security Exception")
 
+/* PIT - unused */
 EXC_DFL(irqh_pit, "PIT event!")
 
+/* Define normal interrupts */
 ASM_EXC(irqh_keyboard)
 ASM_EXC(irqh_rtc)
 ASM_EXC(irqh_syscall)
