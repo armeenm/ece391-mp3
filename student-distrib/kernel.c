@@ -22,6 +22,8 @@
 /* Check if the bit BIT in FLAGS is set. */
 #define CHECK_FLAG(flags, bit) ((flags) & (1 << (bit)))
 
+int test(void) { return 0; }
+
 /* Check if MAGIC is valid and print the Multiboot information structure
    pointed by ADDR. */
 void entry(unsigned long magic, unsigned long addr) {
@@ -152,9 +154,6 @@ void entry(unsigned long magic, unsigned long addr) {
 
   clear();
   sti();
-
-  // NOTE: This will cause a pagefault for no good reason
-  // clear();
 
 #ifdef RUN_TESTS
   /* Run tests */

@@ -4,44 +4,44 @@
 #include "terminal_driver.h"
 
 /* Declare variables for keyboard */
-int8_t line_buffer[LINE_BUFFER_SIZE];
+char line_buf[LINE_BUFFER_SIZE];
 uint8_t key_state[SCS1_PRESSED_F12];
 uint32_t caps_lock_repeat = 0;
 uint32_t multi_byte = 0;
-uint32_t line_buffer_index = 0;
+uint32_t line_buf_index = 0;
 
 /* contains_newline
- * Description: To determine if a newline is present in a buffer
- * Inputs: buf - buffer to write line buffer to
+ * Description: To determine if a newline is present in a buf
+ * Inputs: buf - buf to write line buf to
  *         nbytes - number of bytes to read
  * Outputs: none
- * Return Value:  0 - the buffer does not contain a newline
- *                1 - if the buffer contains a newline
- * Function: To determine if \n or \r is present in a buffer
+ * Return Value:  0 - the buf does not contain a newline
+ *                1 - if the buf contains a newline
+ * Function: To determine if \n or \r is present in a buf
  */
-int32_t contains_newline(int8_t const* const buf, int32_t const size) {
+int contains_newline(int8_t const* const buf, int32_t const size) {
   int32_t i;
 
-  /* If the buffer contains a newline, return its index */
+  /* If the buf contains a newline, return its index */
   for (i = 0; i < size; ++i) {
     if (buf[i] == '\n')
       return i;
   }
 
-  /* No newline is present - return 0 */
+  /* No newline is present - return -1 */
   return -1;
 }
 
-/* get_line_buffer
- * Description: Get the line buffer and copy it into a buffer
- * Inputs: buffer - buffer that line_buffer writes to
+/* get_line_buf
+ * Description: Get the line buf and copy it into a buf
+ * Inputs: buf - buf that line_buf writes to
  *         nbytes - number of bytes to write
- * Outputs: buffer is filled with the line_buffer
- * Return Value: size of the buffer
- * Function: Gets a linebuffer, returns the size of it, and clears
- * the current line buffer
+ * Outputs: buf is filled with the line_buf
+ * Return Value: size of the buf
+ * Function: Gets a linebuf, returns the size of it, and clears
+ * the current line buf
  */
-int32_t get_line_buffer(char* const buffer, int32_t const nbytes) {
+int32_t get_line_buf(char* const buf, int32_t const nbytes) {
   uint32_t strlen;
   int32_t nl_idx;
 
@@ -50,28 +50,27 @@ int32_t get_line_buffer(char* const buffer, int32_t const nbytes) {
 
   terminal_read_flag = 1;
 
-  /* Wait while the line_buffer does not contain a \n */
-  while ((nl_idx = contains_newline(line_buffer, LINE_BUFFER_SIZE)) == -1)
+  /* Wait while the line_buf does not contain a \n */
+  while ((nl_idx = contains_newline(line_buf, LINE_BUFFER_SIZE)) == -1)
     ;
 
   /* TODO: What should we do if nl_idx > nbytes? */
 
-  /* Loop through the buffer until there is a newline */
   {
     uint32_t const limit = MIN(nl_idx + 1, nbytes);
 
-    /* Copy from the line buffer to the buffer */
-    memcpy(buffer, line_buffer, limit);
+    /* Copy from the line buf to the buf */
+    memcpy(buf, line_buf, limit);
 
     /* Set the size of the string */
     strlen = limit;
   }
 
   /* Make sure that the last character is a newline */
-  buffer[MIN(nbytes, LINE_BUFFER_SIZE)] = '\n';
+  buf[MIN(nbytes, LINE_BUFFER_SIZE)] = '\n';
 
-  /* clear the line buffer and return the size of the buffer written to */
-  clear_line_buffer();
+  /* clear the line buf and return the size of the buf written to */
+  clear_line_buf();
 
   terminal_read_flag = 0;
 
@@ -84,14 +83,14 @@ int32_t get_line_buffer(char* const buffer, int32_t const nbytes) {
  * Return Value: None
  * Side Effects: Enables the keyboard IRQ.
  */
-void init_keyboard(void) {
+void init_keyboard() {
   /* Enable IRQ, clear multi-byte and caps-lock vars */
   enable_irq(KEYBOARD_IRQ);
   multi_byte = 0;
   caps_lock_repeat = 0;
 
-  /* Clear the line buffer */
-  clear_line_buffer();
+  /* Clear the line buf */
+  clear_line_buf();
 }
 
 /* irqh_keyboard
@@ -115,7 +114,7 @@ void irqh_keyboard(void) {
  * Inputs: scancode -- Scancode to use
  * Outputs: None
  * Return Value: None
- * Side Effects: Writes to the video buffer
+ * Side Effects: Writes to the video buf
  */
 void handle_keypress(SCSet1 const scancode) {
   uint32_t i;
@@ -152,21 +151,21 @@ void handle_keypress(SCSet1 const scancode) {
         /* Write to terminal to put "thanOS> " in */
         terminal_write(0, TERMINAL_TEXT, TERMINAL_TEXT_SIZE);
 
-        /* Write what's in the input buffer */
-        for (i = 0; i < line_buffer_index; ++i)
-          putc(line_buffer[i]);
+        /* Write what's in the input buf */
+        for (i = 0; i < line_buf_index; ++i)
+          putc(line_buf[i]);
       }
 
     } else if (!terminal_read_flag)
       return;
 
     else if (key_state[SCS1_PRESSED_BACKSPACE] == 1) {
-      /* If there is data in the line buffer and backspace is pressed
-       * decrement the line buffer and handle the backspace keypress
+      /* If there is data in the line buf and backspace is pressed
+       * decrement the line buf and handle the backspace keypress
        */
-      if (line_buffer_index > 0) {
-        line_buffer_index--;
-        line_buffer[line_buffer_index] = 0;
+      if (line_buf_index > 0) {
+        line_buf_index--;
+        line_buf[line_buf_index] = 0;
         putc('\b');
       }
     }
@@ -174,19 +173,19 @@ void handle_keypress(SCSet1 const scancode) {
     /* if there is a key to display */
     else if (disp) {
 
-      /* If the linebuffer is not full (127 characters,  LINE_BUFFER_SIZE - 1) handle keypress */
-      if (line_buffer_index < LINE_BUFFER_SIZE - 1) {
-        /* print the key and put it in the buffer */
+      /* If the linebuf is not full (127 characters,  LINE_BUFFER_SIZE - 1) handle keypress */
+      if (line_buf_index < LINE_BUFFER_SIZE - 1) {
+        /* print the key and put it in the buf */
         putc(disp);
-        line_buffer[line_buffer_index] = disp;
-        line_buffer_index++;
+        line_buf[line_buf_index] = disp;
+        line_buf_index++;
 
       } else if (disp == '\n') {
-        /* Handle newline, put it in the end of the buffer, since line_buffer_index >=
+        /* Handle newline, put it in the end of the buf, since line_buf_index >=
          * LINE_BUFFER_SIZE - 1 */
         putc(disp);
-        line_buffer[line_buffer_index] = disp;
-        line_buffer_index++;
+        line_buf[line_buf_index] = disp;
+        line_buf_index++;
       }
     }
 
@@ -277,23 +276,23 @@ char handle_disp(char disp) {
   return disp;
 }
 
-/* clear_line_buffer
- * Description: Clears the line buffer
+/* clear_line_buf
+ * Description: Clears the line buf
  * Inputs: none
  * Outputs: None
  * Return Value: none
- * Side Effects: Clears the line_buffer and resets the index to 0
+ * Side Effects: Clears the line_buf and resets the index to 0
  */
-void clear_line_buffer() {
-  /* Iterate through the entire line buffer */
+void clear_line_buf() {
+  /* Iterate through the entire line buf */
   uint32_t i;
 
-  /* Clear the line buffer */
+  /* Clear the line buf */
   for (i = 0; i < LINE_BUFFER_SIZE; ++i)
-    line_buffer[i] = 0;
+    line_buf[i] = 0;
 
   /* Set index to 0 */
-  line_buffer_index = 0;
+  line_buf_index = 0;
 }
 
 /* shift_pressed

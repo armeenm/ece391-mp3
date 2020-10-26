@@ -13,19 +13,19 @@
 
 #define I_EXC_DFL(name, str, clear)                                                                \
   ASM_EXC(name)                                                                                    \
-  void name(int eip, int UNUSED(cs), int eflags) {                                                 \
+  void name(void) {                                                                                \
     cli();                                                                                         \
     CLR_##clear                                                                                    \
-    printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", eip, eflags);                                \
+    printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", 0, 0);                                       \
     HLTLOOP;                                                                                       \
   }
 
 #define I_EXC_DFL_ERRC(name, str, clear)                                                           \
   ASM_EXC(name)                                                                                    \
-  void name(int errc, int eip, int UNUSED(cs), int eflags) {                                       \
+  void name(void) {                                                                                \
     cli();                                                                                         \
     CLR_##clear                                                                                    \
-    printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n", errc, eip, eflags);              \
+    printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n", 0, 0, 0);                        \
     HLTLOOP;                                                                                       \
   }
 
@@ -41,7 +41,15 @@
 
 #define ASM_EXC(name)                                                                              \
   .global asm_##name;                                                                              \
-  asm_##name: call name; iret
+  asm_##name:                                                                                      \
+  pushl %eax;                                                                                      \
+  pushl %ecx;                                                                                      \
+  pushl %edx;                                                                                      \
+  call name;                                                                                       \
+  popl %edx;                                                                                       \
+  popl %ecx;                                                                                       \
+  popl %eax;                                                                                       \
+  iret;
 
 #define EXC_DFL(name, str) ASM_EXC(name)
 #define EXC_DFL_ERRC EXC_DFL

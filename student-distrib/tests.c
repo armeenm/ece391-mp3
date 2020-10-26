@@ -167,9 +167,10 @@ void page_test() {
  */
 void handle_keypress_test() {
 
+  clear();
   TEST_HEADER;
-  {
 
+  {
     int NUM_COLS = 80;
     char* video_mem = (char*)(0xB8000);
 
@@ -246,7 +247,7 @@ void handle_keypress_test() {
     handle_keypress(SCS1_PRESSED_CAPSLOCK);
     handle_keypress(SCS1_RELEASED_CAPSLOCK);
 
-    clear_line_buffer();
+    clear_line_buf();
 
     terminal_read_flag = 0;
   }
@@ -257,29 +258,33 @@ void handle_keypress_test() {
 }
 
 void terminal_test() {
-  terminal_open(0);
-  char buf[128];
+  char buf[128] = {0};
 
   TEST_HEADER;
 
-  {
+  terminal_open(0);
+  clear();
 
-    if (terminal_read(0, buf, -1) != -1)
-      TEST_FAIL;
-    if (terminal_write(0, "TEST", -1) != -1)
-      TEST_FAIL;
+  if (terminal_read(0, buf, -1) != -1)
+    TEST_FAIL;
+  if (terminal_write(0, "TEST", -1) != -1)
+    TEST_FAIL;
 
-    TEST_PASS;
-  }
+  TEST_PASS;
 
 #if TERMINAL_TEST
-  while (1 == 1) {
-    terminal_write(0, TERMINAL_TEXT, TERMINAL_TEXT_SIZE);
-    int size = terminal_read(0, buf, 128);
-    terminal_write(0, "Input was : ", 12);
-    terminal_write(0, buf, size);
+  {
+    int32_t size;
+
+    for (;;) {
+      terminal_write(0, TERMINAL_TEXT, TERMINAL_TEXT_SIZE);
+      size = terminal_read(0, buf, 128);
+      terminal_write(0, "Input: ", 7);
+      terminal_write(0, buf, size);
+    }
   }
 #endif
+
   terminal_close(0);
 }
 
@@ -338,6 +343,8 @@ void rtc_test() {
   int i;
   int j;
   int freq;
+
+  TEST_HEADER;
 
   rtc_open(0);
 
@@ -428,9 +435,9 @@ void launch_tests() {
   page_test();
   ls_test();
 
-  /*
   handle_keypress_test();
   terminal_test();
+  /*
   rtc_write_test();
   rtc_read_test();
   */
