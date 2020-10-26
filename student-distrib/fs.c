@@ -166,16 +166,13 @@ int32_t read_data(uint32_t const inode, uint32_t const offset, uint32_t* const f
   INode const* const inodes = (INode*)&bootblk[1];
   Datablk const* const datablks = (Datablk*)&inodes[bootblk->fs_stats.inode_cnt];
 
-  uint32_t datablk_idx = offset / FS_INODE_DATA_LEN;
+  uint32_t datablk_idx = offset / FS_BLK_SIZE;
   uint32_t datablk_offset = offset % FS_BLK_SIZE;
 
   if (inode >= bootblk->fs_stats.inode_cnt)
     return -1;
 
   if (offset >= inodes[inode].size)
-    return -1;
-
-  if (offset + length >= bootblk->fs_stats.direntry_cnt * FS_BLK_SIZE)
     return -1;
 
   if (inodes[inode].data[datablk_idx] >= bootblk->fs_stats.datablk_cnt)

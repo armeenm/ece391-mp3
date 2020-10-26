@@ -348,12 +348,48 @@ void ls_test() {
 }
 
 void cat_test() {
-  char buf[10] = {0};
+  char buf[50000] = {0};
+  (void)buf;
+
+  clear();
 
   TEST_HEADER;
 
-  file_read("frame0.txt", NULL, (uint8_t*)buf, 9, 0);
-  printf("frame0.txt: %s\n", buf);
+#if FRAME0_CAT_TEST
+  {
+    uint32_t fsize;
+
+    file_read("frame0.txt", &fsize, NULL, 0, 0);
+    file_read("frame0.txt", NULL, (uint8_t*)buf, fsize, 0);
+
+    printf("File: frame0.txt\n%s\n", buf);
+  }
+#endif
+
+#if VLTWVLN_CAT_TEST
+  {
+    uint32_t fsize;
+
+    file_read("verylargetextwithverylongname.txt", &fsize, NULL, 0, 0);
+    file_read("verylargetextwithverylongname.txt", NULL, (uint8_t*)buf, fsize, 0);
+
+    printf("File: verylargetextwithverylongname.txt\n%s\n", buf);
+  }
+#endif
+
+#if HELLO_CAT_TEST
+  {
+    uint32_t fsize;
+
+    file_read("hello", &fsize, NULL, 0, 0);
+    file_read("hello", NULL, (uint8_t*)buf, fsize, 0);
+
+    printf("File: hello\n");
+    buf[4] = '\0';
+    printf("First 4 bytes: %s\n", buf);
+    printf("Last 36 bytes: %s\n", &buf[fsize - 37]);
+  }
+#endif
 
   TEST_PASS;
 }
@@ -448,8 +484,14 @@ void launch_tests() {
   terminal_test();
   rtc_write_test();
   rtc_read_test();
+
+#if LS_TEST
   ls_test();
+#endif
+
+#if CAT_TEST
   cat_test();
+#endif
 
 #if RTC_FREQ_CHANGE_DEMO
   rtc_test();
