@@ -11,8 +11,8 @@
 #define LS_TEST 1
 
 /* Enable this to use any of the cat tests */
-#define CAT_TEST 0
-#define FRAME0_CAT_TEST 0
+#define CAT_TEST 1
+#define FRAME0_CAT_TEST 1
 #define VLTWVLN_CAT_TEST 0
 #define HELLO_CAT_TEST 0
 

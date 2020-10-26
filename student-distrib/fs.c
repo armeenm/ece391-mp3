@@ -16,10 +16,12 @@ static Bootblk* bootblk = NULL;
  */
 int32_t open_fs(uint32_t const start, uint32_t const UNUSED(end)) {
   bootblk = (Bootblk*)start;
+  // Enable the filesystem 4mb page to be marked as present
   pgdir[start >> PG_4M_ADDR_OFFSET] |= PG_PRESENT;
 
   /* TODO: Sanity checks */
   if (bootblk->fs_stats.direntry_cnt >= FS_MAX_DIR_ENTRIES) {
+    // Reset state on page location
     pgdir[start >> PG_4M_ADDR_OFFSET] &= ~1;
     return -1;
   }
@@ -59,6 +61,7 @@ int32_t file_read(int8_t const* const fname, uint32_t* const fsize, uint8_t* con
                   uint32_t const offset) {
   DirEntry dentry;
 
+  // We validate fname is a ptr and grab the dentry and then do a read on the cooresponding inode to buf
   return (!fname) ? -1
                   : read_dentry_by_name((uint8_t const*)fname, &dentry)
                        ?: read_data(dentry.inode_idx, offset, fsize, buf, length);
@@ -124,7 +127,9 @@ int32_t read_dentry_by_name(uint8_t const* const ufname, DirEntry* const dentry)
 
   if (dentry)
     for (i = 0; i < FS_MAX_DIR_ENTRIES; ++i)
+      // iterate through each directory entry, compare the files names for a match
       if (!strncmp(fname, bootblk->direntries[i].filename, FS_FNAME_LEN)) {
+        // when they match, grab the dir entry
         memcpy(dentry, &bootblk->direntries[i], sizeof(DirEntry));
         return 0;
       }
@@ -166,15 +171,25 @@ int32_t read_data(uint32_t const inode, uint32_t const offset, uint32_t* const f
   INode const* const inodes = (INode*)&bootblk[1];
   Datablk const* const datablks = (Datablk*)&inodes[bootblk->fs_stats.inode_cnt];
 
+  // We use the datablk_idx to represent the location we need to pull from the inode
   uint32_t datablk_idx = offset / FS_BLK_SIZE;
+  // This is the for determining the start address in actual data block
   uint32_t datablk_offset = offset % FS_BLK_SIZE;
 
+
+  // Ensure we're in bounds for inode
   if (inode >= bootblk->fs_stats.inode_cnt)
     return -1;
 
+  // Make sure our offset is less than filesize
   if (offset >= inodes[inode].size)
     return -1;
 
+  // Check that the furthest byte we want is even in the span of data
+  if (offset + length >= bootblk->fs_stats.direntry_cnt * FS_BLK_SIZE)
+    return -1;
+
+  // Check that the first array position is actually in the datablock size range
   if (inodes[inode].data[datablk_idx] >= bootblk->fs_stats.datablk_cnt)
     return -1;
 
@@ -189,18 +204,23 @@ int32_t read_data(uint32_t const inode, uint32_t const offset, uint32_t* const f
   }
 
   {
+    // How many bytes we've read
     uint32_t reads = 0;
 
     while (reads < length) {
       uint32_t const datablk = inodes[inode].data[datablk_idx];
       uint8_t const* read_addr = &datablks[datablk].data[datablk_offset];
 
+      // if we hit the total size of the file
       if (reads + offset >= inodes[inode].size)
         return reads;
 
+      // move forward in buf and grab the byte from the data block
       buf[reads++] = *read_addr;
 
+      // this moves read address to the next byte offset and resets to 0 when at 4096
       if (++datablk_offset >= FS_BLK_SIZE) {
+        // this moves the position we're grabbing the inode datablack # from and validates it
         if (inodes[inode].data[++datablk_idx] >= bootblk->fs_stats.datablk_cnt)
           return -1;
 
