@@ -4,11 +4,11 @@
 #include "terminal_driver.h"
 
 /* Declare variables for keyboard */
+int8_t line_buffer[LINE_BUFFER_SIZE];
 uint8_t key_state[SCS1_PRESSED_F12];
-int caps_lock_repeat = 0;
-int multi_byte = 0;
-char line_buffer[LINE_BUFFER_SIZE];
-int line_buffer_index = 0;
+uint32_t caps_lock_repeat = 0;
+uint32_t multi_byte = 0;
+uint32_t line_buffer_index = 0;
 
 /* contains_newline
  * Description: To determine if a newline is present in a buffer
@@ -19,18 +19,16 @@ int line_buffer_index = 0;
  *                1 - if the buffer contains a newline
  * Function: To determine if \n or \r is present in a buffer
  */
-int contains_newline(char * buf, int32_t size)
-{
+uint32_t contains_newline(int8_t const* const buf, uint32_t const size) {
   /* Loop through the entire buffer */
-  int index = 0;
-  for(index = 0; index < size; index++)
-  {
+  uint32_t i;
+
+  for (i = 0; i < size; ++i) {
     /* If the buffer contains a newline return 1 */
-    if(buf[index] == '\n' || buf[index] == '\r')
-    {
+    if (buf[i] == '\n' || buf[i] == '\r')
       return 1;
-    }
   }
+
   /* No newline is present - return 0 */
   return 0;
 }
@@ -44,59 +42,59 @@ int contains_newline(char * buf, int32_t size)
  * Function: Gets a linebuffer, returns the size of it, and clears
  * the current line buffer
  */
-int32_t get_line_buffer(char * buffer, int32_t nbytes)
-{
-  if(nbytes <= 0)
+int32_t get_line_buffer(char* const buffer, uint32_t const nbytes) {
+  uint32_t continue_flag = 1;
+  uint32_t strlen;
+
+  if (nbytes <= 0)
     return -1;
+
   terminal_read_flag = 1;
+
   /* Wait while the line_buffer does not contain a \n */
-  while(contains_newline(line_buffer, LINE_BUFFER_SIZE) != 1);
+  while (contains_newline(line_buffer, LINE_BUFFER_SIZE) != 1)
+    ;
 
   /* Loop through the buffer until there is a newline */
-  int index = 0, continue_flag = 1;
-  while(index < nbytes && index < LINE_BUFFER_SIZE && continue_flag == 1)
   {
-    /* set the buffer to the line_buffer */
-    buffer[index] = line_buffer[index];
-    /* if there is a newline then do not continue */
-    if(line_buffer[index] == '\n' || line_buffer[index] == '\r')
-    {
-      continue_flag = 0;
+    /* for the remaining characters set them to empty */
+    uint32_t const limit = MIN(LINE_BUFFER_SIZE, nbytes);
+    uint32_t i = 0;
+
+    while (i < limit && continue_flag == 1) {
+
+      /* Set the buffer to the line_buffer */
+      buffer[i] = line_buffer[i];
+
+      /* If there is a newline then do not continue */
+      if (line_buffer[i] == '\n' || line_buffer[i] == '\r')
+        continue_flag = 0;
+
+      ++i;
     }
-    index++;
-  }
 
-  /* set the size of the string to the current index */
-  int sizeofstring = index;
+    /* set the size of the string to the current index */
+    strlen = i;
 
-  /* for the remaining characters set them to empty */
-  while(index < LINE_BUFFER_SIZE && index < nbytes)
-  {
-    buffer[index] = 0;
-    index++;
+    for (; i < limit; ++i)
+      buffer[i] = 0;
   }
 
   /* make sure that the last character is a newline */
-  if(nbytes < LINE_BUFFER_SIZE)
-  {
+  if (nbytes < LINE_BUFFER_SIZE)
     buffer[nbytes - 1] = '\n';
-  }
 
   /* If the size is greater than line_buffer_size then set the last char to \n */
-  if(nbytes > LINE_BUFFER_SIZE)
-  {
+  else if (nbytes > LINE_BUFFER_SIZE)
     buffer[LINE_BUFFER_SIZE - 1] = '\n';
-  }
 
   /* clear the line buffer and return the size of the buffer written to */
   clear_line_buffer();
 
   terminal_read_flag = 0;
-  
-  return sizeofstring;
+
+  return strlen;
 }
-
-
 
 /* init_keyboard
  * Description: Initializes the keyboard
@@ -104,12 +102,12 @@ int32_t get_line_buffer(char * buffer, int32_t nbytes)
  * Return Value: None
  * Side Effects: Enables the keyboard IRQ.
  */
-void init_keyboard(void)
-{
-  /* Enable irq, set multi_byte and caps lock to zero */
+void init_keyboard(void) {
+  /* Enable IRQ, clear multi-byte and caps-lock vars */
   enable_irq(KEYBOARD_IRQ);
   multi_byte = 0;
   caps_lock_repeat = 0;
+
   /* Clear the line buffer */
   clear_line_buffer();
 }
@@ -125,7 +123,8 @@ void irqh_keyboard(void) {
   /* If a keypress is ready then handle it */
   if (inb(KEYBOARD_STATUS_PORT) & KEYBOARD_OUTBUF_FULL)
     handle_keypress(inb(KEYBOARD_DATA_PORT));
-  /* Send eoi */
+
+  /* Send EOI */
   send_eoi(KEYBOARD_IRQ);
 }
 
@@ -137,104 +136,94 @@ void irqh_keyboard(void) {
  * Side Effects: Writes to the video buffer
  */
 void handle_keypress(SCSet1 const scancode) {
+  uint32_t i;
+
   /* If scancode is multibyte set multibyte_flag to 1 */
-  if(scancode == SCS1_MULTIBYTE)
-  {
+  if (scancode == SCS1_MULTIBYTE)
     multi_byte = 1;
-  }
-  else if(multi_byte == 1)
-  {
+
+  else if (multi_byte) {
     /* Handle multi_byte keycodes here */
     multi_byte = 0;
-  }
-  else if (scancode > 0 && scancode < SCS1_PRESSED_F12)
-  {
+
+  } else if (scancode > 0 && scancode < SCS1_PRESSED_F12) {
+    /* Get the printable keycode if any */
+    char const disp = handle_disp(keycodes[scancode]);
+
     /* If capslock is pressed and is not being held down NOT the key_state  */
-    if(scancode == SCS1_PRESSED_CAPSLOCK && caps_lock_repeat == 0)
-    {
+    if (scancode == SCS1_PRESSED_CAPSLOCK && !caps_lock_repeat) {
       key_state[scancode] ^= 1;
       caps_lock_repeat = 1;
-    }
-    else
-    {
+    } else {
       /* Otherwise the keystate is equal to 1 */
       key_state[scancode] = 1;
     }
-    
-    /* Get the printable keycode if any */
-    char disp = handle_disp(keycodes[scancode]);
 
     /* If the command ctrl + l is pressed clear the screen */
-    if((key_state[SCS1_PRESSED_LEFTCTRL] == 1 && scancode == SCS1_PRESSED_L) || (key_state[SCS1_PRESSED_L] == 1 && scancode == SCS1_PRESSED_LEFTCTRL))
-    {
+    if ((key_state[SCS1_PRESSED_LEFTCTRL] == 1 && scancode == SCS1_PRESSED_L) ||
+        (key_state[SCS1_PRESSED_L] == 1 && scancode == SCS1_PRESSED_LEFTCTRL)) {
+
       /* Clear screen and reset terminal */
       clear();
       set_screen_xy(0, 0);
-      if(terminal_read_flag == 1)
-      { 
+
+      if (terminal_read_flag) {
         /* Write to terminal to put "thanOS> " in */
         terminal_write(0, TERMINAL_TEXT, TERMINAL_TEXT_SIZE);
-        int i = 0;
+
         /* Write what's in the input buffer */
-        for(i = 0; i < line_buffer_index; i++)
-        {
+        for (i = 0; i < line_buffer_index; i++)
           putc(line_buffer[i]);
-        }
       }
-      
-      
-    }
-    else if(terminal_read_flag == 0)
-    {
+
+    } else if (!terminal_read_flag)
       return;
-    }
-    else if(key_state[SCS1_PRESSED_BACKSPACE] == 1)
-    {
+
+    else if (key_state[SCS1_PRESSED_BACKSPACE] == 1) {
       /* If there is data in the line buffer and backspace is pressed
        * decrement the line buffer and handle the backspace keypress
        */
-      if(line_buffer_index > 0)
-      {
+      if (line_buffer_index > 0) {
         line_buffer_index--;
         line_buffer[line_buffer_index] = 0;
         putc('\b');
       }
     }
+
     /* if there is a key to display */
-    else if (disp)
-    {
+    else if (disp) {
+
       /* If the linebuffer is not full (127 characters,  LINE_BUFFER_SIZE - 1) handle keypress */
-      if(line_buffer_index < LINE_BUFFER_SIZE - 1)
-      {
+      if (line_buffer_index < LINE_BUFFER_SIZE - 1) {
         /* print the key and put it in the buffer */
         putc(disp);
         line_buffer[line_buffer_index] = disp;
         line_buffer_index++;
-      }
-      else if(disp == '\n')
-      {
-        /* Handle newline, put it in the end of the buffer, since line_buffer_index >= LINE_BUFFER_SIZE - 1 */
+
+      } else if (disp == '\n') {
+        /* Handle newline, put it in the end of the buffer, since line_buffer_index >=
+         * LINE_BUFFER_SIZE - 1 */
         putc(disp);
         line_buffer[line_buffer_index] = disp;
         line_buffer_index++;
       }
     }
 
-      
   }
+
   /* This section handles key releases */
   else if (scancode > 0x81 && scancode <= SCS1_RELEASED_F12) {
+
     /* If capslock is released reset repeat to 0 so we can toggle it again */
-    if(scancode == SCS1_RELEASED_CAPSLOCK)
-    {
+    if (scancode == SCS1_RELEASED_CAPSLOCK) {
       caps_lock_repeat = 0;
-    }
-    else {
+
+    } else {
       /* The release scancode is SCS1_KEYPRESS_RELEASE_OFFSET greater its
        * pressed scancode. Set it to 0 to indicate it was released
        */
       key_state[scancode - SCS1_KEYPRESS_RELEASE_OFFSET] = 0;
-    } 
+    }
   }
 }
 
@@ -245,91 +234,65 @@ void handle_keypress(SCSet1 const scancode) {
  * Return Value: disp - the changed or unchanged value of the handled disp character
  * Side Effects: none
  */
-char handle_disp(char disp)
-{
+char handle_disp(char disp) {
   /* If shift is pressed or capslock then print its shift/capslock modified value */
-  if(shift_pressed() || (capslock_pressed() && disp >= 'a' && disp <= 'z'))
-  {
+  if (shift_pressed() || (capslock_pressed() && disp >= 'a' && disp <= 'z')) {
+
     /* If the character is a-z capitalize it */
-    if(disp >= 'a' && disp <= 'z' && !(capslock_pressed() && shift_pressed()))
-    {
+    if (disp >= 'a' && disp <= 'z' && !(capslock_pressed() && shift_pressed())) {
       /* an uppercase character is SCS1_UPPERCASE_OFFSET away from its lowercase value */
       disp -= SCS1_UPPERCASE_OFFSET;
-    }
-    else
-    {
+
+    } else
       /* If the character should be modified by shift find which character to print */
-      switch(disp)
-      {
-        case '1':
-          disp = '!';
-        break;
-        case '2':
-          disp = '@';
-        break;
-        case '3':
-          disp = '#';
-        break;
-        case '4':
-          disp = '$';
-        break;
-        case '5':
-          disp = '%';
-        break;
-        case '6':
-          disp = '^';
-        break;
-        case '7':
-          disp = '&';
-        break;
-        case '8':
-          disp = '*';
-        break;
-        case '9':
-          disp = '(';
-        break;
-        case '0':
-          disp = ')';
-        break;
-        case '`':
-          disp = '~';
-        break;
-        case '-':
-          disp = '_';
-        break;
-        case '=':
-          disp = '+';
-        break;
-        case ';':
-          disp = ':';
-        break;
-        case '\'':
-          disp = '\"';
-        break;
-        case ',':
-          disp = '<';
-        break;
-        case '.':
-          disp = '>';
-        break;
-        case '/':
-          disp = '?';
-        break;
-        case '[':
-          disp = '{';
-        break;
-        case ']':
-          disp = '}';
-        break;
-        case '\\':
-          disp = '|';
-        break;
-        default:
+      switch (disp) {
+      case '1':
+        return '!';
+      case '2':
+        return '@';
+      case '3':
+        return '#';
+      case '4':
+        return '$';
+      case '5':
+        return '%';
+      case '6':
+        return '^';
+      case '7':
+        return '&';
+      case '8':
+        return '*';
+      case '9':
+        return '(';
+      case '0':
+        return ')';
+      case '`':
+        return '~';
+      case '-':
+        return '_';
+      case '=':
+        return '+';
+      case ';':
+        return ':';
+      case '\'':
+        return '\"';
+      case ',':
+        return '<';
+      case '.':
+        return '>';
+      case '/':
+        return '?';
+      case '[':
+        return '{';
+      case ']':
+        return '}';
+      case '\\':
+        return '|';
+      default:
         break;
       }
-    }
   }
-  /* Return the character to display */
+
   return disp;
 }
 
@@ -340,15 +303,14 @@ char handle_disp(char disp)
  * Return Value: none
  * Side Effects: Clears the line_buffer and resets the index to 0
  */
-void clear_line_buffer()
-{
+void clear_line_buffer() {
   /* Iterate through the entire line buffer */
-  int i;
-  for(i = 0; i < LINE_BUFFER_SIZE; i++)
-  {
-    /* Set line__buffer at index to 0 */
+  uint32_t i;
+
+  /* Clear the line buffer */
+  for (i = 0; i < LINE_BUFFER_SIZE; ++i)
     line_buffer[i] = 0;
-  }
+
   /* Set index to 0 */
   line_buffer_index = 0;
 }
@@ -360,9 +322,8 @@ void clear_line_buffer()
  * Return Value: 1 if shift pressed, 0 otherwise
  * Side Effects: none
  */
-int shift_pressed()
-{
-  return (key_state[SCS1_PRESSED_LEFTSHIFT] == 1 || key_state[SCS1_PRESSED_RIGHTSHIFT] == 1);
+int32_t shift_pressed() {
+  return key_state[SCS1_PRESSED_LEFTSHIFT] | key_state[SCS1_PRESSED_RIGHTSHIFT];
 }
 
 /* capslock_pressed
@@ -372,7 +333,4 @@ int shift_pressed()
  * Return Value: 1 if capslock pressed, 0 otherwise
  * Side Effects: none
  */
-int capslock_pressed()
-{
-  return (key_state[SCS1_PRESSED_CAPSLOCK] == 1);
-}
+int32_t capslock_pressed() { return key_state[SCS1_PRESSED_CAPSLOCK]; }

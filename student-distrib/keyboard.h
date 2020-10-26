@@ -18,77 +18,77 @@ enum {
   KEYBOARD_TIMEOUT_ERR = 1 << 6,
   KEYBOARD_PARITY_ERR = 1 << 7,
 
-  KEYBOARD_IRQ = 0x1
-};
-#define SCS1_UPPERCASE_OFFSET 0x20
-#define SCS1_KEYPRESS_RELEASE_OFFSET 0x80
-#define LINE_BUFFER_SIZE 128
-/* pressed = 1 if pressed, 0 if released */
-typedef struct KeyDiff {
-  uint8_t keycode;
-  uint8_t pressed;
-} KeyDiff;
+  KEYBOARD_IRQ = 0x1,
 
-static char const keycodes[SCS1_PRESSED_F12] = {[KEY_1] = '1',
-                                                '2',
-                                                '3',
-                                                '4',
-                                                '5',
-                                                '6',
-                                                '7',
-                                                '8',
-                                                '9',
-                                                '0',
-                                                '-',
-                                                '=',
-                                                10,
-                                                ' ',
-                                                'q',
-                                                'w',
-                                                'e',
-                                                'r',
-                                                't',
-                                                'y',
-                                                'u',
-                                                'i',
-                                                'o',
-                                                'p',
-                                                '[',
-                                                ']',
-                                                '\n',
-                                                [KEY_A] = 'a',
-                                                's',
-                                                'd',
-                                                'f',
-                                                'g',
-                                                'h',
-                                                'j',
-                                                'k',
-                                                'l',
-                                                ';',
-                                                '\'',
-                                                '`',
-                                                [KEY_BACKSLASH] = '\\',
-                                                'z',
-                                                'x',
-                                                'c',
-                                                'v',
-                                                'b',
-                                                'n',
-                                                'm',
-                                                ',',
-                                                '.',
-                                                '/',
-                                                [KEY_KPASTERISK] = '*',
-                                                [KEY_SPACE] = ' ',};
+  SCS1_UPPERCASE_OFFSET = 0x20,
+  SCS1_KEYPRESS_RELEASE_OFFSET = 0x80,
+  LINE_BUFFER_SIZE = 128
+};
+
+static char const keycodes[SCS1_PRESSED_F12] = {
+    [KEY_1] = '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    '0',
+    '-',
+    '=',
+    10,
+    ' ',
+    'q',
+    'w',
+    'e',
+    'r',
+    't',
+    'y',
+    'u',
+    'i',
+    'o',
+    'p',
+    '[',
+    ']',
+    '\n',
+    [KEY_A] = 'a',
+    's',
+    'd',
+    'f',
+    'g',
+    'h',
+    'j',
+    'k',
+    'l',
+    ';',
+    '\'',
+    '`',
+    [KEY_BACKSLASH] = '\\',
+    'z',
+    'x',
+    'c',
+    'v',
+    'b',
+    'n',
+    'm',
+    ',',
+    '.',
+    '/',
+    [KEY_KPASTERISK] = '*',
+    [KEY_SPACE] = ' ',
+};
 
 /* Declare helper functions for keyboard */
 void init_keyboard(void);
 void irqh_keyboard(void);
+uint32_t contains_newline(int8_t const* buf, uint32_t size);
 void handle_keypress(SCSet1 scancode);
 char handle_disp(char disp);
 void clear_line_buffer();
-int32_t get_line_buffer(char * buffer, int32_t nbytes);
-int capslock_pressed();
-int shift_pressed();
+int32_t get_line_buffer(int8_t* buffer, uint32_t nbytes);
+int32_t capslock_pressed();
+int32_t shift_pressed();
+
 #endif

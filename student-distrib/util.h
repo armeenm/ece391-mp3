@@ -9,5 +9,7 @@
 #define UNUSED(x) x##_UNUSED __attribute__((unused))
 #define NONNULL(x) __attribute__((nonnull x))
 #define HLTLOOP asm volatile("1: hlt; jmp 1b")
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
 
 #endif /* UTIL_H */
