@@ -38,18 +38,18 @@ typedef struct Datablk {
 
 int32_t open_fs(uint32_t start, uint32_t end);
 
-int32_t file_open(void);
-int32_t file_close(void);
-int32_t file_read(int8_t const* fname, uint32_t* fsize, uint8_t* buf, int32_t length, uint32_t offset);
-int32_t file_write(void);
+int32_t file_open(const uint8_t * filename);
+int32_t file_close(int32_t fd);
+int32_t file_read(int8_t const* fname, uint8_t* buf, uint32_t offset);
+int32_t file_write(int32_t fd, const void* buf, int32_t nbytes);
 
-int32_t dir_open(void);
-int32_t dir_close(void);
-int32_t dir_read(uint32_t idx, DirEntry* dentry);
-int32_t dir_write(void);
+int32_t dir_open(const uint8_t * filename);
+int32_t dir_close(uint32_t fd);
+int32_t dir_read(uint32_t fd, void * buf, int32_t nbytes);
+int32_t dir_write(int32_t fd, const void* buf, int32_t nbytes);
 
 int32_t read_dentry_by_name(uint8_t const* fname, DirEntry* dentry);
 int32_t read_dentry_by_index(uint32_t index, DirEntry* dentry);
-int32_t read_data(uint32_t inode, uint32_t offset, uint32_t* fsize, uint8_t* buf, uint32_t length);
+int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length);
 
 #endif

@@ -328,20 +328,12 @@ void invalid_opcode_test() {
 
 void ls_test() {
   char fname_buf[33] = {0};
-  DirEntry dentry;
-  uint32_t i = 0, fsize;
 
   TEST_HEADER;
 
-  while (!dir_read(i++, &dentry)) {
-    memcpy(fname_buf, dentry.filename, FS_FNAME_LEN);
-
-    if (dentry.filetype == FT_REG)
-      read_data(dentry.inode_idx, 0, &fsize, NULL, 0);
-    else
-      fsize = 0;
-
-    printf("file_name: %s, file_type: %d, file_size: %d\n", fname_buf, dentry.filetype, fsize);
+  while (dir_read(0, fname_buf, 32) > 0) {
+    printf("file_name: %s\n", fname_buf);
+    memset(fname_buf, 0, 32);
   }
 
   TEST_PASS;
@@ -357,10 +349,7 @@ void cat_test() {
 
 #if FRAME0_CAT_TEST
   {
-    uint32_t fsize;
-
-    file_read("frame0.txt", &fsize, NULL, 0, 0);
-    file_read("frame0.txt", NULL, (uint8_t*)buf, fsize, 0);
+    file_read("frame0.txt", (uint8_t*)buf, 0);
 
     printf("File: frame0.txt\n%s\n", buf);
   }
@@ -368,10 +357,8 @@ void cat_test() {
 
 #if VLTWVLN_CAT_TEST
   {
-    uint32_t fsize;
 
-    file_read("verylargetextwithverylongname.txt", &fsize, NULL, 0, 0);
-    file_read("verylargetextwithverylongname.txt", NULL, (uint8_t*)buf, fsize, 0);
+    file_read("verylargetextwithverylongname.txt", (uint8_t*)buf, 0);
 
     printf("File: verylargetextwithverylongname.txt\n%s\n", buf);
   }
@@ -379,15 +366,12 @@ void cat_test() {
 
 #if HELLO_CAT_TEST
   {
-    uint32_t fsize;
-
-    file_read("hello", &fsize, NULL, 0, 0);
-    file_read("hello", NULL, (uint8_t*)buf, fsize, 0);
+    file_read("hello", (uint8_t*)buf, 0);
 
     printf("File: hello\n");
     buf[4] = '\0';
     printf("First 4 bytes: %s\n", buf);
-    printf("Last 36 bytes: %s\n", &buf[fsize - 37]);
+    printf("Last 36 bytes: %s\n", &buf[5349 - 37]);
   }
 #endif
 

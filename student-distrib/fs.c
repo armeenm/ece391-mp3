@@ -6,6 +6,9 @@
 
 static Bootblk* bootblk = NULL;
 
+// How many things we've read
+static int dir_read_count = 0;
+
 /* open_fs
  * Description: Opens filesystem
  * Inputs: start -- The beginning
@@ -31,86 +34,101 @@ int32_t open_fs(uint32_t const start, uint32_t const UNUSED(end)) {
 
 /* file_open
  * Description: Opens file
- * Inputs: none
+ * Inputs: filename, the char * holding the name (UNUSED)
  * Outputs: none
  * Return Value: 0
  * Function: none currently
  */
-int32_t file_open() { return 0; }
+int32_t file_open(const uint8_t * UNUSED(filename)) { return 0; }
 
 /* file_close
  * Description: Closes file
- * Inputs: none
+ * Inputs: fd -- pointer to file descriptor (UNUSED)
  * Outputs: none
  * Return Value: 0
  * Function: none currently
  */
-int32_t file_close() { return 0; }
+int32_t file_close(int32_t UNUSED(fd)) { return 0; }
 
 /* file_read
- * Description: Reads file
- * Inputs: fname -- Name of file to read
- *         buf --
+ * Description: Reads file (not to sys call spec for this part of the MP no fds setup)
+ * Inputs: fname -- Name of file to read (fd in fututre)
+ *         buf -- User supplied buffer to place file data in 
  *         length -- Length of the file
- *         offset --
- * Outputs:
- * Return Value:
- * Function:
+ *         offset -- forward offset (will be in FD in the future)
+ * Outputs: none
+ * Return Value: -1 on failure, otherwise the number of bytes written to buf
+ * Function: Used for the cat test to populate a buffer with file contents
  */
-int32_t file_read(int8_t const* const fname, uint32_t* const fsize, uint8_t* const buf, int32_t const length,
+int32_t file_read(int8_t const* const fname, uint8_t* const buf,
                   uint32_t const offset) {
   DirEntry dentry;
 
   // We validate fname is a ptr and grab the dentry and then do a read on the cooresponding inode to buf
   return (!fname) ? -1
-                  : read_dentry_by_name((uint8_t const*)fname, &dentry)
-                       ?: read_data(dentry.inode_idx, offset, fsize, buf, length);
+                  : read_dentry_by_name((uint8_t const*)fname, &dentry) // We get the size of this inode
+                       ?: read_data(dentry.inode_idx, offset, buf, ((INode*)&bootblk[1])[dentry.inode_idx].size);
 }
 
 /* file_write
  * Description: Writes file
- * Inputs: none
+ * Inputs: fd, buf, nbytes (UNUSED)
  * Outputs: none
- * Return Value: -1
+ * Return Value: -1 (failure because FS is readonly)
  * Function: none currently
  */
-int32_t file_write() { return -1; }
+int32_t file_write(int32_t UNUSED(fd), const void* UNUSED(buf), int32_t UNUSED(nbytes)) { return -1; }
 
 /* dir_open
- * Description: Opens directory
- * Inputs: none
+ * Description: Opens directory (and resets the read count for this directory)
+ * Inputs: filename (UNUSED)
  * Outputs: none
  * Return Value: 0
  * Function: none currently
  */
-int32_t dir_open() { return 0; }
+int32_t dir_open(const uint8_t * UNUSED(filename)) { 
+  dir_read_count = 0;
+  return 0; 
+}
 
 /* dir_close
  * Description: Closes directory
- * Inputs: none
+ * Inputs: fd (UNUSED)
  * Outputs: none
  * Return Value: 0
  * Function: none currently
  */
-int32_t dir_close() { return 0; }
+int32_t dir_close(uint32_t UNUSED(fd)) { return 0; }
 
 /* dir_read
  * Description: Reads diretory
- * Inputs: buf -- Buffer to read from directory
+ * Inputs: 
+ *  fd (UNUSED)
+ *  buf -- user supplied buffer for filename
+ *  nbytes -- the number of bytes to copy from filename
  * Outputs: none
- * Return Value: Length of the buffer
- * Function: Reads the directory and ...            ####################
+ * Return Value: -1, otherwise the number of bytes copied
+ * Function: Read's the current file name  for this directory read
  */
-int32_t dir_read(uint32_t const idx, DirEntry* const buf) { return read_dentry_by_index(idx, buf); }
+int32_t dir_read(uint32_t UNUSED(fd), void * buf, int32_t nbytes) { 
+  DirEntry d;
+  int i = read_dentry_by_index(dir_read_count++, &d);
+  int bytes = MIN(MIN(nbytes, 32), (int32_t)strlen(d.filename));
+  if (bytes < 0)
+    return -1;
+  
+  memcpy(buf, d.filename, bytes);
+  return i ? 0 : bytes;
+}
 
 /* dir_write
- * Description: Writes directory
- * Inputs: none
+ * Description: Writes directory (nothing currently)
+ * Inputs: fd, buf, nbytes (UNUSED)
  * Outputs: none
  * Return Value: -1
  * Function: none currently
  */
-int32_t dir_write() { return -1; }
+int32_t dir_write(int32_t UNUSED(fd), const void* UNUSED(buf), int32_t UNUSED(nbytes)) { return -1; }
 
 /* read_dentry_by_name
  * Description: Reads directory entry by name
@@ -156,16 +174,16 @@ int32_t read_dentry_by_index(uint32_t const idx, DirEntry* const dentry) {
 }
 
 /* read_data
- * Description:
- * Inputs: inode --
- *         offset --
- *         buf --
- *         length --
+ * Description: Reads data from a file into a supplied buffer using offset, length
+ * Inputs: inode -- target file inode
+ *         offset -- number of bytes forward from start of file
+ *         buf -- destination buffer for file data
+ *         length -- number of bytes to copy past offset
  * Outputs: none
- * Return Value:
- * Function:
+ * Return Value: -1 on failure, otherwise how many bytes were read
+ * Function: used in cat to grab the data from a given file
  */
-int32_t read_data(uint32_t const inode, uint32_t const offset, uint32_t* const fsize, uint8_t* const buf,
+int32_t read_data(uint32_t const inode, uint32_t const offset, uint8_t* const buf,
                   uint32_t const length) {
 
   INode const* const inodes = (INode*)&bootblk[1];
@@ -193,15 +211,8 @@ int32_t read_data(uint32_t const inode, uint32_t const offset, uint32_t* const f
   if (inodes[inode].data[datablk_idx] >= bootblk->fs_stats.datablk_cnt)
     return -1;
 
-  if (fsize)
-    *fsize = inodes[inode].size;
-
-  if (!buf) {
-    if (!fsize)
-      return -1;
-    else
-      return 0;
-  }
+  if (!buf)
+    return 0;
 
   {
     // How many bytes we've read
