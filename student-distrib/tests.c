@@ -320,8 +320,6 @@ void ls_test() {
   int8_t buf[33];
   uint8_t idx = 0;
 
-  clear();
-
   TEST_HEADER;
 
   while (!dir_read(buf, idx++)) {

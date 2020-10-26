@@ -30,13 +30,13 @@ void init_paging() {
     pgtbl[i] = (i * PTE_SIZE) | PG_RW | PG_PRESENT;
 
   /* Set video memory. R = 1, P = 1; We may want userspace access in the future */
-  pgtbl[PG_VIDMEM_START] = (PG_VIDMEM_START * PTE_SIZE) | PG_RW | PG_PRESENT;
+  /* pgtbl[PG_VIDMEM_START] = (PG_VIDMEM_START * PTE_SIZE) | PG_RW | PG_PRESENT; */
 
   /* Set first pgdir to pgtbl */
   pgdir[0] = (uint32_t)pgtbl | PG_RW | PG_PRESENT;
 
   /* Kernel page setup.  */
-  pgdir[1] = PG_4M_START | PG_PRESENT | PG_RW | PG_SIZE;
+  pgdir[1] = PG_4M_START | PG_RW | PG_SIZE | PG_PRESENT;
 
   /* Set up remaining page directories. */
   for (i = 2; i < PGDIR_LEN; ++i)

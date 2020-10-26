@@ -150,9 +150,11 @@ void entry(unsigned long magic, unsigned long addr) {
 
   // asm volatile("int $0x80" ::"a"(SYSC_CLOSE));
 
+  clear();
   sti();
 
-  clear();
+  // NOTE: This will cause a pagefault for no good reason
+  // clear();
 
 #ifdef RUN_TESTS
   /* Run tests */
