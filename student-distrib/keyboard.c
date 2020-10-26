@@ -147,9 +147,10 @@ void handle_keypress(SCSet1 const scancode) {
       clear();
       set_screen_xy(0, 0);
 
+      // Todo: let's not have the keyboard setup the screen again? maybe call out to shell?
       if (terminal_read_flag) {
         /* Write to terminal to put "thanOS> " in */
-        terminal_write(0, TERMINAL_TEXT, TERMINAL_TEXT_SIZE);
+        terminal_write(0, TERMINAL_TEXT, strlen(TERMINAL_TEXT));
 
         /* Write what's in the input buf */
         for (i = 0; i < line_buf_index; ++i)
@@ -192,7 +193,7 @@ void handle_keypress(SCSet1 const scancode) {
   }
 
   /* This section handles key releases */
-  else if (scancode > 0x81 && scancode <= SCS1_RELEASED_F12) {
+  else if (scancode > SCS1_KEYPRESS_RELEASE_OFFSET && scancode <= SCS1_RELEASED_F12) {
 
     /* If capslock is released reset repeat to 0 so we can toggle it again */
     if (scancode == SCS1_RELEASED_CAPSLOCK) {

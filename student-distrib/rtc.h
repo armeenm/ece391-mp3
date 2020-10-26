@@ -9,6 +9,7 @@
 #define RTC_BASE_FREQ 32768
 #define RTC_DEFAULT_VIRT_FREQ 2 
 
+
 #define RTC_REG_A 0xA
 #define RTC_REG_B 0xB
 #define RTC_REG_C 0xC
@@ -17,6 +18,7 @@
 
 #define PIE_MASK (1 << 6)
 #define RTC_DIS_NMI (1 << 7)
+#define TOP_BYTE_NIBBLE 0xF0
 
 typedef enum RTCRate { HZ1024 = 0x6, HZ512, HZ256, HZ128, HZ64, HZ32, HZ16, HZ8, HZ4, HZ2 } RTCRate;
 

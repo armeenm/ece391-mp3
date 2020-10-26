@@ -141,7 +141,7 @@ void set_real_freq_rtc(RTCRate const rate) {
 
   outb(RTC_REG_A | RTC_DIS_NMI, RTC_SEL_PORT);
   /* Set rate via the bottom 4 bits */
-  outb((prev & 0xF0) | (uint8_t)rate, RTC_DATA_PORT);
+  outb((prev & TOP_BYTE_NIBBLE) | (uint8_t)rate, RTC_DATA_PORT);
 
   // This is formula to derivce frequency from rate
   virtual_rtc_instance.real_freq = RTC_BASE_FREQ >> (rate - 1);

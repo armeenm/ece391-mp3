@@ -9,7 +9,6 @@ int32_t terminal_open(int32_t UNUSED(fd));
 int32_t terminal_close(int32_t UNUSED(fd));
 
 #define TERMINAL_TEXT "thanOS> "
-#define TERMINAL_TEXT_SIZE 8
 
 
 extern int terminal_read_flag;

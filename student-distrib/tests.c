@@ -275,11 +275,12 @@ void terminal_test() {
 #if TERMINAL_TEST
   {
     int32_t size;
+    char * s = "Input: ";
 
     for (;;) {
-      terminal_write(0, TERMINAL_TEXT, TERMINAL_TEXT_SIZE);
+      terminal_write(0, TERMINAL_TEXT, strlen(TERMINAL_TEXT));
       size = terminal_read(0, buf, 128);
-      terminal_write(0, "Input: ", 7);
+      terminal_write(0, s, strlen(s));
       terminal_write(0, buf, size);
     }
   }
