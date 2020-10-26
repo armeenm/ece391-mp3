@@ -335,9 +335,13 @@ void ls_test() {
 
   while (!dir_read(i++, &dentry)) {
     memcpy(fname_buf, dentry.filename, FS_FNAME_LEN);
-    read_data(dentry.inode_idx, 0, (uint8_t*)&fsize, 4);
 
-    printf("file_name: %s, file_type: %d\n", fname_buf, dentry.filetype);
+    if (dentry.filetype == FT_REG)
+      read_data(dentry.inode_idx, 0, &fsize, NULL, 0);
+    else
+      fsize = 0;
+
+    printf("file_name: %s, file_type: %d, file_size: %d\n", fname_buf, dentry.filetype, fsize);
   }
 
   TEST_PASS;

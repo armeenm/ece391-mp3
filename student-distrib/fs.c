@@ -55,13 +55,13 @@ int32_t file_close() { return 0; }
  * Return Value:
  * Function:
  */
-int32_t file_read(uint8_t const* const fname, uint8_t* const buf, int32_t const length,
+int32_t file_read(int8_t const* const fname, uint32_t* const fsize, uint8_t* const buf, int32_t const length,
                   uint32_t const offset) {
   DirEntry dentry;
 
-  return (!fname || !buf) ? -1
-                          : read_dentry_by_name(fname, &dentry)
-                                ?: read_data(dentry.inode_idx, offset, buf, length);
+  return (!fname) ? -1
+                  : read_dentry_by_name((uint8_t const*)fname, &dentry)
+                       ?: read_data(dentry.inode_idx, offset, fsize, buf, length);
 }
 
 /* file_write
@@ -160,14 +160,15 @@ int32_t read_dentry_by_index(uint32_t const idx, DirEntry* const dentry) {
  * Return Value:
  * Function:
  */
-int32_t read_data(uint32_t const inode, uint32_t const offset, uint8_t* const buf,
+int32_t read_data(uint32_t const inode, uint32_t const offset, uint32_t* const fsize, uint8_t* const buf,
                   uint32_t const length) {
 
-  INode const* const inodes = (INode*)(bootblk + FS_BLK_SIZE);
+  INode const* const inodes = (INode*)((void*)bootblk + FS_BLK_SIZE);
   Datablk const* const datablks =
-      (Datablk*)(bootblk + (1 + bootblk->fs_stats.inode_cnt) * FS_BLK_SIZE);
+      (Datablk*)((void*)bootblk + (1 + bootblk->fs_stats.inode_cnt) * FS_BLK_SIZE);
 
-  uint32_t datablk = offset / FS_INODE_DATA_LEN;
+  uint32_t datablk_idx = offset / FS_INODE_DATA_LEN;
+  uint32_t datablk_offset = offset % FS_BLK_SIZE;
 
   if (inode >= bootblk->fs_stats.inode_cnt)
     return -1;
@@ -178,25 +179,36 @@ int32_t read_data(uint32_t const inode, uint32_t const offset, uint8_t* const bu
   if (offset + length >= bootblk->fs_stats.direntry_cnt * FS_BLK_SIZE)
     return -1;
 
-  if (inodes[inode].data[datablk] >= bootblk->fs_stats.datablk_cnt)
+  if (inodes[inode].data[datablk_idx] >= bootblk->fs_stats.datablk_cnt)
     return -1;
 
+  if (fsize)
+    *fsize = inodes[inode].size;
+
+  if (!buf) {
+    if (!fsize)
+      return -1;
+    else
+      return 0;
+  }
+
   {
-    uint32_t datablk_offset = offset % FS_BLK_SIZE;
     uint32_t reads = 0;
 
     while (reads < length) {
+      uint32_t const datablk = inodes[inode].data[datablk_idx];
       uint8_t const* read_addr = &datablks[datablk].data[datablk_offset];
-      buf[reads++] = *read_addr;
 
       if (reads + offset >= inodes[inode].size)
         return reads;
 
+      buf[reads++] = *read_addr;
+
       if (++datablk_offset >= FS_BLK_SIZE) {
-        if (inodes[inode].data[++datablk] >= bootblk->fs_stats.datablk_cnt)
+        if (inodes[inode].data[++datablk_idx] >= bootblk->fs_stats.datablk_cnt)
           return -1;
-        else
-          datablk_offset = 0;
+
+        datablk_offset = 0;
       }
     }
 
