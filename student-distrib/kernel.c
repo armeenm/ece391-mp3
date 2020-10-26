@@ -147,16 +147,20 @@ void entry(unsigned long magic, unsigned long addr) {
   init_paging();
   init_idt();
 
+  /* Grab the first module and use it to open the filesystem */
   module_t* const mod = (module_t*)mbi->mods_addr;
+
   if (open_fs(mod->mod_start, mod->mod_end)) {
     printf("Failed to open filesystem!\n");
-    asm volatile("int $15");
+	/* If it fails, just loop (for now) */
+	HLTLOOP;
   }
-
-  // asm volatile("int $0x80" ::"a"(SYSC_CLOSE));
 
   clear();
   sti();
+
+  /* Example of using a syscall */
+  /* asm volatile("int $0x80" ::"a"(SYSC_CLOSE)); */
 
 #ifdef RUN_TESTS
   /* Run tests */
