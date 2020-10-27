@@ -19,7 +19,6 @@ void irqh_syscall(void) {
     break;
 
   case SYSC_READ:
-
     break;
 
   case SYSC_WRITE:
@@ -44,5 +43,7 @@ void irqh_syscall(void) {
     break;
   };
 
-  asm volatile("" ::"a"(type), "c"(arg2), "d"(arg3));
+  /* EAX, ECX, EDX: Handled in ASM linkage
+   * EBX, EDI, ESI: Handled by the compiler
+   */
 }
