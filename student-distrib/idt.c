@@ -14,7 +14,7 @@ static const IntHandler exc_handlers[IDT_EXC_CNT] = {
     asm_exc_ss, asm_exc_gp, asm_exc_pf,  asm_exc_af,         asm_exc_mf, asm_exc_ac,
     asm_exc_mc, asm_exc_xf, asm_exc_ve,  [0x1E] = asm_exc_sx};
 
-static NODISCARD CONST idt_desc_t make_idt_desc(void const* handler, uint16_t seg_selector,
+static NODISCARD CONST idt_desc_t make_idt_desc(void const* handler, u16 seg_selector,
                                                 GateType gate_type, Dpl dpl) NONNULL(());
 
 /**
@@ -28,7 +28,7 @@ static NODISCARD CONST idt_desc_t make_idt_desc(void const* handler, uint16_t se
  * Return: IDT descriptor.
  * Side Effects: None
  */
-static idt_desc_t make_idt_desc(void const* const handler, uint16_t const seg_selector,
+static idt_desc_t make_idt_desc(void const* const handler, u16 const seg_selector,
                                 GateType const gate_type, Dpl const dpl) {
 
   GateTypeU const gate_type_u = {.val = gate_type};
@@ -57,7 +57,7 @@ static idt_desc_t make_idt_desc(void const* const handler, uint16_t const seg_se
  * Side Effects: Modified the `idt` array and loads it into the processor with `lidt`.
  */
 void init_idt(void) {
-  uint16_t i;
+  u16 i;
 
   /* Configure first 32 IDT entries (exceptions)
    * Defined by Intel

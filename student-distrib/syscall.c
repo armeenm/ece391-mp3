@@ -3,7 +3,7 @@
 
 void irqh_syscall(void) {
   SyscallType type;
-  uint32_t arg1, arg2, arg3;
+  u32 arg1, arg2, arg3;
 
   /* Read the syscall type from EAX */
   asm volatile("" : "=a"(type), "=b"(arg1), "=c"(arg2), "=d"(arg3));

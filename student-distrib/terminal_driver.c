@@ -11,7 +11,7 @@ int terminal_read_flag = 0;
  * Return Value: number of bytes read
  * Function: To read from the line buf
  */
-int32_t terminal_read(int32_t UNUSED(fd), void* const buf, int32_t const nbytes) {
+i32 terminal_read(i32 UNUSED(fd), void* const buf, i32 const nbytes) {
   /* Get line buf and return size of bytes read */
   return get_line_buf((char*)buf, nbytes);
 }
@@ -24,10 +24,10 @@ int32_t terminal_read(int32_t UNUSED(fd), void* const buf, int32_t const nbytes)
  * Return Value: number of bytes written
  * Function: To write to the line buf
  */
-int32_t terminal_write(int32_t UNUSED(fd), void const* const buf, int32_t const nbytes) {
+i32 terminal_write(i32 UNUSED(fd), void const* const buf, i32 const nbytes) {
   /* Typecast buf to a char* */
   char const* const cbuf = (char const*)buf;
-  int32_t i, bytes_written = 0;
+  i32 i, bytes_written = 0;
 
   /* If params are invalid return -1 */
   if (nbytes <= 0 || !buf)
@@ -50,7 +50,7 @@ int32_t terminal_write(int32_t UNUSED(fd), void const* const buf, int32_t const 
  * Return Value: 0
  * Function: Opens the terminal driver and allocates any memory it needs to
  */
-int32_t terminal_open(int32_t UNUSED(fd)) { return 0; }
+i32 terminal_open(i32 UNUSED(fd)) { return 0; }
 
 /* terminal_close
  * Description: Close the terminal driver
@@ -59,4 +59,4 @@ int32_t terminal_open(int32_t UNUSED(fd)) { return 0; }
  * Return Value: 0
  * Function: Closes the terminal driver and deallocates any memory it needs to.
  */
-int32_t terminal_close(int32_t UNUSED(fd)) { return 0; }
+i32 terminal_close(i32 UNUSED(fd)) { return 0; }

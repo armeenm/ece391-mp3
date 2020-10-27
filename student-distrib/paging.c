@@ -21,7 +21,7 @@ void init_paging(void) {
   /* Make sure to flush TLB in the future when this function gets reused */
 
   /* Initialize page tables */
-  uint32_t i;
+  u32 i;
 
   /* Page table set to i * 4096. R = 1 */
   pgtbl[0] = PG_RW;
@@ -33,7 +33,7 @@ void init_paging(void) {
   /* pgtbl[PG_VIDMEM_START] |= PG_USPACE; */
 
   /* Set first pgdir to pgtbl */
-  pgdir[0] = (uint32_t)pgtbl | PG_RW | PG_PRESENT;
+  pgdir[0] = (u32)pgtbl | PG_RW | PG_PRESENT;
 
   /* Kernel page setup.  */
   pgdir[1] = PG_4M_START | PG_RW | PG_SIZE | PG_PRESENT;

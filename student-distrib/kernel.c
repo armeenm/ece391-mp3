@@ -27,7 +27,7 @@ int test(void) { return 0; }
 
 /* Check if MAGIC is valid and print the Multiboot information structure
    pointed by ADDR. */
-void entry(uint32_t const magic, uint32_t const addr) {
+void entry(u32 const magic, u32 const addr) {
 
   multiboot_info_t* mbi;
 
@@ -60,8 +60,7 @@ void entry(uint32_t const magic, uint32_t const addr) {
     printf("cmdline = %s\n", (char*)mbi->cmdline);
 
   if (CHECK_FLAG(mbi->flags, 3)) {
-    uint32_t mod_count = 0;
-    uint32_t i;
+    u32 i, mod_count = 0;
     module_t* mod = (module_t*)mbi->mods_addr;
     while (mod_count < mbi->mods_count) {
       printf("Module %d loaded at address: 0x%#x\n", mod_count, (unsigned int)mod->mod_start);

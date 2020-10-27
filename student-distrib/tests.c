@@ -47,14 +47,14 @@ enum {
 /***** CHECKPOINT 1 {{{ *****/
 
 /* Helpers */
-static int deref(uint32_t test);
-static int32_t NODISCARD PURE idt_test_helper(uint32_t i, GateType gate_type, Dpl dpl);
+static int deref(u32 test);
+static i32 NODISCARD PURE idt_test_helper(u32 i, GateType gate_type, Dpl dpl);
 
 /* Tests */
 
-static int deref(uint32_t test) { return *(int*)test; }
+static int deref(u32 test) { return *(int*)test; }
 
-static int32_t idt_test_helper(uint32_t const i, GateType const gate_type, Dpl const dpl) {
+static i32 idt_test_helper(u32 const i, GateType const gate_type, Dpl const dpl) {
   GateTypeU const gate_type_u = {.val = gate_type};
 
   return (!idt[i].offset_15_00 && !idt[i].offset_31_16) || (idt[i].seg_selector != KERNEL_CS) ||
@@ -74,7 +74,7 @@ static int32_t idt_test_helper(uint32_t const i, GateType const gate_type, Dpl c
  */
 
 TEST(IDT) {
-  uint32_t i;
+  u32 i;
 
   /* Check the first 21 entires */
   for (i = 0; i < 21; ++i)
@@ -114,7 +114,7 @@ TEST(VIDMEM_EDGE) {
  * Coverage: Paging, null dereference, negative pointer deref, kernel space, userspace,
  */
 TEST(PAGING) {
-  uint32_t i;
+  u32 i;
 
   /* Access pointer in kernel space (5MiB) */
   deref(0x4C4B40);
@@ -126,7 +126,7 @@ TEST(PAGING) {
   /* Check 4KB page directory entry for valid address + permission bits (because the CPU can set
    * other bits) */
 
-  if ((pgdir[0] & PDE_USED_4K) != (PG_PRESENT | PG_RW | (uint32_t)pgtbl))
+  if ((pgdir[0] & PDE_USED_4K) != (PG_PRESENT | PG_RW | (u32)pgtbl))
     TEST_FAIL;
 
   /* Check kernel entry for valid address + permission bits */
@@ -224,7 +224,7 @@ TEST(KEYPRESS) {
     if (start_x != get_screen_x())
       TEST_FAIL;
 
-    if (*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != ' ')
+    if (*(u8*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != ' ')
       TEST_FAIL;
 
     terminal_read_flag = 1;
@@ -236,7 +236,7 @@ TEST(KEYPRESS) {
       TEST_FAIL;
     }
 
-    if (*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'a') {
+    if (*(u8*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'a') {
       TEST_FAIL;
     }
 
@@ -248,7 +248,7 @@ TEST(KEYPRESS) {
     handle_keypress(SCS1_PRESSED_A);
     handle_keypress(SCS1_RELEASED_A);
 
-    if (*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'A')
+    if (*(u8*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'A')
       TEST_FAIL;
 
     handle_keypress(SCS1_RELEASED_LEFTSHIFT);
@@ -261,7 +261,7 @@ TEST(KEYPRESS) {
     handle_keypress(SCS1_PRESSED_1);
     handle_keypress(SCS1_RELEASED_1);
 
-    if (*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != '!')
+    if (*(u8*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != '!')
       TEST_FAIL;
 
     handle_keypress(SCS1_RELEASED_LEFTSHIFT);
@@ -281,7 +281,7 @@ TEST(KEYPRESS) {
     handle_keypress(SCS1_PRESSED_C);
     handle_keypress(SCS1_RELEASED_C);
 
-    if (*(uint8_t*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'C')
+    if (*(u8*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != 'C')
       TEST_FAIL;
 
     handle_keypress(SCS1_PRESSED_CAPSLOCK);
@@ -313,9 +313,9 @@ TEST(TERMINAL) {
 }
 
 TEST(SHELL) {
-  int32_t size;
-  int8_t buf[128] = {0};
-  int8_t const* const s = "Input: ";
+  i32 size;
+  i8 buf[128] = {0};
+  i8 const* const s = "Input: ";
 
   terminal_open(0);
   clear();
@@ -323,7 +323,7 @@ TEST(SHELL) {
   for (;;) {
     terminal_write(0, SHELL_PS1, sizeof(SHELL_PS1));
     size = terminal_read(0, buf, 128);
-    terminal_write(0, s, (int32_t)strlen(s));
+    terminal_write(0, s, (i32)strlen(s));
     terminal_write(0, buf, size);
   }
 
@@ -349,7 +349,7 @@ TEST(CAT_FRAME0) {
   char buf[200] = {0};
 
   clear();
-  file_read("frame0.txt", (uint8_t*)buf, 0);
+  file_read("frame0.txt", (u8*)buf, 0);
   printf("File: frame0.txt\n%s\n", buf);
 
   TEST_END;
@@ -359,7 +359,7 @@ TEST(CAT_VLTWLN) {
   char buf[30000] = {0};
 
   clear();
-  file_read("verylargetextwithverylongname.txt", (uint8_t*)buf, 0);
+  file_read("verylargetextwithverylongname.txt", (u8*)buf, 0);
   printf("File: verylargetextwithverylongname.txt\n%s\n", buf);
 
   TEST_END;
@@ -369,7 +369,7 @@ TEST(CAT_HELLO) {
   char buf[30000] = {0};
 
   clear();
-  file_read("hello", (uint8_t*)buf, 0);
+  file_read("hello", (u8*)buf, 0);
   printf("File: hello\n");
   buf[4] = '\0';
   printf("First 4 bytes: %s\n", buf);
@@ -402,36 +402,36 @@ TEST(RTC_DEMO) {
 }
 
 TEST(RTC_WRITE) {
-  int32_t i;
+  i32 i;
 
   rtc_open(0);
 
   // This also checks against set_virt_freq because it's just a wrapper
-  if (rtc_write(0, 0, sizeof(int32_t)) != -1) // Null pointer rtc_write
+  if (rtc_write(0, 0, sizeof(i32)) != -1) // Null pointer rtc_write
     TEST_FAIL;
 
   i = -128;
-  if (rtc_write(0, &i, sizeof(int32_t)) != -1) // negative freq
+  if (rtc_write(0, &i, sizeof(i32)) != -1) // negative freq
     TEST_FAIL;
 
   i = 2048;
-  if (rtc_write(0, &i, sizeof(int32_t)) != -1) // higher than max
+  if (rtc_write(0, &i, sizeof(i32)) != -1) // higher than max
     TEST_FAIL;
 
   i = 391;
-  if (rtc_write(0, &i, sizeof(int32_t)) != -1) // Valid range, not power of 2
+  if (rtc_write(0, &i, sizeof(i32)) != -1) // Valid range, not power of 2
     TEST_FAIL;
 
   i = 256;
-  if (rtc_write(0, &i, sizeof(int32_t)) != sizeof(int32_t)) // valid range and power of 2
+  if (rtc_write(0, &i, sizeof(i32)) != sizeof(i32)) // valid range and power of 2
     TEST_FAIL;
 
   i = 256;
-  if (set_virtual_freq_rtc((uint32_t)i) != 0) // valid range and power of 2
+  if (set_virtual_freq_rtc((u32)i) != 0) // valid range and power of 2
     TEST_FAIL;
 
   i = 391;
-  if (set_virtual_freq_rtc((uint32_t)i) != -1) // valid range and power of 2
+  if (set_virtual_freq_rtc((u32)i) != -1) // valid range and power of 2
     TEST_FAIL;
 
   rtc_close(0);

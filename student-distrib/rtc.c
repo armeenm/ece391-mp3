@@ -13,7 +13,7 @@ static virtual_rtc virtual_rtc_instance;
  * Side Effects: Writes to RTC ports, enables RTC IRQ.
  */
 void init_rtc(void) {
-  uint32_t prev;
+  u32 prev;
 
   enable_irq(RTC_IRQ);
 
@@ -62,12 +62,12 @@ void irqh_rtc(void) {
 
 /* rtc_read
  * Description: Spin while waiting for the IRQH to fire at virtual freq. Then reset that flag.
- * Inputs: int32_t fd, void* buf, int32_t nbytes (all ignored)
+ * Inputs: i32 fd, void* buf, i32 nbytes (all ignored)
  * Outputs: resets the virtual flag to 0
- * Return Value: int32_t (always 0)
+ * Return Value: i32 (always 0)
  * Side Effects: Blocks exectution of process while waiting for int to occur
  */
-int32_t rtc_read(int32_t UNUSED(fd), void* UNUSED(buf), int32_t UNUSED(nbytes)) {
+i32 rtc_read(i32 UNUSED(fd), void* UNUSED(buf), i32 UNUSED(nbytes)) {
   while (!virtual_rtc_instance.flag) {
     // spin while we wait for flag to be set by IRQH (avoid gcc warnings with this comment)
   }
@@ -78,28 +78,28 @@ int32_t rtc_read(int32_t UNUSED(fd), void* UNUSED(buf), int32_t UNUSED(nbytes)) 
 
 /* rtc_write
  * Description: Set the virtual frequency from buffer if it is a vliad poweer of 2 freq.
- * Inputs: int32_t fd, void* buf (the pointer to an int holding frequency requested), int32_t nbytes
- * (can only be 4 bytes) Outputs: none Return Value: int32_t, -1 on invalid freq, sizeof(int) when
+ * Inputs: i32 fd, void* buf (the pointer to an int holding frequency requested), i32 nbytes
+ * (can only be 4 bytes) Outputs: none Return Value: i32, -1 on invalid freq, sizeof(int) when
  * working Side Effects: none
  */
-int32_t rtc_write(int32_t UNUSED(fd), void const* buf, int32_t const nbytes) {
+i32 rtc_write(i32 UNUSED(fd), void const* buf, i32 const nbytes) {
   // TODO: VALIDATE buf location in memory to prevent ring 0 memory access
   // try to set the freq, if it's not valid, this returns -1 and it's failed
 
-  if (!buf || nbytes != sizeof(uint32_t))
+  if (!buf || nbytes != sizeof(u32))
     return -1;
 
-  return (set_virtual_freq_rtc(*(uint32_t const*)buf)) ? -1 : (int32_t)sizeof(uint32_t);
+  return (set_virtual_freq_rtc(*(u32 const*)buf)) ? -1 : (i32)sizeof(u32);
 }
 
 /* rtc_open
  * Description: reset the virtual frequency to 2HZ (default)
- * Inputs: iconst uint8_t* filename (ignored)
+ * Inputs: iconst u8* filename (ignored)
  * Outputs: none
- * Return Value: int32_t, 0 always
+ * Return Value: i32, 0 always
  * Side Effects: none
  */
-int32_t rtc_open(const uint8_t* UNUSED(filename)) {
+i32 rtc_open(const u8* UNUSED(filename)) {
   set_virtual_freq_rtc(RTC_DEFAULT_VIRT_FREQ);
   return 0;
 }
@@ -111,7 +111,7 @@ int32_t rtc_open(const uint8_t* UNUSED(filename)) {
  * Return Value: 0
  * Side Effects: none
  */
-int32_t rtc_close(int32_t UNUSED(fd)) { return 0; }
+i32 rtc_close(i32 UNUSED(fd)) { return 0; }
 
 /* ack_rtc_int
  * Description: ACKs an RTC interrupt.
@@ -120,7 +120,7 @@ int32_t rtc_close(int32_t UNUSED(fd)) { return 0; }
  * Return Value: None
  * Side Effects: RTC port I/O.
  */
-uint32_t ack_rtc_int(void) {
+u32 ack_rtc_int(void) {
   /* Empty the buffer by reading details from reg C */
   outb(RTC_REG_C, RTC_SEL_PORT);
   return inb(RTC_DATA_PORT);
@@ -134,14 +134,14 @@ uint32_t ack_rtc_int(void) {
  * Side Effects: Writes to RTC ports.
  */
 void set_real_freq_rtc(RTCRate const rate) {
-  uint32_t prev;
+  u32 prev;
 
   outb(RTC_REG_A | RTC_DIS_NMI, RTC_SEL_PORT);
   prev = inb(RTC_DATA_PORT);
 
   outb(RTC_REG_A | RTC_DIS_NMI, RTC_SEL_PORT);
   /* Set rate via the bottom 4 bits */
-  outb((prev & TOP_BYTE_NIBBLE) | (uint8_t)rate, RTC_DATA_PORT);
+  outb((prev & TOP_BYTE_NIBBLE) | (u8)rate, RTC_DATA_PORT);
 
   // This is formula to derivce frequency from rate
   virtual_rtc_instance.real_freq = RTC_BASE_FREQ >> (rate - 1);
@@ -149,12 +149,12 @@ void set_real_freq_rtc(RTCRate const rate) {
 
 /* set_virtual_freq_rtc
  * Description: Sets the frequency of the RTC's interrupts (virtually)
- * Inputs: uint32_t freq: a power of 2 frequency that's less than the real freq of the RTC
+ * Inputs: u32 freq: a power of 2 frequency that's less than the real freq of the RTC
  * Outputs: Modifies virtual_rtc_instance.
  * Return Value: int: -1 = invalid frequency, 0 = success
  * Side Effects: none
  */
-int set_virtual_freq_rtc(uint32_t freq) {
+int set_virtual_freq_rtc(u32 freq) {
   // if freq = 0 or > RTC freq or it's not a power of 2, this in an invalid frequency
   if (freq == 0 || freq > virtual_rtc_instance.real_freq || (freq & (freq - 1)) != 0) {
     return -1;

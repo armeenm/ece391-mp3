@@ -5,10 +5,10 @@
 
 /* Declare variables for keyboard */
 char line_buf[LINE_BUFFER_SIZE];
-uint8_t key_state[SCS1_PRESSED_F12];
-uint32_t caps_lock_repeat = 0;
-uint32_t multi_byte = 0;
-uint32_t line_buf_index = 0;
+u8 key_state[SCS1_PRESSED_F12];
+u32 caps_lock_repeat = 0;
+u32 multi_byte = 0;
+u32 line_buf_index = 0;
 
 /* contains_newline
  * Description: To determine if a newline is present in a buf
@@ -19,8 +19,8 @@ uint32_t line_buf_index = 0;
  *                1 - if the buf contains a newline
  * Function: To determine if \n or \r is present in a buf
  */
-int contains_newline(int8_t const* const buf, int32_t const size) {
-  int32_t i;
+int contains_newline(i8 const* const buf, i32 const size) {
+  i32 i;
 
   /* If the buf contains a newline, return its index */
   for (i = 0; i < size; ++i) {
@@ -41,9 +41,9 @@ int contains_newline(int8_t const* const buf, int32_t const size) {
  * Function: Gets a linebuf, returns the size of it, and clears
  * the current line buf
  */
-int32_t get_line_buf(char* const buf, int32_t const nbytes) {
-  int32_t strlen;
-  int32_t nl_idx;
+i32 get_line_buf(char* const buf, i32 const nbytes) {
+  i32 strlen;
+  i32 nl_idx;
 
   if (nbytes <= 0)
     return -1;
@@ -57,10 +57,10 @@ int32_t get_line_buf(char* const buf, int32_t const nbytes) {
   /* TODO: What should we do if nl_idx > nbytes? */
 
   {
-    int32_t const limit = MIN(nl_idx + 1, nbytes);
+    i32 const limit = MIN(nl_idx + 1, nbytes);
 
     /* Copy from the line buf to the buf */
-    memcpy(buf, line_buf, (uint32_t)limit);
+    memcpy(buf, line_buf, (u32)limit);
 
     /* Set the size of the string */
     strlen = limit;
@@ -117,7 +117,7 @@ void irqh_keyboard(void) {
  * Side Effects: Writes to the video buf
  */
 void handle_keypress(SCSet1 const scancode) {
-  uint32_t i;
+  u32 i;
 
   /* If scancode is multibyte set multibyte_flag to 1 */
   if (scancode == SCS1_MULTIBYTE)
@@ -129,7 +129,7 @@ void handle_keypress(SCSet1 const scancode) {
 
   } else if (scancode > 0 && scancode < SCS1_PRESSED_F12) {
     /* Get the printable keycode if any */
-    int8_t const disp = handle_disp(keycodes[scancode]);
+    i8 const disp = handle_disp(keycodes[scancode]);
 
     /* If capslock is pressed and is not being held down NOT the key_state  */
     if (scancode == SCS1_PRESSED_CAPSLOCK && !caps_lock_repeat) {
@@ -193,8 +193,8 @@ void handle_keypress(SCSet1 const scancode) {
   }
 
   /* This section handles key releases */
-  else if ((uint32_t)scancode > SCS1_KEYPRESS_RELEASE_OFFSET &&
-           (uint32_t)scancode <= SCS1_RELEASED_F12) {
+  else if ((u32)scancode > SCS1_KEYPRESS_RELEASE_OFFSET &&
+           (u32)scancode <= SCS1_RELEASED_F12) {
 
     /* If capslock is released reset repeat to 0 so we can toggle it again */
     if (scancode == SCS1_RELEASED_CAPSLOCK) {
@@ -216,7 +216,7 @@ void handle_keypress(SCSet1 const scancode) {
  * Return Value: disp - the changed or unchanged value of the handled disp character
  * Side Effects: none
  */
-int8_t handle_disp(int8_t disp) {
+i8 handle_disp(i8 disp) {
   /* If shift is pressed or capslock then print its shift/capslock modified value */
   if (shift_pressed() || (capslock_pressed() && disp >= 'a' && disp <= 'z')) {
 
@@ -287,7 +287,7 @@ int8_t handle_disp(int8_t disp) {
  */
 void clear_line_buf(void) {
   /* Iterate through the entire line buf */
-  uint32_t i;
+  u32 i;
 
   /* Clear the line buf */
   for (i = 0; i < LINE_BUFFER_SIZE; ++i)
@@ -304,7 +304,7 @@ void clear_line_buf(void) {
  * Return Value: 1 if shift pressed, 0 otherwise
  * Side Effects: none
  */
-int32_t shift_pressed(void) {
+i32 shift_pressed(void) {
   return key_state[SCS1_PRESSED_LEFTSHIFT] | key_state[SCS1_PRESSED_RIGHTSHIFT];
 }
 
@@ -315,4 +315,4 @@ int32_t shift_pressed(void) {
  * Return Value: 1 if capslock pressed, 0 otherwise
  * Side Effects: none
  */
-int32_t capslock_pressed(void) { return key_state[SCS1_PRESSED_CAPSLOCK]; }
+i32 capslock_pressed(void) { return key_state[SCS1_PRESSED_CAPSLOCK]; }

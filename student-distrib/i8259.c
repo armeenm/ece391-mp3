@@ -7,8 +7,8 @@
 #include "util.h"
 
 /* Interrupt masks to determine which interrupts are enabled and disabled */
-uint8_t master_mask = 0xFF; /* IRQs 0-7  */
-uint8_t slave_mask = 0xFF;  /* IRQs 8-15 */
+u8 master_mask = 0xFF; /* IRQs 0-7  */
+u8 slave_mask = 0xFF;  /* IRQs 8-15 */
 
 /* Initialize the 8259 PIC
  * See 8259 datasheet for more information
@@ -39,35 +39,35 @@ void init_i8259(void) {
 }
 
 /* Enable (unmask) the specified IRQ */
-void enable_irq(uint32_t const irq_num) {
+void enable_irq(u32 const irq_num) {
   ASSERT(irq_num < 16);
 
   /* Check if IRQ on master or slave */
   if (irq_num < 8) {
-    master_mask &= (uint8_t) ~(1U << irq_num);
+    master_mask &= (u8) ~(1U << irq_num);
     outb(master_mask, MASTER_8259_DATA_PORT);
   } else {
-    slave_mask &= (uint8_t) ~(1U << (irq_num - 8U));
+    slave_mask &= (u8) ~(1U << (irq_num - 8U));
     outb(slave_mask, SLAVE_8259_DATA_PORT);
   }
 }
 
 /* Disable (mask) the specified IRQ */
-void disable_irq(uint32_t const irq_num) {
+void disable_irq(u32 const irq_num) {
   ASSERT(irq_num < 16);
 
   /* Check if IRQ on master or slave */
   if (irq_num < 8) {
-    master_mask |= (uint8_t)(1U << irq_num);
+    master_mask |= (u8)(1U << irq_num);
     outb(master_mask, MASTER_8259_DATA_PORT);
   } else {
-    slave_mask |= (uint8_t)(1U << (irq_num - 8U));
+    slave_mask |= (u8)(1U << (irq_num - 8U));
     outb(slave_mask, SLAVE_8259_DATA_PORT);
   }
 }
 
 /* Send end-of-interrupt signal for the specified IRQ */
-void send_eoi(uint32_t const irq_num) {
+void send_eoi(u32 const irq_num) {
   ASSERT(irq_num < 16);
 
   if (irq_num < 8)
