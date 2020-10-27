@@ -45,7 +45,7 @@ i32 get_line_buf(char* const buf, i32 const nbytes) {
   i32 strlen;
   i32 nl_idx;
 
-  if (nbytes <= 0)
+  if (nbytes <= 0 || !buf)
     return -1;
 
   terminal_read_flag = 1;
@@ -193,8 +193,7 @@ void handle_keypress(SCSet1 const scancode) {
   }
 
   /* This section handles key releases */
-  else if ((u32)scancode > SCS1_KEYPRESS_RELEASE_OFFSET &&
-           (u32)scancode <= SCS1_RELEASED_F12) {
+  else if ((u32)scancode > SCS1_KEYPRESS_RELEASE_OFFSET && (u32)scancode <= SCS1_RELEASED_F12) {
 
     /* If capslock is released reset repeat to 0 so we can toggle it again */
     if (scancode == SCS1_RELEASED_CAPSLOCK) {
