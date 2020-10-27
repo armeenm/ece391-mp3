@@ -17,7 +17,7 @@
  * Function: Creates page table & page directories.
  *           Initializes CR0, CR3, and CR4 to enable paging.
  */
-void init_paging() {
+void init_paging(void) {
   /* Make sure to flush TLB in the future when this function gets reused */
 
   /* Initialize page tables */

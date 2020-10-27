@@ -1,7 +1,7 @@
 #include "syscall.h"
 #include "lib.h"
 
-void irqh_syscall() {
+void irqh_syscall(void) {
   SyscallType type;
   uint32_t arg1, arg2, arg3;
 

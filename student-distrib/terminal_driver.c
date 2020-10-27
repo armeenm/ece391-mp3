@@ -1,6 +1,3 @@
-#ifndef TERMINAL_DRIVER_H
-#define TERMINAL_DRIVER_H
-
 #include "terminal_driver.h"
 #include "keyboard.h"
 
@@ -63,5 +60,3 @@ int32_t terminal_open(int32_t UNUSED(fd)) { return 0; }
  * Function: Closes the terminal driver and deallocates any memory it needs to.
  */
 int32_t terminal_close(int32_t UNUSED(fd)) { return 0; }
-
-#endif

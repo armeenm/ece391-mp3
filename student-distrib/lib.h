@@ -13,8 +13,7 @@
 #define VGA_CURSOR_LOW_REGISTER 0x0F
 
 int32_t printf(int8_t* format, ...);
-void putc(uint8_t c);
-void putc2(uint8_t c);
+void putc(int8_t c);
 int32_t puts(int8_t* s);
 int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix);
 int8_t* strrev(int8_t* s);
@@ -35,14 +34,14 @@ int32_t bad_userspace_addr(const void* addr, int32_t len);
 int32_t safe_strncpy(int8_t* dest, const int8_t* src, int32_t n);
 
 void test_interrupts(void);
-int get_screen_x();
-int get_screen_y();
-void set_screen_x(uint32_t x);
-void set_screen_y(uint32_t y);
-void scroll_up();
-void clear_screen_xy();
-void set_cursor_location(uint32_t x, uint32_t y);
-void set_screen_xy(uint32_t x, uint32_t y);
+uint16_t get_screen_x(void);
+uint16_t get_screen_y(void);
+void set_screen_x(uint16_t x);
+void set_screen_y(uint16_t y);
+void scroll_up(void);
+void clear_screen_xy(void);
+void set_cursor_location(uint16_t x, uint16_t y);
+void set_screen_xy(uint16_t x, uint16_t y);
 
 /* Port read functions */
 /* Inb reads a byte and returns its value as a zero-extended 32-bit

@@ -44,10 +44,10 @@ void enable_irq(uint32_t const irq_num) {
 
   /* Check if IRQ on master or slave */
   if (irq_num < 8) {
-    master_mask &= ~(1 << irq_num);
+    master_mask &= (uint8_t) ~(1U << irq_num);
     outb(master_mask, MASTER_8259_DATA_PORT);
   } else {
-    slave_mask &= ~(1 << (irq_num - 8));
+    slave_mask &= (uint8_t) ~(1U << (irq_num - 8U));
     outb(slave_mask, SLAVE_8259_DATA_PORT);
   }
 }
@@ -58,10 +58,10 @@ void disable_irq(uint32_t const irq_num) {
 
   /* Check if IRQ on master or slave */
   if (irq_num < 8) {
-    master_mask |= 1 << irq_num;
+    master_mask |= (uint8_t)(1U << irq_num);
     outb(master_mask, MASTER_8259_DATA_PORT);
   } else {
-    slave_mask |= 1 << (irq_num - 8);
+    slave_mask |= (uint8_t)(1U << (irq_num - 8U));
     outb(slave_mask, SLAVE_8259_DATA_PORT);
   }
 }

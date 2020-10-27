@@ -15,6 +15,7 @@
 
 #define I_EXC_DFL(name, str, clear)                                                                \
   ASM_EXC(name)                                                                                    \
+  void name(void);                                                                                 \
   void name(void) {                                                                                \
     cli();                                                                                         \
     CLR_##clear                                                                                    \
@@ -24,6 +25,7 @@
 
 #define I_EXC_DFL_ERRC(name, str, clear)                                                           \
   ASM_EXC(name)                                                                                    \
+  void name(void);                                                                                 \
   void name(void) {                                                                                \
     cli();                                                                                         \
     CLR_##clear                                                                                    \

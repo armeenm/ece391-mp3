@@ -23,7 +23,7 @@ enum {
 };
 
 /* Enable paging and setup page directory and page table */
-void init_paging();
+void init_paging(void);
 
 #endif
 #endif

@@ -2,14 +2,11 @@
 
 #include "lib.h"
 
-#define VIDEO 0xB8000
-#define NUM_COLS 80
-#define NUM_ROWS 25
-#define ATTRIB 0x2
+enum { ATTRIB = 2, NUM_ROWS = 25, NUM_COLS = 80, VIDEO = 0xB8000 };
 
-static uint32_t screen_x;
-static uint32_t screen_y;
-static char* video_mem = (char*)VIDEO;
+static uint16_t screen_x;
+static uint16_t screen_y;
+static int8_t* video_mem = (int8_t*)VIDEO;
 
 /* void clear(void);
  * Inputs: void
@@ -30,7 +27,7 @@ void clear(void) {
  * Return Value: none
  * Function: Scrolls up the video memory
  */
-void scroll_up() {
+void scroll_up(void) {
   /* Copy the rows except the first one into the start of video memory */
   video_mem = (char*)memmove(video_mem, video_mem + ((NUM_COLS * 1) << 1),
                              (NUM_COLS * (NUM_ROWS - 1) << 1));
@@ -48,7 +45,7 @@ void scroll_up() {
  * Return Value: none
  * Function: clears the screen position at the current location
  */
-void clear_screen_xy() {
+void clear_screen_xy(void) {
   /* Sets char to ' ' at the current screen location */
   video_mem[(NUM_COLS * screen_y + screen_x) << 1] = ' ';
   /* sets attribute to ATTRIB at the current location */
@@ -61,8 +58,8 @@ void clear_screen_xy() {
  * Return Value: none
  * Function: sets the VGA cursor location
  */
-void set_cursor_location(uint32_t const x, uint32_t const y) {
-  uint16_t const vga_position = y * NUM_COLS + x;
+void set_cursor_location(uint16_t const x, uint16_t const y) {
+  uint16_t const vga_position = (uint16_t)(y * NUM_COLS + x);
 
   outb(VGA_CURSOR_HIGH_REGISTER, 0x3D4);
   outb(vga_position >> 8, VGA_DATA_REGISTER);
@@ -76,7 +73,7 @@ void set_cursor_location(uint32_t const x, uint32_t const y) {
  * Return Value: none
  * Function: set value of screen_x to x
  */
-void set_screen_x(uint32_t const x) {
+void set_screen_x(uint16_t const x) {
   if (x < NUM_COLS) {
     /* If valid position set x position to x and set the cursor */
     screen_x = x;
@@ -89,7 +86,7 @@ void set_screen_x(uint32_t const x) {
  * Return Value: none
  * Function: set value of screen_y to y
  */
-void set_screen_y(uint32_t const y) {
+void set_screen_y(uint16_t const y) {
   if (y < NUM_ROWS) {
     /* If valid position set y position to y and set the cursor */
     screen_y = y;
@@ -103,7 +100,7 @@ void set_screen_y(uint32_t const y) {
  * Return Value: none
  * Function: set value of screen_y to y, screen_x to x
  */
-void set_screen_xy(uint32_t const x, uint32_t const y) {
+void set_screen_xy(uint16_t const x, uint16_t const y) {
   if (y < NUM_ROWS && x < NUM_COLS) {
     /* If valid position set y position to y and set the cursor */
     screen_y = y;
@@ -116,13 +113,13 @@ void set_screen_xy(uint32_t const x, uint32_t const y) {
  * Inputs: void
  * Return Value: int
  * Function: get value of screen_x */
-int get_screen_x() { return screen_x; }
+uint16_t get_screen_x(void) { return screen_x; }
 
 /* int get_screen_y();
  * Inputs: void
  * Return Value: int
  * Function: get value of screen_y */
-int get_screen_y() { return screen_y; }
+uint16_t get_screen_y(void) { return screen_y; }
 
 /* Standard printf().
  * Only supports the following format strings:
@@ -183,7 +180,7 @@ int32_t printf(int8_t* format, ...) {
           int32_t starting_index;
           int32_t i;
           itoa(*((uint32_t*)esp), &conv_buf[8], 16);
-          i = starting_index = strlen(&conv_buf[8]);
+          i = starting_index = (int32_t)strlen(&conv_buf[8]);
           while (i < 8) {
             conv_buf[i] = '0';
             i++;
@@ -207,9 +204,9 @@ int32_t printf(int8_t* format, ...) {
         int32_t value = *((int32_t*)esp);
         if (value < 0) {
           conv_buf[0] = '-';
-          itoa(-value, &conv_buf[1], 10);
+          itoa((uint32_t)-value, &conv_buf[1], 10);
         } else {
-          itoa(value, conv_buf, 10);
+          itoa((uint32_t)value, conv_buf, 10);
         }
         puts(conv_buf);
         esp++;
@@ -217,7 +214,7 @@ int32_t printf(int8_t* format, ...) {
 
       /* Print a single character */
       case 'c':
-        putc((uint8_t) * ((int32_t*)esp));
+        putc((int8_t) * ((int32_t*)esp));
         esp++;
         break;
 
@@ -259,10 +256,11 @@ int32_t puts(int8_t* s) {
  * Inputs: uint_8* c = character to print
  * Return Value: void
  *  Function: Output a character to the console */
-void putc(uint8_t c) {
+void putc(int8_t c) {
   if (c == 0)
     return;
-  if (c == '\n' || c == '\r') {
+
+  if (c == '\n') {
     /* If there is still screenspace left then go to next line */
     if (screen_y < NUM_ROWS - 1) {
       screen_y++;
@@ -275,8 +273,8 @@ void putc(uint8_t c) {
 
   } else if (c == '\b') {
     /* Get x and y pos  */
-    int x = get_screen_x();
-    int y = get_screen_y();
+    uint16_t x = get_screen_x();
+    uint16_t y = get_screen_y();
     /* if x is zero go to previous line */
     if (x == 0 && y > 0) {
       set_screen_xy(NUM_COLS - 1, y - 1);
@@ -286,27 +284,33 @@ void putc(uint8_t c) {
     }
     /* clear the character at the current location */
     clear_screen_xy();
+
   } else if (c == '\t') {
     /* if tab use a space */
     putc(' ');
     return;
+
   } else {
-    *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
-    *(uint8_t*)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
-    screen_x++;
+    video_mem[(NUM_COLS * screen_y + screen_x) << 1] = c;
+    video_mem[((NUM_COLS * screen_y + screen_x) << 1) + 1] = ATTRIB;
+
+    ++screen_x;
+
     /* if it is a newline then go to the next line */
     if ((screen_x / NUM_COLS) > 0) {
+
       /* At the top of the screen scroll up */
-      if (screen_y == NUM_ROWS - 1) {
+      if (screen_y == NUM_ROWS - 1)
         scroll_up();
-      } else {
+      else {
         /* Otherwise go to the next row */
-        screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+        screen_y = (uint16_t)((screen_y + (screen_x / NUM_COLS)) % NUM_ROWS);
       }
     }
     /* Make sure x is bounded by the columns */
     screen_x %= NUM_COLS;
   }
+
   /* Set location of the cursor based on new screen_x and screen_y */
   set_cursor_location(screen_x, screen_y);
 }
@@ -336,10 +340,10 @@ int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix) {
    * opposite of how the number should be printed.  We'll reverse the
    * characters later. */
   while (newval > 0) {
-    i = newval % radix;
+    i = (int32_t)newval % radix;
     *newbuf = lookup[i];
     newbuf++;
-    newval /= radix;
+    newval /= (uint32_t)radix;
   }
 
   /* Add a terminating NULL */
@@ -356,7 +360,7 @@ int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix) {
 int8_t* strrev(int8_t* s) {
   register int8_t tmp;
   register int32_t beg = 0;
-  register int32_t end = strlen(s) - 1;
+  register int32_t end = (int32_t)strlen(s) - 1;
 
   while (beg < end) {
     tmp = s[end];
@@ -372,7 +376,7 @@ int8_t* strrev(int8_t* s) {
  * Inputs: const int8_t* s = string to take length of
  * Return Value: length of string s
  * Function: return length of string s */
-uint32_t strlen(const int8_t* s) {
+uint32_t strlen(int8_t const* s) {
   register uint32_t len = 0;
   while (s[len] != '\0')
     len++;

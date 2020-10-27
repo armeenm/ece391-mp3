@@ -2,6 +2,7 @@
  * vim:ts=4 noexpandtab
  */
 
+#include "kernel.h"
 #include "debug.h"
 #include "fs.h"
 #include "i8259.h"
@@ -26,7 +27,7 @@ int test(void) { return 0; }
 
 /* Check if MAGIC is valid and print the Multiboot information structure
    pointed by ADDR. */
-void entry(unsigned long magic, unsigned long addr) {
+void entry(uint32_t const magic, uint32_t const addr) {
 
   multiboot_info_t* mbi;
 
@@ -59,14 +60,14 @@ void entry(unsigned long magic, unsigned long addr) {
     printf("cmdline = %s\n", (char*)mbi->cmdline);
 
   if (CHECK_FLAG(mbi->flags, 3)) {
-    unsigned int mod_count = 0;
-    int i;
+    uint32_t mod_count = 0;
+    uint32_t i;
     module_t* mod = (module_t*)mbi->mods_addr;
     while (mod_count < mbi->mods_count) {
       printf("Module %d loaded at address: 0x%#x\n", mod_count, (unsigned int)mod->mod_start);
       printf("Module %d ends at address: 0x%#x\n", mod_count, (unsigned int)mod->mod_end);
       printf("First few bytes of module:\n");
-      for (i = 0; i < 16; i++) {
+      for (i = 0; i < 16; ++i) {
         printf("0x%x ", *((char*)(mod->mod_start + i)));
       }
       printf("\n");
@@ -152,8 +153,8 @@ void entry(unsigned long magic, unsigned long addr) {
 
   if (open_fs(mod->mod_start, mod->mod_end)) {
     printf("Failed to open filesystem!\n");
-	/* If it fails, just loop (for now) */
-	HLTLOOP;
+    /* If it fails, just loop (for now) */
+    HLTLOOP;
   }
 
   clear();

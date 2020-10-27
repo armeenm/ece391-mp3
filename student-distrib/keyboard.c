@@ -42,7 +42,7 @@ int contains_newline(int8_t const* const buf, int32_t const size) {
  * the current line buf
  */
 int32_t get_line_buf(char* const buf, int32_t const nbytes) {
-  uint32_t strlen;
+  int32_t strlen;
   int32_t nl_idx;
 
   if (nbytes <= 0)
@@ -57,10 +57,10 @@ int32_t get_line_buf(char* const buf, int32_t const nbytes) {
   /* TODO: What should we do if nl_idx > nbytes? */
 
   {
-    uint32_t const limit = MIN(nl_idx + 1, nbytes);
+    int32_t const limit = MIN(nl_idx + 1, nbytes);
 
     /* Copy from the line buf to the buf */
-    memcpy(buf, line_buf, limit);
+    memcpy(buf, line_buf, (uint32_t)limit);
 
     /* Set the size of the string */
     strlen = limit;
@@ -83,7 +83,7 @@ int32_t get_line_buf(char* const buf, int32_t const nbytes) {
  * Return Value: None
  * Side Effects: Enables the keyboard IRQ.
  */
-void init_keyboard() {
+void init_keyboard(void) {
   /* Enable IRQ, clear multi-byte and caps-lock vars */
   enable_irq(KEYBOARD_IRQ);
   multi_byte = 0;
@@ -129,7 +129,7 @@ void handle_keypress(SCSet1 const scancode) {
 
   } else if (scancode > 0 && scancode < SCS1_PRESSED_F12) {
     /* Get the printable keycode if any */
-    char const disp = handle_disp(keycodes[scancode]);
+    int8_t const disp = handle_disp(keycodes[scancode]);
 
     /* If capslock is pressed and is not being held down NOT the key_state  */
     if (scancode == SCS1_PRESSED_CAPSLOCK && !caps_lock_repeat) {
@@ -150,7 +150,7 @@ void handle_keypress(SCSet1 const scancode) {
       // Todo: let's not have the keyboard setup the screen again? maybe call out to shell?
       if (terminal_read_flag) {
         /* Write to terminal to put "thanOS> " in */
-        terminal_write(0, TERMINAL_TEXT, strlen(TERMINAL_TEXT));
+        terminal_write(0, SHELL_PS1, sizeof(SHELL_PS1));
 
         /* Write what's in the input buf */
         for (i = 0; i < line_buf_index; ++i)
@@ -193,7 +193,8 @@ void handle_keypress(SCSet1 const scancode) {
   }
 
   /* This section handles key releases */
-  else if (scancode > SCS1_KEYPRESS_RELEASE_OFFSET && scancode <= SCS1_RELEASED_F12) {
+  else if ((uint32_t)scancode > SCS1_KEYPRESS_RELEASE_OFFSET &&
+           (uint32_t)scancode <= SCS1_RELEASED_F12) {
 
     /* If capslock is released reset repeat to 0 so we can toggle it again */
     if (scancode == SCS1_RELEASED_CAPSLOCK) {
@@ -215,7 +216,7 @@ void handle_keypress(SCSet1 const scancode) {
  * Return Value: disp - the changed or unchanged value of the handled disp character
  * Side Effects: none
  */
-char handle_disp(char disp) {
+int8_t handle_disp(int8_t disp) {
   /* If shift is pressed or capslock then print its shift/capslock modified value */
   if (shift_pressed() || (capslock_pressed() && disp >= 'a' && disp <= 'z')) {
 
@@ -284,7 +285,7 @@ char handle_disp(char disp) {
  * Return Value: none
  * Side Effects: Clears the line_buf and resets the index to 0
  */
-void clear_line_buf() {
+void clear_line_buf(void) {
   /* Iterate through the entire line buf */
   uint32_t i;
 
@@ -303,7 +304,7 @@ void clear_line_buf() {
  * Return Value: 1 if shift pressed, 0 otherwise
  * Side Effects: none
  */
-int32_t shift_pressed() {
+int32_t shift_pressed(void) {
   return key_state[SCS1_PRESSED_LEFTSHIFT] | key_state[SCS1_PRESSED_RIGHTSHIFT];
 }
 
@@ -314,4 +315,4 @@ int32_t shift_pressed() {
  * Return Value: 1 if capslock pressed, 0 otherwise
  * Side Effects: none
  */
-int32_t capslock_pressed() { return key_state[SCS1_PRESSED_CAPSLOCK]; }
+int32_t capslock_pressed(void) { return key_state[SCS1_PRESSED_CAPSLOCK]; }

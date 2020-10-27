@@ -132,9 +132,9 @@ extern uint32_t pgtbl[PGTBL_LEN];
 /* Sets runtime-settable parameters in the GDT entry for the LDT */
 #define SET_LDT_PARAMS(str, addr, lim)                                                             \
   do {                                                                                             \
-    str.base_31_24 = ((uint32_t)(addr)&0xFF000000) >> 24;                                          \
-    str.base_23_16 = ((uint32_t)(addr)&0x00FF0000) >> 16;                                          \
-    str.base_15_00 = (uint32_t)(addr)&0x0000FFFF;                                                  \
+    str.base_31_24 = (uint8_t)(((uint32_t)(addr)&0xFF000000) >> 24);                               \
+    str.base_23_16 = (uint8_t)(((uint32_t)(addr)&0x00FF0000) >> 16);                               \
+    str.base_15_00 = (uint16_t)((uint32_t)(addr)&0x0000FFFF);                                      \
     str.seg_lim_19_16 = ((lim)&0x000F0000) >> 16;                                                  \
     str.seg_lim_15_00 = (lim)&0x0000FFFF;                                                          \
   } while (0)
@@ -142,9 +142,9 @@ extern uint32_t pgtbl[PGTBL_LEN];
 /* Sets runtime parameters for the TSS */
 #define SET_TSS_PARAMS(str, addr, lim)                                                             \
   do {                                                                                             \
-    str.base_31_24 = ((uint32_t)(addr)&0xFF000000) >> 24;                                          \
-    str.base_23_16 = ((uint32_t)(addr)&0x00FF0000) >> 16;                                          \
-    str.base_15_00 = (uint32_t)(addr)&0x0000FFFF;                                                  \
+    str.base_31_24 = (uint8_t)(((uint32_t)(addr)&0xFF000000) >> 24);                               \
+    str.base_23_16 = (uint8_t)(((uint32_t)(addr)&0x00FF0000) >> 16);                               \
+    str.base_15_00 = (uint16_t)((uint32_t)(addr)&0x0000FFFF);                                      \
     str.seg_lim_19_16 = ((lim)&0x000F0000) >> 16;                                                  \
     str.seg_lim_15_00 = (lim)&0x0000FFFF;                                                          \
   } while (0)
@@ -175,8 +175,8 @@ extern x86_desc_t idt_desc_ptr;
 /* Sets runtime parameters for an IDT entry */
 #define SET_IDT_ENTRY(str, handler)                                                                \
   do {                                                                                             \
-    str.offset_31_16 = ((uint32_t)(handler)&0xFFFF0000) >> 16;                                     \
-    str.offset_15_00 = ((uint32_t)(handler)&0xFFFF);                                               \
+    str.offset_31_16 = (uint16_t)(((uint32_t)(handler)&0xFFFF0000) >> 16);                         \
+    str.offset_15_00 = (uint16_t)((uint32_t)(handler)&0xFFFF);                                     \
   } while (0)
 
 /* Load task register.  This macro takes a 16-bit index into the GDT,

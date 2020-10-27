@@ -12,8 +12,8 @@ static virtual_rtc virtual_rtc_instance;
  * Return Value: None
  * Side Effects: Writes to RTC ports, enables RTC IRQ.
  */
-void init_rtc() {
-  uint8_t prev;
+void init_rtc(void) {
+  uint32_t prev;
 
   enable_irq(RTC_IRQ);
 
@@ -44,15 +44,16 @@ void init_rtc() {
  * Return Value: None
  * Side Effects: Reads from RTC port C to ack, sends EOI.
  */
-void irqh_rtc() {
+void irqh_rtc(void) {
   ack_rtc_int();
   virtual_rtc_instance.int_count++;
   // We only set the flag to indicate a virtualized interrupt occured (eg 1024HZ <= 2HZ * 512 ints)
-  virtual_rtc_instance.flag = (virtual_rtc_instance.real_freq <= virtual_rtc_instance.virt_freq * virtual_rtc_instance.int_count);
+  virtual_rtc_instance.flag = (virtual_rtc_instance.real_freq <=
+                               virtual_rtc_instance.virt_freq * virtual_rtc_instance.int_count);
   if (virtual_rtc_instance.flag) {
     virtual_rtc_instance.int_count = 0;
   }
-#if RTC_RANDOM_TEXT
+#if RTC_RANDOM_TEXT_DEMO
   test_interrupts();
 #endif
 
@@ -77,17 +78,18 @@ int32_t rtc_read(int32_t UNUSED(fd), void* UNUSED(buf), int32_t UNUSED(nbytes)) 
 
 /* rtc_write
  * Description: Set the virtual frequency from buffer if it is a vliad poweer of 2 freq.
- * Inputs: int32_t fd, void* buf (the pointer to an int holding frequency requested), int32_t nbytes (can only be 4 bytes)
- * Outputs: none
- * Return Value: int32_t, -1 on invalid freq, sizeof(int) when working
- * Side Effects: none
+ * Inputs: int32_t fd, void* buf (the pointer to an int holding frequency requested), int32_t nbytes
+ * (can only be 4 bytes) Outputs: none Return Value: int32_t, -1 on invalid freq, sizeof(int) when
+ * working Side Effects: none
  */
-int32_t rtc_write(int32_t UNUSED(fd), const void* buf, int32_t nbytes) {
-  // Todo: VALIDATE buf location in memory to prevent ring 0 memory access
+int32_t rtc_write(int32_t UNUSED(fd), void const* buf, int32_t const nbytes) {
+  // TODO: VALIDATE buf location in memory to prevent ring 0 memory access
   // try to set the freq, if it's not valid, this returns -1 and it's failed
+
   if (!buf || nbytes != sizeof(uint32_t))
     return -1;
-  return (set_virtual_freq_rtc(*(uint32_t*)buf)) ? -1 : (int32_t)sizeof(uint32_t);
+
+  return (set_virtual_freq_rtc(*(uint32_t const*)buf)) ? -1 : (int32_t)sizeof(uint32_t);
 }
 
 /* rtc_open
@@ -102,7 +104,6 @@ int32_t rtc_open(const uint8_t* UNUSED(filename)) {
   return 0;
 }
 
-
 /* rtc_close
  * Description: handles system call case, but does nothing
  * Inputs: none
@@ -112,7 +113,6 @@ int32_t rtc_open(const uint8_t* UNUSED(filename)) {
  */
 int32_t rtc_close(int32_t UNUSED(fd)) { return 0; }
 
-
 /* ack_rtc_int
  * Description: ACKs an RTC interrupt.
  * Inputs: None
@@ -120,7 +120,7 @@ int32_t rtc_close(int32_t UNUSED(fd)) { return 0; }
  * Return Value: None
  * Side Effects: RTC port I/O.
  */
-uint8_t ack_rtc_int() {
+uint32_t ack_rtc_int(void) {
   /* Empty the buffer by reading details from reg C */
   outb(RTC_REG_C, RTC_SEL_PORT);
   return inb(RTC_DATA_PORT);
@@ -134,7 +134,7 @@ uint8_t ack_rtc_int() {
  * Side Effects: Writes to RTC ports.
  */
 void set_real_freq_rtc(RTCRate const rate) {
-  uint8_t prev;
+  uint32_t prev;
 
   outb(RTC_REG_A | RTC_DIS_NMI, RTC_SEL_PORT);
   prev = inb(RTC_DATA_PORT);
@@ -150,7 +150,7 @@ void set_real_freq_rtc(RTCRate const rate) {
 /* set_virtual_freq_rtc
  * Description: Sets the frequency of the RTC's interrupts (virtually)
  * Inputs: uint32_t freq: a power of 2 frequency that's less than the real freq of the RTC
- * Outputs: Modifies virtual_rtc_instance. 
+ * Outputs: Modifies virtual_rtc_instance.
  * Return Value: int: -1 = invalid frequency, 0 = success
  * Side Effects: none
  */

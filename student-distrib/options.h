@@ -1,26 +1,30 @@
 #ifndef OPTIONS_H
 #define OPTIONS_H
 
-#define TESTS_ENABLED 0
+#define TESTS_ENABLED 1
 
-#define RTC_RANDOM_TEXT 0
+/* BSOD */
+#define ENABLE_TEST_DIV_ZERO 0
+#define ENABLE_TEST_UD 0
+#define ENABLE_TEST_NULLPTR 0
+#define ENABLE_TEST_USPACE_PTR 0
+#define ENABLE_TEST_VIDMEM_EDGE 0
 
-#define RTC_FREQ_CHANGE_DEMO 0
-#define TERMINAL_TEST 1
+#define ENABLE_TEST_IDT 1
+#define ENABLE_TEST_PAGING 1
+#define ENABLE_TEST_KEYPRESS 1
+#define ENABLE_TEST_TERMINAL 1
+#define ENABLE_TEST_SHELL 1
+#define ENABLE_TEST_LS 1
+#define ENABLE_TEST_CAT_FRAME0 1
+#define ENABLE_TEST_CAT_VLTWLN 1
+#define ENABLE_TEST_CAT_HELLO 1
+#define ENABLE_TEST_RTC_WRITE 1
+#define ENABLE_TEST_RTC_READ 1
+#define ENABLE_TEST_FS 1
 
-#define LS_TEST 0
-
-/* Enable this to use any of the cat tests */
-#define CAT_TEST 0
-#define FRAME0_CAT_TEST 0
-#define VLTWVLN_CAT_TEST 0
-#define HELLO_CAT_TEST 0
-
-/* Should BSOD */
-#define DIV_ZERO_TEST 0
-#define INVLD_OPCODE_TEST 0
-#define NULLPTR_TEST 0
-#define USPACE_PTR_TEST 0
-#define VIDMEM_EDGE_TEST 0
+/* RTC demonstrations */
+#define RTC_RANDOM_TEXT_DEMO 0 /* CP1 */
+#define ENABLE_TEST_RTC_DEMO 0 /* CP2 */
 
 #endif

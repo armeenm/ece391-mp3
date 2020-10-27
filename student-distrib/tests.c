@@ -12,21 +12,31 @@
 
 enum { FAIL, PASS };
 
-/* format these macros as you see fit */
-#define TEST_HEADER                                                                                \
-  printf("[TEST %s] Running %s at %s:%d\n", __FUNCTION__, __FUNCTION__, __FILE__, __LINE__)
-
-#define TEST_PASS printf("[TEST %s] PASS\n", __FUNCTION__);
-
 #define TEST_FAIL_MSG(str, ...)                                                                    \
   do {                                                                                             \
     clear();                                                                                       \
     printf("[TEST %s] FAIL: %s:%d; " str "\n", __FUNCTION__, __FILE__, __LINE__, ##__VA_ARGS__);   \
     asm volatile("int $15");                                                                       \
   } while (0)
+
 #define TEST_FAIL TEST_FAIL_MSG("")
 
-/* Checkpoint 1 tests */
+#define TEST_PASS printf("[TEST %s] PASS\n", __FUNCTION__)
+
+#define TEST(name)                                                                                 \
+  static void TEST_##name(void);                                                                   \
+  static void TEST_##name(void) {                                                                  \
+    if (!ENABLE_TEST_##name)                                                                       \
+      return;                                                                                      \
+    printf("[TEST %s] Running at %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
+
+#define TEST_END                                                                                   \
+  TEST_PASS;                                                                                       \
+  }
+
+#define TEST_END_FAIL                                                                              \
+  TEST_FAIL;                                                                                       \
+  }
 
 enum {
   PDE_USED = PG_PRESENT | PG_RW | PG_USPACE | PG_SIZE,
@@ -34,7 +44,17 @@ enum {
   PDE_USED_4M = PDE_USED | 0xFFC00000
 };
 
-int idt_test_helper(int const i, GateType const gate_type, Dpl const dpl) {
+/***** CHECKPOINT 1 {{{ *****/
+
+/* Helpers */
+static int deref(uint32_t test);
+static int32_t NODISCARD PURE idt_test_helper(uint32_t i, GateType gate_type, Dpl dpl);
+
+/* Tests */
+
+static int deref(uint32_t test) { return *(int*)test; }
+
+static int32_t idt_test_helper(uint32_t const i, GateType const gate_type, Dpl const dpl) {
   GateTypeU const gate_type_u = {.val = gate_type};
 
   return (!idt[i].offset_15_00 && !idt[i].offset_31_16) || (idt[i].seg_selector != KERNEL_CS) ||
@@ -53,10 +73,8 @@ int idt_test_helper(int const i, GateType const gate_type, Dpl const dpl) {
  * Files: x86_desc.h/S
  */
 
-void idt_test() {
-  int i;
-
-  TEST_HEADER;
+TEST(IDT) {
+  uint32_t i;
 
   /* Check the first 21 entires */
   for (i = 0; i < 21; ++i)
@@ -69,16 +87,23 @@ void idt_test() {
       idt_test_helper(IDT_SYSCALL, INT, DPL3))
     TEST_FAIL;
 
-  TEST_PASS;
+  TEST_END;
 }
 
-/* int deref(int * test)
- * Description: Dereference an integer pointer
- * Inputs: test - integer pointer
- * Return Value: integer value at that point
- * Side Effects: none
- */
-int deref(uint32_t test) { return *(int*)test; }
+TEST(NULLPTR) {
+  deref(0);
+  TEST_END_FAIL;
+}
+
+TEST(USPACE_PTR) {
+  deref(0x10000000);
+  TEST_END_FAIL;
+}
+
+TEST(VIDMEM_EDGE) {
+  deref(0xB7FFF);
+  TEST_END_FAIL;
+}
 
 /* Paging Test
  * int page_test()
@@ -88,25 +113,8 @@ int deref(uint32_t test) { return *(int*)test; }
  * Side Effects: None
  * Coverage: Paging, null dereference, negative pointer deref, kernel space, userspace,
  */
-void page_test() {
+TEST(PAGING) {
   uint32_t i;
-
-  TEST_HEADER;
-
-  /* Access NULL pointer */
-#if NULLPTR_TEST
-  deref(0);
-#endif
-
-  /* Access pointer in 8MiB - 4GiB range (userspace) */
-#if USPACE_PTR_TEST
-  deref(0x10000000);
-#endif
-
-#if VIDMEM_EDGE_TEST
-  /* Access video memory */
-  deref(0xB7FFF);
-#endif
 
   /* Access pointer in kernel space (5MiB) */
   deref(0x4C4B40);
@@ -143,7 +151,7 @@ void page_test() {
   /* Check that the 4MB to 4GB range has the correct bits set (4MB entries, not present), no
    * address yet */
   for (i = 2; i < PGDIR_LEN; ++i)
-    if ((pgdir[i] & PDE_USED_4M & ~0x1) != ((i * PG_4M_START) | PG_RW | PG_USPACE | PG_SIZE))
+    if ((pgdir[i] & PDE_USED_4M & ~1U) != ((i * PG_4M_START) | PG_RW | PG_USPACE | PG_SIZE))
       TEST_FAIL_MSG("i: %u", i);
 
   /* Memory sanity check */
@@ -153,8 +161,42 @@ void page_test() {
   if (b != *a)
     TEST_FAIL;
 
-  TEST_PASS;
+  TEST_END;
 }
+
+/* int div_zero_except_test()
+ *  force div by zero exception to occur, if not handled, test will fail
+ * Inputs: None
+ * Outputs: Exception handled or FAIL
+ * Side Effects: compiler warning
+ * Coverage: vector 0x0
+ */
+TEST(DIV_ZERO) {
+  /* Fool the compiler warnings */
+  int y = 0;
+  // NOLINTNEXTLINE("div zero")
+  int const x = 391 / y;
+  (void)x;
+
+  TEST_END_FAIL;
+}
+
+/* int invalid_opcode()
+ *  force invalid op-code exception to occur, if not handled, test will fail
+ * Inputs: None
+ * Outputs: Exception handled or FAIL
+ * Side Effects: Causes a CPU exception to be thrown
+ * Coverage: Vector 0x6
+ */
+TEST(UD) {
+  asm volatile("ud2");
+
+  TEST_END_FAIL;
+}
+
+/***** }}} CHECKPOINT 1 *****/
+
+/***** CHECKPOINT 2 {{{ *****/
 
 /* Handle Keypress
  * int handle_keypress_test()
@@ -165,10 +207,8 @@ void page_test() {
  * Side Effects: Prints all valid keyboard characters
  * Coverage: Tests large negative to large postiive scancode inputs
  */
-void handle_keypress_test() {
-
+TEST(KEYPRESS) {
   clear();
-  TEST_HEADER;
 
   {
     int NUM_COLS = 80;
@@ -254,82 +294,46 @@ void handle_keypress_test() {
 
   putc('\n');
 
-  TEST_PASS;
+  TEST_END;
 }
 
-void terminal_test() {
+TEST(TERMINAL) {
   char buf[128] = {0};
 
-  TEST_HEADER;
-
   terminal_open(0);
-  clear();
 
   if (terminal_read(0, buf, -1) != -1)
     TEST_FAIL;
   if (terminal_write(0, "TEST", -1) != -1)
     TEST_FAIL;
 
-  TEST_PASS;
+  terminal_close(0);
 
-#if TERMINAL_TEST
-  {
-    int32_t size;
-    char * s = "Input: ";
+  TEST_END;
+}
 
-    for (;;) {
-      terminal_write(0, TERMINAL_TEXT, strlen(TERMINAL_TEXT));
-      size = terminal_read(0, buf, 128);
-      terminal_write(0, s, strlen(s));
-      terminal_write(0, buf, size);
-    }
+TEST(SHELL) {
+  int32_t size;
+  int8_t buf[128] = {0};
+  int8_t const* const s = "Input: ";
+
+  terminal_open(0);
+  clear();
+
+  for (;;) {
+    terminal_write(0, SHELL_PS1, sizeof(SHELL_PS1));
+    size = terminal_read(0, buf, 128);
+    terminal_write(0, s, (int32_t)strlen(s));
+    terminal_write(0, buf, size);
   }
-#endif
 
   terminal_close(0);
+
+  TEST_END;
 }
 
-/* int div_zero_except_test()
- *  force div by zero exception to occur, if not handled, test will fail
- * Inputs: None
- * Outputs: Exception handled or FAIL
- * Side Effects: compiler warning
- * Coverage: vector 0x0
- */
-void div_zero_test() {
-  TEST_HEADER;
-
-  {
-    /* Fool the compiler warnings */
-    int y = 0;
-    int const x = 391 / y;
-    (void)x;
-  }
-
-  TEST_FAIL;
-}
-
-/* int invalid_opcode()
- *  force invalid op-code exception to occur, if not handled, test will fail
- * Inputs: None
- * Outputs: Exception handled or FAIL
- * Side Effects: Causes a CPU exception to be thrown
- * Coverage: Vector 0x6
- */
-void invalid_opcode_test() {
-  TEST_HEADER;
-
-  asm volatile("ud2");
-
-  TEST_FAIL;
-}
-
-/* Checkpoint 2 tests */
-
-void ls_test() {
+TEST(LS) {
   char fname_buf[33] = {0};
-
-  TEST_HEADER;
 
   dir_open(0);
 
@@ -338,53 +342,45 @@ void ls_test() {
     memset(fname_buf, 0, 32);
   }
 
-  TEST_PASS;
+  TEST_END;
 }
 
-void cat_test() {
-  char buf[50000] = {0};
-  (void)buf;
+TEST(CAT_FRAME0) {
+  char buf[200] = {0};
 
   clear();
+  file_read("frame0.txt", (uint8_t*)buf, 0);
+  printf("File: frame0.txt\n%s\n", buf);
 
-  TEST_HEADER;
-
-#if FRAME0_CAT_TEST
-  {
-    file_read("frame0.txt", (uint8_t*)buf, 0);
-
-    printf("File: frame0.txt\n%s\n", buf);
-  }
-#endif
-
-#if VLTWVLN_CAT_TEST
-  {
-
-    file_read("verylargetextwithverylongname.txt", (uint8_t*)buf, 0);
-
-    printf("File: verylargetextwithverylongname.txt\n%s\n", buf);
-  }
-#endif
-
-#if HELLO_CAT_TEST
-  {
-    file_read("hello", (uint8_t*)buf, 0);
-
-    printf("File: hello\n");
-    buf[4] = '\0';
-    printf("First 4 bytes: %s\n", buf);
-    printf("Last 36 bytes: %s\n", &buf[5349 - 37]);
-  }
-#endif
-
-  TEST_PASS;
+  TEST_END;
 }
 
-void rtc_test() {
+TEST(CAT_VLTWLN) {
+  char buf[30000] = {0};
+
+  clear();
+  file_read("verylargetextwithverylongname.txt", (uint8_t*)buf, 0);
+  printf("File: verylargetextwithverylongname.txt\n%s\n", buf);
+
+  TEST_END;
+}
+
+TEST(CAT_HELLO) {
+  char buf[30000] = {0};
+
+  clear();
+  file_read("hello", (uint8_t*)buf, 0);
+  printf("File: hello\n");
+  buf[4] = '\0';
+  printf("First 4 bytes: %s\n", buf);
+  printf("Last 36 bytes: %s\n", &buf[5349 - 37]);
+
+  TEST_END;
+}
+
+TEST(RTC_DEMO) {
   int i, j;
   int freq;
-
-  TEST_HEADER;
 
   rtc_open(0);
 
@@ -401,11 +397,12 @@ void rtc_test() {
       rtc_read(0, 0, 4);
     }
   }
+
+  TEST_END;
 }
 
-void rtc_write_test() {
-  int i;
-  TEST_HEADER;
+TEST(RTC_WRITE) {
+  int32_t i;
 
   rtc_open(0);
 
@@ -430,31 +427,31 @@ void rtc_write_test() {
     TEST_FAIL;
 
   i = 256;
-  if (set_virtual_freq_rtc(i) != 0) // valid range and power of 2
+  if (set_virtual_freq_rtc((uint32_t)i) != 0) // valid range and power of 2
     TEST_FAIL;
 
   i = 391;
-  if (set_virtual_freq_rtc(i) != -1) // valid range and power of 2
+  if (set_virtual_freq_rtc((uint32_t)i) != -1) // valid range and power of 2
     TEST_FAIL;
 
-  TEST_PASS;
+  rtc_close(0);
+
+  TEST_END;
 }
 
-void rtc_read_test() {
-  TEST_HEADER;
-
+TEST(RTC_READ) {
   rtc_open(0);
   if (rtc_read(0, 0, 0)) // Read always works, 2Hz
     TEST_FAIL;
+  rtc_close(0);
 
-  TEST_PASS;
+  TEST_END;
 }
 
-void fs_test() {
-  TEST_HEADER;
-
+TEST(FS) {
   if (file_open(0))
     TEST_FAIL;
+
   if (dir_open(0))
     TEST_FAIL;
 
@@ -481,46 +478,36 @@ void fs_test() {
 
   if (read_dentry_by_index(0, 0) != -1)
     TEST_FAIL;
-  
+
   if (read_data(0, 0, 0, 0))
     TEST_FAIL;
 
-  TEST_PASS;
-
+  TEST_END;
 }
 
-/* Checkpoint 3 tests */
-/* Checkpoint 4 tests */
-/* Checkpoint 5 tests */
+/***** }}} CHECKPOINT 2 *****/
 
 /* Test suite entry point */
-void launch_tests() {
-#if DIV_ZERO_TEST
-  div_zero_test();
-#endif
+void launch_tests(void) {
+#if TESTS_ENABLED
+  TEST_DIV_ZERO();
+  TEST_UD();
+  TEST_NULLPTR();
+  TEST_USPACE_PTR();
+  TEST_VIDMEM_EDGE();
 
-#if INVALID_OPCODE_TEST
-  invalid_opcode_test();
-#endif
-
-  idt_test();
-  page_test();
-  handle_keypress_test();
-  fs_test();
-  rtc_write_test();
-  rtc_read_test();
-  terminal_test();
-
-
-#if LS_TEST
-  ls_test();
-#endif
-
-#if CAT_TEST
-  cat_test();
-#endif
-
-#if RTC_FREQ_CHANGE_DEMO
-  rtc_test();
+  TEST_IDT();
+  TEST_PAGING();
+  TEST_FS();
+  TEST_TERMINAL();
+  TEST_KEYPRESS();
+  TEST_RTC_DEMO();
+  TEST_RTC_WRITE();
+  TEST_RTC_READ();
+  TEST_LS();
+  TEST_CAT_FRAME0();
+  TEST_CAT_VLTWLN();
+  TEST_CAT_HELLO();
+  TEST_SHELL();
 #endif
 }
