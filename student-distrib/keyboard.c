@@ -42,7 +42,7 @@ int contains_newline(i8 const* const buf, i32 const size) {
  * the current line buf
  */
 i32 get_line_buf(char* const buf, i32 const nbytes) {
-  i32 strlen;
+  i32 lenstr;
   i32 nl_idx;
 
   if (nbytes <= 0 || !buf)
@@ -54,8 +54,6 @@ i32 get_line_buf(char* const buf, i32 const nbytes) {
   while ((nl_idx = contains_newline(line_buf, LINE_BUFFER_SIZE)) == -1)
     ;
 
-  /* TODO: What should we do if nl_idx > nbytes? */
-
   {
     i32 const limit = MIN(nl_idx + 1, nbytes);
 
@@ -63,7 +61,7 @@ i32 get_line_buf(char* const buf, i32 const nbytes) {
     memcpy(buf, line_buf, (u32)limit);
 
     /* Set the size of the string */
-    strlen = limit;
+    lenstr = limit;
   }
 
   /* Make sure that the last character is a newline */
@@ -74,7 +72,7 @@ i32 get_line_buf(char* const buf, i32 const nbytes) {
 
   terminal_read_flag = 0;
 
-  return strlen;
+  return lenstr;
 }
 
 /* init_keyboard

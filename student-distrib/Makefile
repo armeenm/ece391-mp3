@@ -4,9 +4,9 @@
 
 
 # Flags to use when compiling, preprocessing, assembling, and linking
-CFLAGS+=-Wall -Wextra -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wconversion \
+CFLAGS+=-Wall -Wextra -Wshadow -Wstrict-prototypes -Wmissing-prototypes \
 				-Wno-missing-braces -Wno-missing-field-initializers -Wcast-align -Wswitch-enum \
-				-Winline -Wunreachable-code -Wredundant-decls -Wlogical-op -Wfloat-equal -Wstrict-aliasing=2 -Wstrict-overflow=5 \
+				-Winline -Wredundant-decls -Wfloat-equal -Wstrict-aliasing=2 \
 				-Wpointer-arith -Wundef -Wnested-externs -Wcast-qual -Wold-style-definition -Wformat=2 -Wbad-function-cast \
 				-fno-builtin -fno-stack-protector -nostdlib -m32
 ASFLAGS+=-m32
