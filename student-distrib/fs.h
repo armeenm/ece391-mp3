@@ -9,22 +9,22 @@ enum { FS_MAX_DIR_ENTRIES = 63, FS_FNAME_LEN = 32, FS_INODE_DATA_LEN = 1023, FS_
 typedef enum FileType { FT_RTC, FT_DIR, FT_REG } FileType;
 
 typedef struct FsStats {
-  uint32_t direntry_cnt;
-  uint32_t inode_cnt;
-  uint32_t datablk_cnt;
-  uint8_t reserved[52];
+  u32 direntry_cnt;
+  u32 inode_cnt;
+  u32 datablk_cnt;
+  u8 reserved[52];
 } FsStats;
 
 typedef struct DirEntry {
-  int8_t filename[FS_FNAME_LEN];
+  i8 filename[FS_FNAME_LEN];
   FileType filetype;
-  uint32_t inode_idx;
-  uint8_t reserved[24];
+  u32 inode_idx;
+  u8 reserved[24];
 } DirEntry;
 
 typedef struct INode {
-  uint32_t size;
-  uint32_t data[FS_INODE_DATA_LEN];
+  u32 size;
+  u32 data[FS_INODE_DATA_LEN];
 } INode;
 
 typedef struct Bootblk {
@@ -33,23 +33,23 @@ typedef struct Bootblk {
 } Bootblk;
 
 typedef struct Datablk {
-  uint8_t data[FS_BLK_SIZE];
+  u8 data[FS_BLK_SIZE];
 } Datablk;
 
-int32_t open_fs(uint32_t start, uint32_t end);
+i32 open_fs(u32 start, u32 end);
 
-int32_t file_open(const uint8_t * filename);
-int32_t file_close(int32_t fd);
-int32_t file_read(int8_t const* fname, uint8_t* buf, uint32_t offset);
-int32_t file_write(int32_t fd, const void* buf, int32_t nbytes);
+i32 file_open(const u8* filename);
+i32 file_close(i32 fd);
+i32 file_read(i8 const* fname, u8* buf, u32 offset, u32 size);
+i32 file_write(i32 fd, const void* buf, i32 nbytes);
 
-int32_t dir_open(const uint8_t * filename);
-int32_t dir_close(uint32_t fd);
-int32_t dir_read(uint32_t fd, void * buf, int32_t nbytes);
-int32_t dir_write(int32_t fd, const void* buf, int32_t nbytes);
+i32 dir_open(const u8* filename);
+i32 dir_close(u32 fd);
+i32 dir_read(u32 fd, void* buf, i32 nbytes);
+i32 dir_write(i32 fd, const void* buf, i32 nbytes);
 
-int32_t read_dentry_by_name(uint8_t const* fname, DirEntry* dentry);
-int32_t read_dentry_by_index(uint32_t index, DirEntry* dentry);
-int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length);
+i32 read_dentry_by_name(u8 const* fname, DirEntry* dentry);
+i32 read_dentry_by_index(u32 index, DirEntry* dentry);
+i32 read_data(u32 inode, u32 offset, u8* buf, u32 length);
 
 #endif

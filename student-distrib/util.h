@@ -26,7 +26,7 @@ inline void ALWAYS_INLINE NORETURN crash(void) {
 
 #define NIMPL                                                                                      \
   do {                                                                                             \
-    printf("Unimplemented function %s:%s:%d called!\n", __FILE__, __FUNCTION__, __LINE__);         \
+    printf("Unimplemented function %s@%s:%d called!\n", __FUNCTION__, __FILE__, __LINE__);         \
     crash();                                                                                       \
   } while (0)
 

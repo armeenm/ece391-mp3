@@ -60,16 +60,19 @@ i32 file_close(i32 UNUSED(fd)) { return 0; }
  * Return Value: -1 on failure, otherwise the number of bytes written to buf
  * Function: Used for the cat test to populate a buffer with file contents
  */
-i32 file_read(i8 const* const fname, u8* const buf, u32 const offset) {
+i32 file_read(i8 const* const fname, u8* const buf, u32 const offset, u32 size) {
   DirEntry dentry;
 
-  // We validate fname is a ptr and grab the dentry and then do a read on the cooresponding inode to
-  // buf
-  return (!fname)
-             ? -1
-             : read_dentry_by_name((u8 const*)fname, &dentry) // We get the size of this inode
-                   ?: read_data(dentry.inode_idx, offset, buf,
-                                ((INode*)&bootblk[1])[dentry.inode_idx].size);
+  if (!fname)
+    return -1;
+
+  if (read_dentry_by_name((u8 const*)fname, &dentry))
+    return -1;
+
+  if (!size)
+    size = ((INode*)&bootblk[1])[dentry.inode_idx].size;
+
+  return read_data(dentry.inode_idx, offset, buf, size);
 }
 
 /* file_write
@@ -79,9 +82,7 @@ i32 file_read(i8 const* const fname, u8* const buf, u32 const offset) {
  * Return Value: -1 (failure because FS is readonly)
  * Function: none currently
  */
-i32 file_write(i32 UNUSED(fd), const void* UNUSED(buf), i32 UNUSED(nbytes)) {
-  return -1;
-}
+i32 file_write(i32 UNUSED(fd), const void* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }
 
 /* dir_open
  * Description: Opens directory (and resets the read count for this directory)
@@ -134,9 +135,7 @@ i32 dir_read(u32 UNUSED(fd), void* buf, i32 nbytes) {
  * Return Value: -1
  * Function: none currently
  */
-i32 dir_write(i32 UNUSED(fd), const void* UNUSED(buf), i32 UNUSED(nbytes)) {
-  return -1;
-}
+i32 dir_write(i32 UNUSED(fd), const void* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }
 
 /* read_dentry_by_name
  * Description: Reads directory entry by name
@@ -191,8 +190,7 @@ i32 read_dentry_by_index(u32 const idx, DirEntry* const dentry) {
  * Return Value: -1 on failure, otherwise how many bytes were read
  * Function: used in cat to grab the data from a given file
  */
-i32 read_data(u32 const inode, u32 const offset, u8* const buf,
-                  u32 const ulength) {
+i32 read_data(u32 const inode, u32 const offset, u8* const buf, u32 const ulength) {
 
   INode const* const inodes = (INode*)&bootblk[1];
   Datablk const* const datablks = (Datablk const*)&inodes[bootblk->fs_stats.inode_cnt];
@@ -204,7 +202,7 @@ i32 read_data(u32 const inode, u32 const offset, u8* const buf,
   u32 datablk_offset = offset % FS_BLK_SIZE;
 
   if (!buf)
-    return 0;
+    return -1;
 
   // Ensure we're in bounds for inode
   if (inode >= bootblk->fs_stats.inode_cnt)

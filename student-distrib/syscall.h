@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-enum { FD_CNT = 8, ARGBUF_SIZE = 128 };
+enum { FD_CNT = 8, ARGS_SIZE = 128 };
 
 typedef enum SyscallType {
   SYSC_HALT = 1,
@@ -26,9 +26,11 @@ typedef struct FileDesc {
 
 typedef struct Pcb {
   FileDesc fds[FD_CNT];
-  i8 argbuf[ARGBUF_SIZE];
-  u32 state;
+  i32 argc;
+  i8 argv[ARGS_SIZE];
   u32 pid;
+  u32 parent_ksp;
+  u32 parent_kbp;
   u32 parent_pid;
 } Pcb;
 

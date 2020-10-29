@@ -4,6 +4,6 @@
 #include "types.h"
 
 int test(void);
-void entry(uint32_t magic, uint32_t addr);
+void entry(u32 magic, u32 addr);
 
 #endif

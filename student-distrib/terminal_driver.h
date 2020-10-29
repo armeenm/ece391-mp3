@@ -8,9 +8,9 @@ static const char SHELL_PS1[] = "thanOS> ";
 extern int terminal_read_flag;
 
 /* Define Function Calls */
-int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes);
-int32_t terminal_write(int32_t fd, void const* buf, int32_t nbytes);
-int32_t terminal_open(int32_t fd);
-int32_t terminal_close(int32_t fd);
+i32 terminal_read(i32 fd, void* buf, i32 nbytes);
+i32 terminal_write(i32 fd, void const* buf, i32 nbytes);
+i32 terminal_open(i32 fd);
+i32 terminal_close(i32 fd);
 
 #endif

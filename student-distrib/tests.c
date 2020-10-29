@@ -349,7 +349,7 @@ TEST(CAT_FRAME0) {
   char buf[200] = {0};
 
   clear();
-  file_read("frame0.txt", (u8*)buf, 0);
+  file_read("frame0.txt", (u8*)buf, 0, 0);
   printf("File: frame0.txt\n%s\n", buf);
 
   TEST_END;
@@ -359,7 +359,7 @@ TEST(CAT_VLTWLN) {
   char buf[30000] = {0};
 
   clear();
-  file_read("verylargetextwithverylongname.txt", (u8*)buf, 0);
+  file_read("verylargetextwithverylongname.txt", (u8*)buf, 0, 0);
   printf("File: verylargetextwithverylongname.txt\n%s\n", buf);
 
   TEST_END;
@@ -369,7 +369,7 @@ TEST(CAT_HELLO) {
   char buf[30000] = {0};
 
   clear();
-  file_read("hello", (u8*)buf, 0);
+  file_read("hello", (u8*)buf, 0, 0);
   printf("File: hello\n");
   buf[4] = '\0';
   printf("First 4 bytes: %s\n", buf);
@@ -467,7 +467,7 @@ TEST(FS) {
   if (dir_write(0, 0, 0) != -1)
     TEST_FAIL;
 
-  if (file_read(0, 0, 0) != -1)
+  if (file_read(0, 0, 0, 0) != -1)
     TEST_FAIL;
 
   if (dir_read(0, 0, -1) != -1)

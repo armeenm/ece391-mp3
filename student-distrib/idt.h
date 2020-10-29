@@ -10,9 +10,9 @@ typedef union GateTypeU {
   GateType val;
 
   struct {
-    uint32_t reserved3 : 1;
-    uint32_t reserved2 : 1;
-    uint32_t reserved1 : 1;
+    u32 reserved3 : 1;
+    u32 reserved2 : 1;
+    u32 reserved1 : 1;
   };
 
 } GateTypeU;
