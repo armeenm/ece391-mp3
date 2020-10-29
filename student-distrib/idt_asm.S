@@ -13,23 +13,47 @@
 #define CLR_true clear();
 #define CLR_false
 
+typedef struct IntStack {
+  u32 edx;
+  u32 ecx;
+  u32 eax;
+  u32 eip;
+  u32 cs;
+  u32 eflags;
+  u32 esp;
+  u32 ss;
+} PACKED IntStack;
+
+typedef struct IntStackE {
+  u32 edx;
+  u32 ecx;
+  u32 eax;
+  u32 errc;
+  u32 eip;
+  u32 cs;
+  u32 eflags;
+  u32 esp;
+  u32 ss;
+} PACKED IntStackE;
+
 #define I_EXC_DFL(name, str, clear)                                                                \
   ASM_EXC(name)                                                                                    \
-  void name(void);                                                                                 \
-  void name(void) {                                                                                \
+  void name(IntStack stack);                                                                       \
+  void name(IntStack stack) {                                                                      \
     cli();                                                                                         \
     CLR_##clear                                                                                    \
-    printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", 0, 0);                                       \
+    printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", stack.eip, stack.eflags);                    \
     HLTLOOP;                                                                                       \
   }
 
 #define I_EXC_DFL_ERRC(name, str, clear)                                                           \
   ASM_EXC(name)                                                                                    \
-  void name(void);                                                                                 \
-  void name(void) {                                                                                \
+  void name(IntStackE stack);                                                                      \
+  void name(IntStackE stack) {                                                                     \
     cli();                                                                                         \
     CLR_##clear                                                                                    \
-    printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n", 0, 0, 0);                        \
+    printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n",                                  \
+           stack.errc, stack.eip, stack.eflags);                                                   \
     HLTLOOP;                                                                                       \
   }
 

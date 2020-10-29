@@ -1,46 +1,62 @@
 #include "syscall.h"
 #include "lib.h"
+#include "util.h"
 
-void irqh_syscall(void) {
+i32 halt(u8 UNUSED(status)) { NIMPL; }
+
+i32 execute(u8 const* UNUSED(command)) { NIMPL; }
+
+i32 read(i32 UNUSED(fd), void* UNUSED(buf), i32 UNUSED(nbytes)) { NIMPL; }
+
+i32 write(i32 UNUSED(fd), void const* UNUSED(buf), i32 UNUSED(nbytes)) { NIMPL; }
+
+i32 open(u8 const* UNUSED(filename)) { NIMPL; }
+
+i32 close(i32 UNUSED(fd)) { NIMPL; }
+
+i32 getargs(u8* UNUSED(buf), i32 UNUSED(nbytes)) { NIMPL; }
+
+i32 vidmap(u8** UNUSED(screen_start)) { NIMPL; }
+
+i32 irqh_syscall(void) {
   SyscallType type;
   u32 arg1, arg2, arg3;
 
-  /* Read the syscall type from EAX */
+  /* Read the syscall type and arguments */
   asm volatile("" : "=a"(type), "=b"(arg1), "=c"(arg2), "=d"(arg3));
 
   printf("Handling syscall...\n");
 
   switch (type) {
   case SYSC_HALT:
-    printf("HALTING!\n");
-    break;
+    return halt(arg1);
 
   case SYSC_EXEC:
-    break;
+    return execute((u8 const*)arg1);
 
   case SYSC_READ:
-    break;
+    return read(*(i32*)&arg1, (void*)arg2, *(i32*)&arg3);
 
   case SYSC_WRITE:
-    break;
+    return write(*(i32*)&arg1, (void const*)arg2, *(i32*)&arg3);
 
   case SYSC_OPEN:
-    break;
+    return open((u8 const*)arg1);
 
   case SYSC_CLOSE:
-    break;
+    return close(*(i32*)&arg1);
 
   case SYSC_GETARGS:
-    break;
+    return getargs((u8*)arg1, *(i32*)&arg1);
 
   case SYSC_VIDMAP:
-    break;
+    return vidmap((u8**)arg1);
 
   case SYSC_SET_HANDLER:
-    break;
+    NIMPL;
 
   case SYSC_SIGRETURN:
-    break;
+    NIMPL;
   };
 
   /* EAX, ECX, EDX: Handled in ASM linkage

@@ -156,8 +156,11 @@ void entry(u32 const magic, u32 const addr) {
     HLTLOOP;
   }
 
-  clear();
   sti();
+
+  clear();
+
+  /* asm volatile("int $0" ::"a"(64)); */
 
   /* Example of using a syscall */
   /* asm volatile("int $0x80" ::"a"(SYSC_CLOSE)); */
