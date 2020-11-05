@@ -13,6 +13,7 @@ u8 running_pid = 0;
 u32 ksp;
 
 static Pcb* get_pcb(u8 proc);
+static Pcb* get_current_pcb(void);
 
 i32 irqh_syscall(void) {
   SyscallType type;
@@ -64,6 +65,8 @@ i32 irqh_syscall(void) {
 }
 
 static Pcb* get_pcb(u8 proc) { return (Pcb*)(MB8 - (proc + 1) * KB8); }
+
+static Pcb* get_current_pcb(void) { return (Pcb*)(ksp & 0xFFFFE); }
 
 i32 halt(u8 UNUSED(status)) { NIMPL; }
 
