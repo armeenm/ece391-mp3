@@ -11,7 +11,7 @@
 .globl tss, tss_desc_ptr, ldt, ldt_desc_ptr
 .globl gdt_ptr
 .globl idt_desc_ptr, idt
-.globl pgdir, pgtbl
+.globl pgdir, pgtbl, pgtbl_proc
 
 .align 4
 ldt_size:
@@ -111,8 +111,12 @@ idt_bottom:
 
 .align PTE_SIZE_MCR
 pgdir:
-  .fill PGDIR_LEN_MCR, 4, 0
+  .fill PGDIR_LEN_MCR * 8, 4, 0
 
 .align PTE_SIZE_MCR
 pgtbl:
+  .fill PGTBL_LEN_MCR, 4, 0
+
+.align PTE_SIZE_MCR
+pgtbl_proc:
   .fill PGTBL_LEN_MCR, 4, 0

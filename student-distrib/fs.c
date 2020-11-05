@@ -20,12 +20,12 @@ static u32 dir_read_count = 0;
 i32 open_fs(u32 const start, u32 const UNUSED(end)) {
   bootblk = (Bootblk*)start;
   // Enable the filesystem 4mb page to be marked as present
-  pgdir[start >> PG_4M_ADDR_OFFSET] |= PG_PRESENT;
+  pgdir[0][start >> PG_4M_ADDR_OFFSET] |= PG_PRESENT;
 
   /* TODO: Sanity checks */
   if (bootblk->fs_stats.direntry_cnt >= FS_MAX_DIR_ENTRIES) {
     // Reset state on page location
-    pgdir[start >> PG_4M_ADDR_OFFSET] &= ~(1U);
+    pgdir[0][start >> PG_4M_ADDR_OFFSET] &= ~(1U);
     return -1;
   }
 

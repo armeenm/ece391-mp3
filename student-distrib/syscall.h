@@ -34,6 +34,9 @@ typedef struct Pcb {
   u32 parent_pid;
 } Pcb;
 
+/* Implemented in syscall_asm.S */
+void uspace(i32 entry);
+
 i32 halt(u8 status);
 i32 execute(u8 const* command);
 i32 read(i32 fd, void* buf, i32 nbytes);

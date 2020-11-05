@@ -7,6 +7,7 @@
 
 #ifndef ASM
 
+#include "types.h"
 #include "video.h"
 
 enum {
@@ -24,6 +25,7 @@ enum {
 
 /* Enable paging and setup page directory and page table */
 void init_paging(void);
+i32 make_task_pgdir(u8 proc);
 
 #endif
 #endif

@@ -14,6 +14,7 @@
 #define CLR_false
 
 typedef struct IntStack {
+  u32 flags;
   u32 edx;
   u32 ecx;
   u32 eax;
@@ -25,6 +26,7 @@ typedef struct IntStack {
 } PACKED IntStack;
 
 typedef struct IntStackE {
+  u32 flags;
   u32 edx;
   u32 ecx;
   u32 eax;
@@ -77,7 +79,9 @@ typedef struct IntStackE {
   pushl %eax;                                                                                      \
   pushl %ecx;                                                                                      \
   pushl %edx;                                                                                      \
+  pushf;                                                                                           \
   call name;                                                                                       \
+  popf;                                                                                            \
   popl %edx;                                                                                       \
   popl %ecx;                                                                                       \
   popl %eax;                                                                                       \
@@ -88,8 +92,6 @@ typedef struct IntStackE {
 #define EXC_DFL_ERRC EXC_DFL
 #define EXC_DFL_NOCLR EXC_DFL
 #define EXC_DFL_ERRC_NOCLR EXC_DFL
-
-.align 4
 
 #endif
 

@@ -82,7 +82,7 @@ i32 execute(u8 const* const ucmd) {
   if (file_open(ucmd))
     return -1;
 
-  if (file_read(cmd, header, 0, sizeof(header)))
+  if (file_read(cmd, header, 0, sizeof(header)) != sizeof(header))
     return -1;
 
   for (i = 0; i < sizeof(header); ++i)
@@ -100,14 +100,19 @@ i32 execute(u8 const* const ucmd) {
   return -1;
 
 cont:
-  if (file_read(cmd, (u8*)&entry, ENTRY_POINT_OFFSET, sizeof(entry)))
+  if (file_read(cmd, (u8*)&entry, ENTRY_POINT_OFFSET, sizeof(entry)) != sizeof(entry))
     return -1;
 
-  if (make_task_pgdir(running_pid))
+  //  if (file_read(cmd, (u8*)LOAD_ADDR, 0, 0) == -1)
+  //    return -1;
+
+  //  if (make_task_pgdir(running_pid))
+  //    return -1;
+
+  if (file_read(cmd, (u8*)LOAD_ADDR, 0, 0) == -1)
     return -1;
 
-  if (file_read(cmd, (u8*)LOAD_ADDR, 0, 0))
-    return -1;
+#if 0
 
   {
     Pcb* const pcb = get_pcb(running_pid);
@@ -136,6 +141,7 @@ cont:
 
     uspace(entry);
   }
+#endif
 
   return 0;
 }

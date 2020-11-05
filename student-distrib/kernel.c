@@ -160,7 +160,7 @@ void entry(u32 const magic, u32 const addr) {
   sti();
 
   /* Example of using a syscall */
-  asm volatile("int $0x80" ::"a"(SYSC_CLOSE));
+  // asm volatile("int $0x80" ::"a"(SYSC_CLOSE));
 
 #ifdef RUN_TESTS
   /* Run tests */

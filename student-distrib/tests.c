@@ -6,6 +6,7 @@
 #include "options.h"
 #include "paging.h"
 #include "rtc.h"
+#include "syscall.h"
 #include "terminal_driver.h"
 #include "util.h"
 #include "x86_desc.h"
@@ -126,11 +127,11 @@ TEST(PAGING) {
   /* Check 4KB page directory entry for valid address + permission bits (because the CPU can set
    * other bits) */
 
-  if ((pgdir[0] & PDE_USED_4K) != (PG_PRESENT | PG_RW | (u32)pgtbl))
+  if ((pgdir[0][0] & PDE_USED_4K) != (PG_PRESENT | PG_RW | (u32)pgtbl))
     TEST_FAIL;
 
   /* Check kernel entry for valid address + permission bits */
-  if ((pgdir[1] & PDE_USED_4M) != (PG_PRESENT | PG_RW | PG_SIZE | PG_4M_START))
+  if ((pgdir[0][1] & PDE_USED_4M) != (PG_PRESENT | PG_RW | PG_SIZE | PG_4M_START))
     TEST_FAIL;
 
   /* Check nullptr region */
@@ -151,7 +152,7 @@ TEST(PAGING) {
   /* Check that the 4MB to 4GB range has the correct bits set (4MB entries, not present), no
    * address yet */
   for (i = 2; i < PGDIR_LEN; ++i)
-    if ((pgdir[i] & PDE_USED_4M & ~1U) != ((i * PG_4M_START) | PG_RW | PG_USPACE | PG_SIZE))
+    if ((pgdir[0][i] & PDE_USED_4M & ~1U) != ((i * PG_4M_START) | PG_RW | PG_USPACE | PG_SIZE))
       TEST_FAIL_MSG("i: %u", i);
 
   /* Memory sanity check */
@@ -479,13 +480,26 @@ TEST(FS) {
   if (read_dentry_by_index(0, 0) != -1)
     TEST_FAIL;
 
-  if (read_data(0, 0, 0, 0))
+  if (read_data(0, 0, 0, 0) != -1)
     TEST_FAIL;
 
   TEST_END;
 }
 
 /***** }}} CHECKPOINT 2 *****/
+
+/***** CHECKPOINT 3 {{{ *****/
+
+TEST(EXEC_LS) {
+  clear();
+
+  if (execute((u8*)"ls"))
+    TEST_FAIL;
+
+  TEST_END;
+}
+
+/***** }}} CHECKPOINT 3 *****/
 
 /* Test suite entry point */
 void launch_tests(void) {
@@ -509,5 +523,7 @@ void launch_tests(void) {
   TEST_CAT_VLTWLN();
   TEST_CAT_HELLO();
   TEST_SHELL();
+
+  TEST_EXEC_LS();
 #endif
 }
