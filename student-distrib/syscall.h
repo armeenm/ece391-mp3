@@ -18,8 +18,15 @@ typedef enum SyscallType {
   SYSC_SIGRETURN
 } SyscallType;
 
+typedef struct FileOps {
+  i32 (*open)(i32 fd, void* buf, i32 nbytes);
+  i32 (*close)(i32 fd);
+  i32 (*read)(i32 fd, void* buf, i32 nbytes);
+  i32 (*write)(i32 fd, const void* buf, i32 nbytes);
+} FileOps;
+
 typedef struct FileDesc {
-  u32* jumptable;
+  FileOps* jumptable;
   u32 flags;
   u32 inode;
 } FileDesc;

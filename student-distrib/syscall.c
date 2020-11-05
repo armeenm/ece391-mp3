@@ -146,7 +146,13 @@ cont:
   return 0;
 }
 
-i32 read(i32 UNUSED(fd), void* UNUSED(buf), i32 UNUSED(nbytes)) { NIMPL; }
+i32 read(i32 fd, void* buf, i32 nbytes) {
+  if(buf == NULL || fd < 0 || fd > 7 || nbytes < 0)
+    return -1;
+  
+  Pcb* pcb = get_current_pcb();
+  pcb->fds[fd].jumptable
+}
 
 i32 write(i32 UNUSED(fd), void const* UNUSED(buf), i32 UNUSED(nbytes)) { NIMPL; }
 
