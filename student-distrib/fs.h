@@ -40,7 +40,7 @@ i32 open_fs(u32 start, u32 end);
 
 i32 file_open(const u8* filename);
 i32 file_close(i32 fd);
-i32 file_read(i8 const* fname, u8* buf, u32 offset, u32 size);
+i32 file_read(i32 fd, u8* const buf, u32 size);
 i32 file_write(i32 fd, const void* buf, i32 nbytes);
 
 i32 dir_open(const u8* filename);

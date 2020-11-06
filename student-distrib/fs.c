@@ -1,8 +1,8 @@
 #include "fs.h"
 #include "debug.h"
 #include "paging.h"
-#include "util.h"
 #include "x86_desc.h"
+#include "syscall.h"
 
 static Bootblk* bootblk = NULL;
 
@@ -52,27 +52,34 @@ i32 file_close(i32 UNUSED(fd)) { return 0; }
 
 /* file_read
  * Description: Reads file (not to sys call spec for this part of the MP no fds setup)
- * Inputs: fname -- Name of file to read (fd in fututre)
- *         buf -- User supplied buffer to place file data in
+ * Inputs: fd     -- file descriptor to read from
  *         length -- Length of the file
  *         offset -- forward offset (will be in FD in the future)
  * Outputs: none
  * Return Value: -1 on failure, otherwise the number of bytes written to buf
  * Function: Used for the cat test to populate a buffer with file contents
  */
-i32 file_read(i8 const* const fname, u8* const buf, u32 const offset, u32 size) {
+i32 file_read(i32 fd, u8* const buf, u32 size) {
   DirEntry dentry;
 
-  if (!fname)
+  Pcb* pcb = get_current_pcb();
+
+  if(pcb == NULL || pcb->fds == NULL
+    || (pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE)
     return -1;
 
-  if (read_dentry_by_name((u8 const*)fname, &dentry))
+  if (read_dentry_by_index(pcb->fds[fd].inode, &dentry) == -1)
     return -1;
 
+  /* TODO: Is this the right behavior. If the buf is < size it will write into random memory */
   if (!size)
     size = ((INode*)&bootblk[1])[dentry.inode_idx].size;
 
-  return read_data(dentry.inode_idx, offset, buf, size);
+  i32 bytes_read = read_data(dentry.inode_idx, pcb->fds[fd].file_position, buf, size);
+  if(bytes_read >= 0)
+    pcb->fds[fd].file_position += bytes_read;
+
+  return bytes_read;
 }
 
 /* file_write

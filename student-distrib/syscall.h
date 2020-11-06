@@ -59,7 +59,7 @@ i32 vidmap(u8** screen_start);
 
 i32 irqh_syscall(void);
 
-
+Pcb* get_current_pcb(void);
 i32 read_failure(i32 fd, void* buf, i32 nbytes);
 i32 write_failure(i32 fd, void const* buf, i32 nbytes);
 
