@@ -45,7 +45,7 @@ i32 file_write(i32 fd, const void* buf, i32 nbytes);
 
 i32 dir_open(const u8* filename);
 i32 dir_close(u32 fd);
-i32 dir_read(u32 fd, void* buf, i32 nbytes);
+i32 dir_read(i32 fd, void* buf, i32 nbytes);
 i32 dir_write(i32 fd, const void* buf, i32 nbytes);
 
 i32 read_dentry_by_name(u8 const* fname, DirEntry* dentry);

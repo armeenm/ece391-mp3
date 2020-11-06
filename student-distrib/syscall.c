@@ -3,8 +3,17 @@
 #include "lib.h"
 #include "util.h"
 #include "x86_desc.h"
+#include "terminal_driver.h"
+#include "rtc.h"
+#include "fs.h"
 
 enum { ENTRY_POINT_OFFSET = 24, LOAD_ADDR = 0x8048000, MB8 = 0x800000, KB8 = 0x2000 };
+
+const FileOps std_in_fops = {terminal_open, terminal_close, terminal_read, write_failure};
+const FileOps std_out_fops = {terminal_open, terminal_close, read_failure, terminal_write};
+const FileOps rtc_fops = {rtc_open, rtc_close, rtc_read, rtc_write};
+const FileOps fs_fops = {file_open, file_close, file_read, file_write};
+const FileOps dir_fops = {dir_open, dir_close, dir_read, dir_write};
 
 u8 const elf_header[] = {0x7F, 'E', 'L', 'F'};
 
@@ -127,11 +136,18 @@ cont:
                  : "=g"(esp), "=g"(ebp));
 
     parent = (Pcb*)(esp & 0xFFFFE);
-
-    for (i = 0; i < FD_CNT; ++i) {
-      pcb->fds[i].jumptable = NULL;
-      pcb->fds[i].flags = 0;
+    for (i = 0; i < 2; ++i) {
+      pcb->fds[i].jumptable = i == 0 ? &std_in_fops : &std_out_fops;
+      pcb->fds[i].flags = FD_IN_USE;
       pcb->fds[i].inode = 0;
+      pcb->fds[i].file_position = 0;
+    }
+
+    for (i = 2; i < FD_CNT; ++i) {
+      pcb->fds[i].jumptable = NULL;
+      pcb->fds[i].flags = FD_NOT_IN_USE;
+      pcb->fds[i].inode = 0;
+      pcb->fds[i].file_position = 0;
     }
 
     pcb->pid = running_pid;
@@ -150,19 +166,100 @@ cont:
 }
 
 i32 read(i32 fd, void* buf, i32 nbytes) {
-  if(buf == NULL || fd < 0 || fd > 7 || nbytes < 0)
+  if(buf == NULL || fd < 0 || fd >= FD_CNT || nbytes < 0)
     return -1;
   
   Pcb* pcb = get_current_pcb();
-  pcb->fds[fd].jumptable
+
+  if(pcb == NULL || pcb->fds == NULL ||
+  ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || pcb->fds[fd].jumptable == NULL)
+    return -1;
+
+  return pcb->fds[fd].jumptable->read(fd, buf, nbytes);
 }
 
-i32 write(i32 UNUSED(fd), void const* UNUSED(buf), i32 UNUSED(nbytes)) { NIMPL; }
+i32 write(i32 fd, void const* buf, i32 nbytes) {
+   if(buf == NULL || fd < 0 || fd >= FD_CNT || nbytes < 0)
+    return -1;
 
-i32 open(u8 const* UNUSED(filename)) { NIMPL; }
+  Pcb* pcb = get_current_pcb();
 
-i32 close(i32 UNUSED(fd)) { NIMPL; }
+ if(pcb == NULL || pcb->fds == NULL ||
+  ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || pcb->fds[fd].jumptable == NULL)
+    return -1;
+
+  return pcb->fds[fd].jumptable->write(fd, buf, nbytes);
+}
+
+i32 open(u8 const* filename) { 
+  if(filename == NULL || strncmp(filename, "", strlen(filename)) != 0)
+    return -1;
+
+  DirEntry* const dentry;
+  if(read_dentry_by_name(filename, dentry) == -1)
+    return -1;
+  
+  Pcb *pcb = get_current_pcb();
+
+  if(pcb == NULL || pcb->fds == NULL)
+    return -1;
+  
+  i32 fdIndex = 0;
+  for(fdIndex = 0; fdIndex < FD_NOT_IN_USE; ++fdIndex)
+  {
+    if(pcb->fds[fdIndex].flags & FD_IN_USE)
+      continue;
+    
+    switch(dentry->filetype)
+    {
+      case FT_RTC:
+        pcb->fds[fdIndex].jumptable = &rtc_fops;
+        break;
+      case FT_DIR:
+        pcb->fds[fdIndex].jumptable = &dir_fops;
+        break;
+      case FT_REG:
+        pcb->fds[fdIndex].jumptable = &fs_fops;
+        break;
+      default:
+        return -1;
+    }
+
+    if(pcb->fds[fdIndex].jumptable->open(filename) != 0)
+    {
+      pcb->fds[fdIndex].jumptable = NULL;
+      return -1;
+    }
+
+    pcb->fds[fdIndex].flags = FD_IN_USE;
+    pcb->fds[fdIndex].inode = dentry->filetype == FT_REG ? dentry->inode_idx : 0;
+    pcb->fds[fdIndex].file_position = 0;
+    break;
+  }
+
+  return fdIndex;
+}
+
+i32 close(i32 fd) {
+  if(fd < 2 || fd >= FD_CNT)
+    return -1;
+
+  Pcb* pcb = get_current_pcb();
+  if(pcb == NULL || pcb->fds == NULL ||
+  (pcb->fds[fd].flags & FD_IN_USE == FD_NOT_IN_USE) || pcb->fds[fd].jumptable == NULL)
+    return -1;
+
+  pcb->fds[fd].flags = 0;
+  pcb->fds[fd].file_position = 0;
+  pcb->fds[fd].inode = 0;
+  pcb->fds[fd].jumptable = NULL;
+  return 0;
+}
 
 i32 getargs(u8* UNUSED(buf), i32 UNUSED(nbytes)) { NIMPL; }
 
 i32 vidmap(u8** UNUSED(screen_start)) { NIMPL; }
+
+
+i32 read_failure(i32 UNUSED(fd), void* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }
+i32 write_failure(i32 UNUSED(fd), void const* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }

@@ -115,7 +115,7 @@ i32 dir_close(u32 UNUSED(fd)) { return 0; }
  * Return Value: -1, otherwise the number of bytes copied
  * Function: Read's the current file name  for this directory read
  */
-i32 dir_read(u32 UNUSED(fd), void* buf, i32 nbytes) {
+i32 dir_read(i32 UNUSED(fd), void* buf, i32 nbytes) {
   DirEntry d;
   i32 const i = read_dentry_by_index(dir_read_count++, &d);
   i32 const bytes = MIN(MIN(nbytes, 32), (i32)strlen(d.filename));
