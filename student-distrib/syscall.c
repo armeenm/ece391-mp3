@@ -96,7 +96,25 @@ Pcb* get_current_pcb(void) { return (Pcb*)(ksp & 0xFFFFE); }
  * Return Value: none
  * Function: currently unimplemented
  */
-i32 halt(u8 UNUSED(status)) { NIMPL; }
+i32 halt(u8 status) {
+  int i; 
+  // if we're the "parent process" of the OS (pid == 0, shell) don't halt it
+  if (!get_current_pcb()->parent_pid) {
+    return -1;
+  }
+
+  // close all FDS for the current process
+  for (i = 0; i<FD_CNT; i++) {
+    close(i);
+  }
+
+  // there is a parent, we need to switch contexts to the parent
+  get_pcb(get_current_pcb()->parent_pid)->child_return = status;
+  remove_task_pgdir(get_current_pcb()->pid);
+  make_task_pgdir(get_current_pcb()->parent_pid);
+  tss.esp0 = get_current_pcb()->parent_ksp;;    
+  return 0; // not sure if this is correct -- halt is supposed to jump to execute return
+}
 
 /* execute
  * Description: Executes system calls
@@ -188,7 +206,7 @@ cont:
   }
 
 #endif
-  return 0;
+  return get_current_pcb()->child_return;
 }
 
 /* read

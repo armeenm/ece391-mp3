@@ -82,3 +82,9 @@ i32 make_task_pgdir(u8 const proc) {
 
   return 0;
 }
+
+i32 remove_task_pgdir(u8 const proc) {
+  pgdir[proc][ELF_LOAD_PG] = ((proc + 2) * PG_4M_START) | PG_SIZE | PG_USPACE | PG_RW;
+  asm volatile("mov %0, %%cr3;" ::"g"(pgdir[proc]));
+  return 0;
+}

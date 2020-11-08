@@ -43,6 +43,7 @@ typedef struct Pcb {
   u32 parent_ksp;
   u32 parent_kbp;
   u32 parent_pid;
+  u32 child_return;
 } Pcb;
 
 /* Implemented in syscall_asm.S */
