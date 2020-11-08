@@ -135,9 +135,11 @@ i32 execute(u8 const* const ucmd) {
 
   /* TODO: argc, argv, stdin, stdout */
   DirEntry dentry;
+  /* If directory entry read fails, fail */
   if (read_dentry_by_name(ucmd, &dentry))
     return -1;
 
+  /* If the data read isn't the size of the data, fail */
   if (read_data(dentry.inode_idx, 0, header, sizeof(header)) != sizeof(header))
     return -1;
 
@@ -157,15 +159,19 @@ i32 execute(u8 const* const ucmd) {
 
 cont:
 
+  /* If bytes read from file isn't the same as the size of the file, fail */
   if (file_read_name(cmd, (u8*)&entry, ENTRY_POINT_OFFSET, sizeof(entry)) != sizeof(entry))
     return -1;
 
+  /* If file read was unsuccessful, fail */
   if (file_read_name(cmd, (u8*)LOAD_ADDR, 0, 0) == -1)
     return -1;
 
+  /* If making page directory fails, fail */
   if (make_task_pgdir(running_pid))
     return -1;
 
+  /* If file read was unsuccessful after making pgdir, fail */
   if (file_read_name(cmd, (u8*)LOAD_ADDR, 0, 0) == -1)
     return -1;
 
@@ -219,11 +225,12 @@ cont:
  * Function: Checks if inputs are valid, if so then read bytes to buffer
  */
 i32 read(i32 fd, void* buf, i32 nbytes) {
+  /* If buffer is null, fd is invalid value, or nbytes is invalid value, fail */
   if (!buf || fd < 0 || fd >= FD_CNT || nbytes < 0)
     return -1;
 
   Pcb* const pcb = get_current_pcb();
-
+  /* If pcb is null, file descriptor not in use, and ... */
   if (!pcb || ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || !pcb->fds[fd].jumptable)
     return -1;
 
@@ -240,11 +247,12 @@ i32 read(i32 fd, void* buf, i32 nbytes) {
  * Function: currently unimplemented
  */
 i32 write(i32 fd, void const* buf, i32 nbytes) {
+  /* If buffer is null, fd is invalid value, or nbytes is invalid value, fail */
   if (buf == NULL || fd < 0 || fd >= FD_CNT || nbytes < 0)
     return -1;
 
   Pcb* pcb = get_current_pcb();
-
+  /* If pcb is null, file descriptor not in use, and ... */
   if (!pcb || ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || pcb->fds[fd].jumptable)
     return -1;
 
@@ -259,15 +267,18 @@ i32 write(i32 fd, void const* buf, i32 nbytes) {
  * Function: Checks for invalid inputs, if valid then open file
  */
 i32 open(u8 const* filename) {
+  /* If filename is null, or empty, fail */
   if (!filename || filename[0] == '\0')
     return -1;
 
   DirEntry dentry;
+  /* If directory entry read fails, fail */
   if (read_dentry_by_name(filename, &dentry) == -1)
     return -1;
 
   Pcb* const pcb = get_current_pcb();
 
+  /* If pcb is null, fail */
   if (!pcb)
     return -1;
 
@@ -313,16 +324,19 @@ i32 open(u8 const* filename) {
  * Inputs: fd -- file descriptor
  * Outputs: none
  * Return Value: if fails return -1, if success return 0
- * Function: Checks if value file descriptor, if valid close it
+ * Function: Checks if file descriptor is valid, if valid close it
  */
 i32 close(i32 fd) {
+  /* If file descriptor is invalid, fail */
   if (fd < 2 || fd >= FD_CNT)
     return -1;
 
   Pcb* pcb = get_current_pcb();
+  /* If pcb is null, file descriptor not in use, and ... */
   if (!pcb || ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || pcb->fds[fd].jumptable)
     return -1;
 
+  /* Close file */
   pcb->fds[fd].flags = 0;
   pcb->fds[fd].file_position = 0;
   pcb->fds[fd].inode = 0;
