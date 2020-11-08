@@ -38,18 +38,20 @@ typedef struct Datablk {
 
 i32 open_fs(u32 start, u32 end);
 
-i32 file_open(const u8* filename);
+i32 file_open(u8 const* filename);
 i32 file_close(i32 fd);
-i32 file_read(i32 fd, u8* const buf, u32 size);
-i32 file_write(i32 fd, const void* buf, i32 nbytes);
+i32 file_read(i32 fd, void* buf, i32 nbytes);
+i32 file_write(i32 fd, void const* buf, i32 nbytes);
 
-i32 dir_open(const u8* filename);
-i32 dir_close(u32 fd);
+i32 dir_open(u8 const* filename);
+i32 dir_close(i32 fd);
 i32 dir_read(i32 fd, void* buf, i32 nbytes);
-i32 dir_write(i32 fd, const void* buf, i32 nbytes);
+i32 dir_write(i32 fd, void const* buf, i32 nbytes);
 
 i32 read_dentry_by_name(u8 const* fname, DirEntry* dentry);
 i32 read_dentry_by_index(u32 index, DirEntry* dentry);
 i32 read_data(u32 inode, u32 offset, u8* buf, u32 length);
+
+i32 file_read_name(i8 const* fname, void* buf, u32 offset, u32 size);
 
 #endif

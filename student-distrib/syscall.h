@@ -22,14 +22,14 @@ typedef enum SyscallType {
 } SyscallType;
 
 typedef struct FileOps {
-  i32 (*open)(const u8* filename);
+  i32 (*open)(u8 const* filename);
   i32 (*close)(i32 fd);
   i32 (*read)(i32 fd, void* buf, i32 nbytes);
-  i32 (*write)(i32 fd, const void* buf, i32 nbytes);
+  i32 (*write)(i32 fd, void const* buf, i32 nbytes);
 } FileOps;
 
 typedef struct FileDesc {
-  FileOps* jumptable;
+  FileOps const* jumptable;
   u32 inode;
   u32 file_position;
   u32 flags;

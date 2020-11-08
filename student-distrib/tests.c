@@ -29,6 +29,7 @@ enum { FAIL, PASS };
   static void TEST_##name(void) {                                                                  \
     if (!ENABLE_TEST_##name)                                                                       \
       return;                                                                                      \
+    clear();                                                                                       \
     printf("[TEST %s] Running at %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 
 #define TEST_END                                                                                   \
@@ -209,8 +210,6 @@ TEST(UD) {
  * Coverage: Tests large negative to large postiive scancode inputs
  */
 TEST(KEYPRESS) {
-  clear();
-
   {
     int NUM_COLS = 80;
     char* video_mem = (char*)(0xB8000);
@@ -319,8 +318,6 @@ TEST(SHELL) {
   i8 const* const s = "Input: ";
 
   terminal_open(0);
-  clear();
-
   for (;;) {
     terminal_write(0, SHELL_PS1, sizeof(SHELL_PS1));
     size = terminal_read(0, buf, 128);
@@ -349,7 +346,6 @@ TEST(LS) {
 TEST(CAT_FRAME0) {
   char buf[200] = {0};
 
-  clear();
   int fd = open((u8*)"frame0.txt");
   read(fd, (u8*)buf, 0);
   printf("File: frame0.txt\n%s\n", buf);
@@ -360,7 +356,6 @@ TEST(CAT_FRAME0) {
 TEST(CAT_VLTWLN) {
   char buf[30000] = {0};
 
-  clear();
   int fd = open((u8*)"verylargetextwithverylongname.txt");
   read(fd, (u8*)buf, 0);
   printf("File: verylargetextwithverylongname.txt\n%s\n", buf);
@@ -371,7 +366,6 @@ TEST(CAT_VLTWLN) {
 TEST(CAT_HELLO) {
   char buf[30000] = {0};
 
-  clear();
   int fd = open((u8*)"hello");
   read(fd, (u8*)buf, 0);
   printf("File: hello\n");
@@ -392,8 +386,6 @@ TEST(RTC_DEMO) {
     freq = 1 << j;
 
     /* Print 8 chars for 2Hz, print 16 for 4Hz (4 seconds per RTC) */
-    clear();
-    set_screen_xy(0, 0);
     rtc_write(0, &freq, sizeof(int));
 
     for (i = 0; i < 1 << (2 + j); ++i) {
@@ -494,8 +486,6 @@ TEST(FS) {
 /***** CHECKPOINT 3 {{{ *****/
 
 TEST(EXEC_LS) {
-  clear();
-
   if (execute((u8*)"ls"))
     TEST_FAIL;
 

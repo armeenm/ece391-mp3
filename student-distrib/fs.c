@@ -1,8 +1,8 @@
 #include "fs.h"
 #include "debug.h"
 #include "paging.h"
-#include "x86_desc.h"
 #include "syscall.h"
+#include "x86_desc.h"
 
 static Bootblk* bootblk = NULL;
 
@@ -39,7 +39,7 @@ i32 open_fs(u32 const start, u32 const UNUSED(end)) {
  * Return Value: 0
  * Function: none currently
  */
-i32 file_open(const u8* UNUSED(filename)) { return 0; }
+i32 file_open(u8 const* UNUSED(filename)) { return 0; }
 
 /* file_close
  * Description: Closes file
@@ -59,27 +59,41 @@ i32 file_close(i32 UNUSED(fd)) { return 0; }
  * Return Value: -1 on failure, otherwise the number of bytes written to buf
  * Function: Used for the cat test to populate a buffer with file contents
  */
-i32 file_read(i32 fd, u8* const buf, u32 size) {
+i32 file_read(i32 fd, void* const buf, i32 nbytes) {
   DirEntry dentry;
 
   Pcb* pcb = get_current_pcb();
 
-  if(pcb == NULL || pcb->fds == NULL
-    || (pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE)
+  if (!pcb || (pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE)
     return -1;
 
   if (read_dentry_by_index(pcb->fds[fd].inode, &dentry) == -1)
     return -1;
 
   /* TODO: Is this the right behavior. If the buf is < size it will write into random memory */
-  if (!size)
-    size = ((INode*)&bootblk[1])[dentry.inode_idx].size;
+  if (!nbytes)
+    nbytes = ((INode*)&bootblk[1])[dentry.inode_idx].size;
 
-  i32 bytes_read = read_data(dentry.inode_idx, pcb->fds[fd].file_position, buf, size);
-  if(bytes_read >= 0)
+  i32 bytes_read = read_data(dentry.inode_idx, pcb->fds[fd].file_position, buf, nbytes);
+  if (bytes_read >= 0)
     pcb->fds[fd].file_position += bytes_read;
 
   return bytes_read;
+}
+
+i32 file_read_name(i8 const* const fname, void* const buf, u32 const offset, u32 size) {
+  DirEntry dentry;
+
+  if (!fname)
+    return -1;
+
+  if (read_dentry_by_name((u8 const*)fname, &dentry))
+    return -1;
+
+  if (!size)
+    size = ((INode*)&bootblk[1])[dentry.inode_idx].size;
+
+  return read_data(dentry.inode_idx, offset, buf, size);
 }
 
 /* file_write
@@ -89,7 +103,7 @@ i32 file_read(i32 fd, u8* const buf, u32 size) {
  * Return Value: -1 (failure because FS is readonly)
  * Function: none currently
  */
-i32 file_write(i32 UNUSED(fd), const void* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }
+i32 file_write(i32 UNUSED(fd), void const* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }
 
 /* dir_open
  * Description: Opens directory (and resets the read count for this directory)
@@ -110,7 +124,7 @@ i32 dir_open(const u8* UNUSED(filename)) {
  * Return Value: 0
  * Function: none currently
  */
-i32 dir_close(u32 UNUSED(fd)) { return 0; }
+i32 dir_close(i32 UNUSED(fd)) { return 0; }
 
 /* dir_read
  * Description: Reads diretory
@@ -142,7 +156,7 @@ i32 dir_read(i32 UNUSED(fd), void* buf, i32 nbytes) {
  * Return Value: -1
  * Function: none currently
  */
-i32 dir_write(i32 UNUSED(fd), const void* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }
+i32 dir_write(i32 UNUSED(fd), void const* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }
 
 /* read_dentry_by_name
  * Description: Reads directory entry by name

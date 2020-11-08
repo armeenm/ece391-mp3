@@ -76,7 +76,7 @@ i32 make_task_pgdir(u8 const proc) {
 
   pgdir[proc][1] = PG_4M_START | PG_RW | PG_SIZE | PG_PRESENT;
 
-  pgdir[proc][ELF_LOAD_PG] = ((proc + 1) * PG_4M_START) | PG_SIZE | PG_USPACE | PG_RW | PG_PRESENT;
+  pgdir[proc][ELF_LOAD_PG] = ((proc + 2) * PG_4M_START) | PG_SIZE | PG_USPACE | PG_RW | PG_PRESENT;
 
   asm volatile("mov %0, %%cr3;" ::"g"(pgdir[proc]));
 

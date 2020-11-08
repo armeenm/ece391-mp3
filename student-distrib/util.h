@@ -14,20 +14,20 @@
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 
-// inline void ALWAYS_INLINE NORETURN crash(void) {
-//   asm volatile("int $15");
+static inline void ALWAYS_INLINE NORETURN crash(void) {
+  asm volatile("int $15");
 
-//   /* We'll never get back here
-//    * This is just to avoid compiler warnings
-//    */
-//   for (;;)
-//     ;
-// }
+  /* We'll never get back here
+   * This is just to avoid compiler warnings
+   */
+  for (;;)
+    ;
+}
 
 #define NIMPL                                                                                      \
   do {                                                                                             \
     printf("Unimplemented function %s@%s:%d called!\n", __FUNCTION__, __FILE__, __LINE__);         \
-    /*crash();*/                                                                                    \
+    crash();                                                                                       \
   } while (0)
 
 #endif /* UTIL_H */
