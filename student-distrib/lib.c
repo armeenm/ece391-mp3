@@ -372,6 +372,21 @@ i8* strrev(i8* s) {
   return s;
 }
 
+
+/* u32 strnonspace(i8* s);
+ * Inputs:  i8* s
+ * Return Value: u32 postition of first non-space character:
+ * Function: returns the postition of the first non-scace char */
+u32 strnonspace(i8 const* s) {
+  u32 i;
+  for (i = 0; i<strlen(s); i++) {
+    if (s[i] != ' ') {
+      return i;
+    }
+  }
+  return i;
+}
+
 /* u32 strlen(const i8* s);
  * Inputs: const i8* s = string to take length of
  * Return Value: length of string s

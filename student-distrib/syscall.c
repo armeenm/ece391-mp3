@@ -145,9 +145,9 @@ i32 execute(u8 const* const ucmd) {
   if (!ucmd)
     return -1;
 
-  /* Copy the input argument */
+  /* Copy the input argument neglecting leading spaces */
   memset(cmd, 0, ARGS_SIZE);
-  strcpy(cmd, (i8 const*)ucmd);
+  strcpy(cmd, (i8 const*)ucmd+strnonspace(ucmd));
   j = strlen(cmd);
   for (i = 0, argc = 1; i<j; i++) {
     /* Replace all spaces with null termination, and count up the number of args */
