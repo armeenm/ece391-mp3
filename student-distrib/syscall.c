@@ -211,10 +211,6 @@ cont:
     }
 
     pcb->argc = argc;
-
-    for (i = 0; i<argc; i++) {
-      printf("ye : %s\n", pcb->argv[i]);
-    }
     pcb->pid = running_pid;
     pcb->parent_ksp = esp;
     pcb->parent_kbp = ebp;

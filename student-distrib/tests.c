@@ -86,7 +86,7 @@ TEST(IDT) {
   /* Only ones left are 30 (#SX), PIT, keyboard, RTC, and syscall entries */
   if (idt_test_helper(30, INT, DPL0) || idt_test_helper(IDT_PIT, INT, DPL0) ||
       idt_test_helper(IDT_KEYBOARD, INT, DPL0) || idt_test_helper(IDT_RTC, INT, DPL0) ||
-      idt_test_helper(IDT_SYSCALL, INT, DPL3))
+      idt_test_helper(IDT_SYSCALL, TRAP, DPL3))
     TEST_FAIL;
 
   TEST_END;
