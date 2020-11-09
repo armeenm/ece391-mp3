@@ -141,21 +141,32 @@ i32 halt(u8 const status) {
  * Function: Checks cmd validity, if valid executes a system call given as ucmd input
  */
 i32 execute(u8 const* const ucmd) {
-  i8 const* const cmd = (i8 const*)ucmd;
+  i8 cmd[ARGS_SIZE];
   Pcb* const parent = get_current_pcb();
   DirEntry dentry;
   u32 entry;
   u8 header[4];
   u8 mask;
-  u32 i;
+  u32 i, j;
+  u32 argc;
 
   if (!cmd)
     return -1;
 
-  /* TODO: argc, argv */
+  // copy the input argument
+  memset(cmd, 0, ARGS_SIZE);
+  strcpy(cmd, (i8 const*)ucmd);
+  j = strlen(cmd);
+  for (i = 0, argc = 1; i<j; i++) {
+    // replace all spaces with null termination, and count up the number of args
+    if (cmd[i] == ' ') {
+      cmd[i] = '\0';
+      argc++;
+    }
+  }
 
   /* If directory entry read fails, fail */
-  if (read_dentry_by_name(ucmd, &dentry))
+  if (read_dentry_by_name((u8*)cmd, &dentry))
     return -1;
 
   /* If the data read isn't the size of the data, fail */
@@ -193,6 +204,7 @@ cont:
     Pcb* const pcb = get_current_pcb();
     u32 esp, ebp;
 
+    // copy the ESP and EBP for the child process to return to
     asm volatile("mov %%esp, %0;"
                  "mov %%ebp, %1;"
                  : "=g"(esp), "=g"(ebp));
@@ -211,10 +223,23 @@ cont:
       pcb->fds[i].file_position = 0;
     }
 
+    // setup argv to point to sections of the raw_argv string to seperate args
+    memcpy(pcb->raw_argv, cmd, ARGS_SIZE);
+    pcb->argv[0] = pcb->raw_argv;
+    for (i = 1, j = 1; i<ARGS_SIZE - 1; i++) {
+      if (pcb->raw_argv[i] == (i8)'\0')
+        pcb->argv[j++] = &pcb->raw_argv[i+1];
+    }
+
+    pcb->argc = argc;
+
+    for (i = 0; i<argc; i++) {
+      printf("ye : %s\n", pcb->argv[i]);
+    }
     pcb->pid = running_pid;
     pcb->parent_ksp = esp;
     pcb->parent_kbp = ebp;
-    pcb->parent_pid = (procs == 0x80) ? -1 : parent->pid; /* Special case 1st proc */
+    pcb->parent_pid = (procs == 0x80U) ? -1 : (i32)parent->pid; /* Special case 1st proc */
 
     /* New KSP */
     tss.esp0 = MB8 - KB8 * running_pid - 4;
