@@ -117,8 +117,10 @@ i32 halt(u8 const status) {
     running_pid = pcb->parent_pid;
   }
 
+  /* Marks process as completed */
   procs &= ~(0x80U >> pcb->pid);
 
+  /* Moves base pointers to parent */
   asm volatile("mov %0, %%esp;"
                "mov %1, %%ebp;"
                "mov %2, %%eax;"
@@ -150,10 +152,11 @@ i32 execute(u8 const* const ucmd) {
   u32 i, j;
   u32 argc;
 
+  /* If command input is null, fail */
   if (!cmd)
     return -1;
 
-  // copy the input argument
+  /* Copy the input argument */
   memset(cmd, 0, ARGS_SIZE);
   strcpy(cmd, (i8 const*)ucmd);
   j = strlen(cmd);
@@ -173,6 +176,7 @@ i32 execute(u8 const* const ucmd) {
   if (read_data(dentry.inode_idx, 0, header, sizeof(header)) != sizeof(header))
     return -1;
 
+  /* If file is an invalid executable, fail */
   for (i = 0; i < sizeof(header); ++i)
     if (header[i] != elf_header[i])
       return -1;
@@ -204,7 +208,7 @@ cont:
     Pcb* const pcb = get_current_pcb();
     u32 esp, ebp;
 
-    // copy the ESP and EBP for the child process to return to
+    /* Copy the ESP and EBP for the child process to return to parent */
     asm volatile("mov %%esp, %0;"
                  "mov %%ebp, %1;"
                  : "=g"(esp), "=g"(ebp));
@@ -223,7 +227,7 @@ cont:
       pcb->fds[i].file_position = 0;
     }
 
-    // setup argv to point to sections of the raw_argv string to seperate args
+    /* Setup argv to point to sections of the raw_argv string to seperate args */
     memcpy(pcb->raw_argv, cmd, ARGS_SIZE);
     pcb->argv[0] = pcb->raw_argv;
     for (i = 1, j = 1; i<ARGS_SIZE - 1; i++) {
@@ -266,7 +270,7 @@ i32 read(i32 const fd, void* const buf, i32 const nbytes) {
   if (!buf || fd < 0 || fd >= FD_CNT || nbytes < 0)
     return -1;
 
-  /* If PCB is NULL, file descriptor not in use, and ... */
+  /* If PCB is NULL, file descriptor not in use, or page table is null, fail */
   if (!pcb || ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || !pcb->fds[fd].jumptable)
     return -1;
 
@@ -288,7 +292,7 @@ i32 write(i32 fd, void const* buf, i32 nbytes) {
     return -1;
 
   Pcb* pcb = get_current_pcb();
-  /* If pcb is null, file descriptor not in use, and ... */
+  /* If pcb is null, file descriptor not in use, or page table is null, fail */
   if (!pcb || ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || !pcb->fds[fd].jumptable)
     return -1;
 
@@ -319,10 +323,12 @@ i32 open(u8 const* filename) {
   if (!pcb)
     return -1;
 
+  /* Start from index 2 because 0 and 1 are already in-use by std I/O */
   for (fdIndex = 2; fdIndex < FD_CNT; ++fdIndex) {
     if (pcb->fds[fdIndex].flags & FD_IN_USE)
       continue;
 
+    /* Check which file type we have and set appropriate file operation address */
     switch (dentry.filetype) {
     case FT_RTC:
       pcb->fds[fdIndex].jumptable = &rtc_fops;
@@ -340,11 +346,13 @@ i32 open(u8 const* filename) {
       return -1;
     }
 
+    /* If we fail to open, set jumptable address to NULL */
     if (pcb->fds[fdIndex].jumptable->open(filename) == -1) {
       pcb->fds[fdIndex].jumptable = NULL;
       return -1;
     }
 
+    /* Set file descriptor flags etc */
     pcb->fds[fdIndex].flags = FD_IN_USE;
     pcb->fds[fdIndex].inode = (dentry.filetype == FT_REG) ? dentry.inode_idx : 0;
     pcb->fds[fdIndex].file_position = 0;
@@ -368,7 +376,7 @@ i32 close(i32 fd) {
     return -1;
 
   Pcb* pcb = get_current_pcb();
-  /* If pcb is null, file descriptor not in use, and ... */
+  /* If pcb is null, file descriptor not in use, or page table is null, fail */
   if (!pcb || ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || !pcb->fds[fd].jumptable)
     return -1;
 

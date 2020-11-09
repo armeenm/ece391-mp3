@@ -64,28 +64,37 @@ void init_paging(void) {
 i32 make_task_pgdir(u8 const proc) {
   u32 i;
 
+  /* If there are more than 8 processes, fail */
+  /* It says >= because 0-7 are our 8 processes */
   if (proc >= 8)
     return -1;
 
+  /* Initialize page table for process */
   pgtbl_proc[0] = PG_USPACE | PG_RW;
 
   for (i = 1; i < PGTBL_LEN; ++i)
     pgtbl_proc[i] = (i * PTE_SIZE) | PG_USPACE | PG_RW | PG_PRESENT;
 
+  /* Initialize page directory 4KB pages */
   pgdir[proc][0] = (u32)pgtbl_proc | PG_USPACE | PG_RW | PG_PRESENT;
 
+  /* Initialize page directory kernal */
   pgdir[proc][1] = PG_4M_START | PG_USPACE | PG_RW | PG_SIZE | PG_PRESENT;
 
+  /* Initialize page directory 4MB pages */
   pgdir[proc][ELF_LOAD_PG] = ((proc + 2) * PG_4M_START) | PG_SIZE | PG_USPACE | PG_RW | PG_PRESENT;
 
+  /* Sets up page directory for process and flushes TLB */
   asm volatile("mov %0, %%cr3;" ::"g"(pgdir[proc]));
 
   return 0;
 }
 
 i32 remove_task_pgdir(u8 const proc) {
+  /* Mark page as not present */
   pgdir[proc][ELF_LOAD_PG] &= ~PG_PRESENT;
 
+  /* Sets up page directory for process and flushes TLB */
   asm volatile("mov %0, %%cr3;" ::"g"(pgdir[proc]));
 
   return 0;
