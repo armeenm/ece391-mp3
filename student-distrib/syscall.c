@@ -107,7 +107,7 @@ i32 halt(u8 const status) {
   }
 
   /* Marks process as completed */
-  procs &= ~(0x80U >> pcb->pid);
+  procs &= ~(FIRST_PID >> pcb->pid);
 
   /* Moves base pointers to parent */
   asm volatile("mov %0, %%esp;"
@@ -203,7 +203,7 @@ cont:
                  : "=g"(esp), "=g"(ebp));
 
     /* Sets first two file descriptors to stdin and stdout, and that they're in use */
-    for (i = 0; i < 2; ++i) {
+    for (i = 0; i < FD_START; ++i) {
       pcb->fds[i].jumptable = (i == 0) ? &std_in_fops : &std_out_fops;
       pcb->fds[i].flags = FD_IN_USE;
       pcb->fds[i].inode = 0;
@@ -211,7 +211,7 @@ cont:
     }
 
     /* Sets the rest of the file descriptors to NULL and not in use */
-    for (i = 2; i < FD_CNT; ++i) {
+    for (i = FD_START; i < FD_CNT; ++i) {
       pcb->fds[i].jumptable = NULL;
       pcb->fds[i].flags = FD_NOT_IN_USE;
       pcb->fds[i].inode = 0;
@@ -233,7 +233,7 @@ cont:
     pcb->parent_pid = (procs == FIRST_PID) ? -1 : (i32)parent->pid; /* Special case 1st proc */
 
     /* New KSP */
-    tss.esp0 = MB8 - KB8 * (running_pid + 1) - 4;
+    tss.esp0 = MB8 - KB8 * (running_pid + 1) - ADDRESS_SIZE;
 
     uspace(entry);
 
@@ -359,7 +359,7 @@ i32 open(u8 const* filename) {
  */
 i32 close(i32 fd) {
   /* If file descriptor is invalid, fail */
-  if (fd < 2 || fd >= FD_CNT)
+  if (fd < FD_START || fd >= FD_CNT)
     return -1;
 
   Pcb* pcb = get_current_pcb();
