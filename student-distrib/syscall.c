@@ -33,9 +33,11 @@ i32 irqh_syscall(void) {
   case SYSC_HALT:
     return halt(arg1);
 
+  /* Execute */
   case SYSC_EXEC:
     return execute((u8 const*)arg1);
 
+  /* Read */
   case SYSC_READ:
     return read(*(i32*)&arg1, (void*)arg2, *(i32*)&arg3);
 
@@ -121,7 +123,7 @@ i32 halt(u8 const status) {
   asm volatile("mov %0, %%esp;"
                "mov %1, %%ebp;"
                "leave;"
-               "ret;"
+               "jmp pog;"
                : "=g"(pcb->parent_ksp), "=g"(pcb->parent_kbp)::"esp", "ebp");
 
   return 0;
@@ -218,6 +220,7 @@ cont:
 
     uspace(entry);
   }
+  asm volatile("pog:");
 
   return get_current_pcb()->child_return;
 }

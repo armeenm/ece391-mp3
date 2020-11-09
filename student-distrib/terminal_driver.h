@@ -3,7 +3,7 @@
 
 #include "keyboard.h"
 
-static const char SHELL_PS1[] = "thanOS> ";
+static const char SHELL_PS1[] = "391OS> ";
 
 extern int terminal_read_flag;
 
