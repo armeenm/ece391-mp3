@@ -25,6 +25,16 @@ u8 running_pid = 0;
 
 static Pcb* get_pcb(u8 proc);
 
+/* irqh_syscall
+ * Description: IRQ Handler for system calls
+ * Inputs: type -- Type of syscall 
+ *         arg1 -- Argument 1
+ *         arg2 -- Argument 2
+ *         arg3 -- Argument 3
+ * Outputs: none
+ * Return Value: -1 if fails
+ * Function: Uses a jump table to call function given type and passed arguments
+ */
 i32 irqh_syscall(void) {
   SyscallType type;
   Syscall func;
@@ -69,11 +79,11 @@ static Pcb* get_pcb(u8 proc) { return (Pcb*)(MB8 - (proc + 1) * KB8); }
 Pcb* get_current_pcb(void) { return get_pcb(running_pid); }
 
 /* halt
- * Description:
- * Inputs: status -- UNUSED
+ * Description: Halts a program
+ * Inputs: status -- exit code of program
  * Outputs: none
  * Return Value: none
- * Function: currently unimplemented
+ * Function: Halts a program given a status
  */
 i32 halt(u8 const status) {
   u32 i;
@@ -131,6 +141,7 @@ i32 execute(u8 const* const ucmd) {
   u32 i, j;
   u32 argc;
 
+  /* If our input is null, fail */
   if (!ucmd)
     return -1;
 
@@ -139,7 +150,7 @@ i32 execute(u8 const* const ucmd) {
   strcpy(cmd, (i8 const*)ucmd);
   j = strlen(cmd);
   for (i = 0, argc = 1; i<j; i++) {
-    // replace all spaces with null termination, and count up the number of args
+    /* Replace all spaces with null termination, and count up the number of args */
     if (cmd[i] == ' ') {
       cmd[i] = '\0';
       argc++;
@@ -191,6 +202,7 @@ cont:
                  "mov %%ebp, %1;"
                  : "=g"(esp), "=g"(ebp));
 
+    /* Sets first two file descriptors to stdin and stdout, and that they're in use */
     for (i = 0; i < 2; ++i) {
       pcb->fds[i].jumptable = (i == 0) ? &std_in_fops : &std_out_fops;
       pcb->fds[i].flags = FD_IN_USE;
@@ -198,6 +210,7 @@ cont:
       pcb->fds[i].file_position = 0;
     }
 
+    /* Sets the rest of the file descriptors to NULL and not in use */
     for (i = 2; i < FD_CNT; ++i) {
       pcb->fds[i].jumptable = NULL;
       pcb->fds[i].flags = FD_NOT_IN_USE;
@@ -258,7 +271,7 @@ i32 read(i32 const fd, void* const buf, i32 const nbytes) {
  *         nbytes -- number of bytes
  * Outputs: none
  * Return Value: if fails return -1, if success return 0
- * Function: currently unimplemented
+ * Function: Checks if inputs are valid, if so then writes bytes to buffer
  */
 i32 write(i32 fd, void const* buf, i32 nbytes) {
   /* If buffer is NULL, fd is invalid value, or nbytes is invalid value, fail */
@@ -278,7 +291,7 @@ i32 write(i32 fd, void const* buf, i32 nbytes) {
  * Inputs: filename -- name of the file to open
  * Outputs: none
  * Return Value: if fails return -1, if success return 0
- * Function: Checks for invalid inputs, if valid then open file
+ * Function: Checks for invalid inputs, if valid then open filename
  */
 i32 open(u8 const* filename) {
   DirEntry dentry;
