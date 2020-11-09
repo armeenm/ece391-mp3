@@ -486,8 +486,18 @@ TEST(FS) {
 /***** CHECKPOINT 3 {{{ *****/
 
 TEST(EXEC_LS) {
-  if (execute((u8*)"ls blah blah blah!!!"))
+  if (execute((u8*)"                                     ls blah blah blah!!!"))
     TEST_FAIL;
+
+  TEST_END;
+}
+
+TEST(EXEC_TESTPRINT) {
+  u32 i;
+
+  for (i = 0; i < 5; ++i)
+    if (execute((u8*)"testprint"))
+      TEST_FAIL;
 
   TEST_END;
 }
@@ -518,5 +528,6 @@ void launch_tests(void) {
   TEST_SHELL();
 
   TEST_EXEC_LS();
+  TEST_EXEC_TESTPRINT();
 #endif
 }

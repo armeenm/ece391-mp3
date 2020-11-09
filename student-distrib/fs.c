@@ -60,21 +60,16 @@ i32 file_close(i32 UNUSED(fd)) { return 0; }
  * Function: Used for the cat test to populate a buffer with file contents
  */
 i32 file_read(i32 fd, void* const buf, i32 nbytes) {
-  DirEntry dentry;
-
   Pcb* pcb = get_current_pcb();
 
   if (!pcb || (pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE)
     return -1;
 
-  if (read_dentry_by_index(pcb->fds[fd].inode, &dentry) == -1)
-    return -1;
-
   /* TODO: Is this the right behavior. If the buf is < size it will write into random memory */
   if (!nbytes)
-    nbytes = ((INode*)&bootblk[1])[dentry.inode_idx].size;
+    nbytes = ((INode*)&bootblk[1])[pcb->fds[fd].inode].size;
 
-  i32 bytes_read = read_data(dentry.inode_idx, pcb->fds[fd].file_position, buf, nbytes);
+  i32 bytes_read = read_data(pcb->fds[fd].inode, pcb->fds[fd].file_position, buf, nbytes);
   if (bytes_read >= 0)
     pcb->fds[fd].file_position += bytes_read;
 
@@ -193,7 +188,7 @@ i32 read_dentry_by_name(u8 const* const ufname, DirEntry* const dentry) {
  *           entry memory.
  */
 i32 read_dentry_by_index(u32 const idx, DirEntry* const dentry) {
-  if (idx >= bootblk->fs_stats.direntry_cnt || !dentry)
+  if (idx >= bootblk->fs_stats.inode_cnt || !dentry)
     return -1;
 
   memcpy(dentry, &bootblk->direntries[idx], sizeof(DirEntry));
@@ -212,7 +207,6 @@ i32 read_dentry_by_index(u32 const idx, DirEntry* const dentry) {
  * Function: used in cat to grab the data from a given file
  */
 i32 read_data(u32 const inode, u32 const offset, u8* const buf, u32 const ulength) {
-
   INode const* const inodes = (INode*)&bootblk[1];
   Datablk const* const datablks = (Datablk const*)&inodes[bootblk->fs_stats.inode_cnt];
   i32 const length = (i32)ulength;
@@ -231,7 +225,7 @@ i32 read_data(u32 const inode, u32 const offset, u8* const buf, u32 const ulengt
 
   // Make sure our offset is less than filesize
   if (offset >= inodes[inode].size)
-    return -1;
+    return 0;
 
   // Check that the furthest byte we want is even in the span of data
   if (offset + ulength >= bootblk->fs_stats.direntry_cnt * FS_BLK_SIZE)

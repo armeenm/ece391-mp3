@@ -17,8 +17,9 @@ FileOps const fs_fops = {file_open, file_close, file_read, file_write};
 FileOps const dir_fops = {dir_open, dir_close, dir_read, dir_write};
 
 u8 const elf_header[] = {0x7F, 'E', 'L', 'F'};
-Syscall const syscalls[] = {(Syscall)halt, (Syscall)execute, (Syscall)read, (Syscall)write, (Syscall)open,
-	(Syscall)close, (Syscall)NULL, (Syscall)NULL};
+Syscall const syscalls[] = {(Syscall)halt, (Syscall)execute, (Syscall)read,    (Syscall)write,
+                            (Syscall)open, (Syscall)close,   (Syscall)getargs, (Syscall)NULL,
+                            (Syscall)NULL, (Syscall)NULL};
 
 u8 procs = 0x0;
 u8 running_pid = 0;
@@ -27,7 +28,7 @@ static Pcb* get_pcb(u8 proc);
 
 /* irqh_syscall
  * Description: IRQ Handler for system calls
- * Inputs: type -- Type of syscall 
+ * Inputs: type -- Type of syscall
  *         arg1 -- Argument 1
  *         arg2 -- Argument 2
  *         arg3 -- Argument 3
@@ -147,9 +148,9 @@ i32 execute(u8 const* const ucmd) {
 
   /* Copy the input argument neglecting leading spaces */
   memset(cmd, 0, ARGS_SIZE);
-  strcpy(cmd, (i8 const*)ucmd+strnonspace(ucmd));
+  strcpy(cmd, (i8 const*)ucmd + strnonspace((i8 const*)ucmd));
   j = strlen(cmd);
-  for (i = 0, argc = 1; i<j; i++) {
+  for (i = 0, argc = 1; i < j; i++) {
     /* Replace all spaces with null termination, and count up the number of args */
     if (cmd[i] == ' ') {
       cmd[i] = '\0';
@@ -221,9 +222,10 @@ cont:
     /* Setup argv to point to sections of the raw_argv string to seperate args */
     memcpy(pcb->raw_argv, cmd, ARGS_SIZE);
     pcb->argv[0] = pcb->raw_argv;
-    for (i = 1, j = 1; i<ARGS_SIZE - 1; i++) {
+
+    for (i = 1, j = 1; i < ARGS_SIZE - 1; i++) {
       if (pcb->raw_argv[i] == (i8)'\0')
-        pcb->argv[j++] = &pcb->raw_argv[i+1];
+        pcb->argv[j++] = &pcb->raw_argv[i + 1];
     }
 
     pcb->argc = argc;
@@ -254,11 +256,8 @@ i32 read(i32 const fd, void* const buf, i32 const nbytes) {
   Pcb* const pcb = get_current_pcb();
 
   /* If buffer is NULL, fd is invalid value, or nbytes is invalid value, fail */
-  if (!buf || fd < 0 || fd >= FD_CNT || nbytes < 0)
-    return -1;
-
-  /* If PCB is NULL, file descriptor not in use, or page table is null, fail */
-  if (!pcb || ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || !pcb->fds[fd].jumptable)
+  if (!buf || fd < 0 || fd >= FD_CNT || nbytes < 0 || !pcb ||
+      ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || !pcb->fds[fd].jumptable)
     return -1;
 
   return pcb->fds[fd].jumptable->read(fd, buf, nbytes);
@@ -383,7 +382,16 @@ i32 close(i32 fd) {
  * Return Value: if fails return -1, if success return 0
  * Function: currently unimplemented
  */
-i32 getargs(u8* UNUSED(buf), i32 UNUSED(nbytes)) { NIMPL; }
+i32 getargs(u8* const buf, i32 const nbytes) {
+  Pcb const* const pcb = get_current_pcb();
+
+  if (!buf || nbytes < 0 || !pcb->argv[1])
+    return -1;
+
+  memcpy(buf, pcb->argv[1], MIN(strlen(pcb->argv[1]), (u32)nbytes));
+
+  return 0;
+}
 
 /* vidmap
  * Description:

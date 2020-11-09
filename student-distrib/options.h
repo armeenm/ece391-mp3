@@ -24,6 +24,7 @@
 #define ENABLE_TEST_FS 0
 
 #define ENABLE_TEST_EXEC_LS 1
+#define ENABLE_TEST_EXEC_TESTPRINT 1
 
 /* RTC demonstrations */
 #define RTC_RANDOM_TEXT_DEMO 0 /* CP1 */
