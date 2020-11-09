@@ -5,6 +5,10 @@
 
 #define FD_IN_USE 0x00000001
 #define FD_NOT_IN_USE 0x00000000
+#define FIRST_PID 0x80 // MSB is high to represent only pid 0 is enabled
+#define FD_START 2 // start after std in/out
+#define ADDRESS_SIZE 4
+#define ELF_HEADER_SIZE 4
 
 enum { FD_CNT = 8, ARGS_SIZE = 128 };
 

@@ -95,14 +95,14 @@ i32 halt(u8 const status) {
     close(i);
 
   if (pcb->parent_pid == -1) {
-    tss.esp0 = MB8 - KB8 - 4;
+    tss.esp0 = MB8 - KB8 - ADDRESS_SIZE;
   } else {
     get_pcb(pcb->parent_pid)->child_return = status;
     /* There is a parent, we need to switch contexts to the parent */
     remove_task_pgdir(pcb->pid);
     make_task_pgdir(pcb->parent_pid);
 
-    tss.esp0 = MB8 - KB8 * (pcb->parent_pid + 1) - 4;
+    tss.esp0 = MB8 - KB8 * (pcb->parent_pid + 1) - ADDRESS_SIZE;
     running_pid = pcb->parent_pid;
   }
 
@@ -136,7 +136,7 @@ i32 execute(u8 const* const ucmd) {
   Pcb* const parent = get_current_pcb();
   DirEntry dentry;
   u32 entry;
-  u8 header[4];
+  u8 header[ELF_HEADER_SIZE];
   u8 mask;
   u32 i, j;
   u32 argc;
@@ -170,7 +170,7 @@ i32 execute(u8 const* const ucmd) {
     if (header[i] != elf_header[i])
       return -1;
 
-  for (i = 0, mask = 0x80; i < 8; ++i, mask >>= 1)
+  for (i = 0, mask = FIRST_PID; i < 8; ++i, mask >>= 1)
     if (!(mask & procs)) {
       procs |= mask;
       running_pid = i;
@@ -230,7 +230,7 @@ cont:
     pcb->pid = running_pid;
     pcb->parent_ksp = esp;
     pcb->parent_kbp = ebp;
-    pcb->parent_pid = (procs == 0x80U) ? -1 : (i32)parent->pid; /* Special case 1st proc */
+    pcb->parent_pid = (procs == FIRST_PID) ? -1 : (i32)parent->pid; /* Special case 1st proc */
 
     /* New KSP */
     tss.esp0 = MB8 - KB8 * (running_pid + 1) - 4;
