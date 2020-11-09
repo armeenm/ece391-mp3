@@ -167,7 +167,8 @@ void entry(u32 const magic, u32 const addr) {
   launch_tests();
 #endif
   /* Execute the first program ("shell") ... */
-  execute((u8*)"shell");
+  for (;;)
+    execute((u8*)"shell");
 
   /* Spin (nicely, so we don't chew up cycles) */
   HLTLOOP;

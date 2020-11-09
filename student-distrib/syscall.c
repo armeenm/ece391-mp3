@@ -18,7 +18,6 @@ u8 const elf_header[] = {0x7F, 'E', 'L', 'F'};
 
 u8 procs = 0x0;
 u8 running_pid = 0;
-static u32 ksp = 0;
 
 static Pcb* get_pcb(u8 proc);
 
@@ -101,21 +100,24 @@ i32 halt(u8 const status) {
   Pcb* const pcb = get_current_pcb();
 
   /* If we're the "parent process" of the OS (pid == 0, shell) don't halt it */
-  if (pcb->parent_pid != -1) {
+  /* Close all FDs for the current process */
+  for (i = 0; i < FD_CNT; ++i)
+    close(i);
 
-    /* Close all FDs for the current process */
-    for (i = 0; i < FD_CNT; ++i)
-      close(i);
-
-    /* There is a parent, we need to switch contexts to the parent */
+  if (pcb->parent_pid == -1) {
+    tss.esp0 = MB8 - 4;
+    running_pid = 0;
+  } else {
     get_pcb(pcb->parent_pid)->child_return = status;
+    /* There is a parent, we need to switch contexts to the parent */
     remove_task_pgdir(pcb->pid);
     make_task_pgdir(pcb->parent_pid);
 
     tss.esp0 = MB8 - KB8 * pcb->parent_pid - 4;
-    procs &= ~(0x80U >> pcb->pid);
     running_pid = pcb->parent_pid;
   }
+
+  procs &= ~(0x80U >> pcb->pid);
 
   asm volatile("mov %0, %%esp;"
                "mov %1, %%ebp;"
@@ -124,11 +126,10 @@ i32 halt(u8 const status) {
                : "g"(pcb->parent_ksp), "g"(pcb->parent_kbp), "g"(pcb->child_return)
                : "eax", "esp", "ebp");
 
-  // asm volatile("add $244, %ebp");
-
   asm volatile("leave;"
                "ret;");
-  return 0;
+
+  return -1;
   /* Not sure if this is correct -- halt is supposed to jump to execute return */
 }
 
@@ -217,7 +218,6 @@ cont:
 
     /* New KSP */
     tss.esp0 = MB8 - KB8 * running_pid - 4;
-    ksp = tss.esp0;
 
     uspace(entry);
 
