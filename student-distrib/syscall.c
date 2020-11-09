@@ -8,6 +8,8 @@
 
 enum { ENTRY_POINT_OFFSET = 24, LOAD_ADDR = 0x8048000, MB8 = 0x800000, KB8 = 0x2000 };
 
+typedef i32 (*Syscall)(u32 arg1, u32 arg2, u32 arg3);
+
 FileOps const std_in_fops = {terminal_open, terminal_close, terminal_read, write_failure};
 FileOps const std_out_fops = {terminal_open, terminal_close, read_failure, terminal_write};
 FileOps const rtc_fops = {rtc_open, rtc_close, rtc_read, rtc_write};
@@ -15,6 +17,8 @@ FileOps const fs_fops = {file_open, file_close, file_read, file_write};
 FileOps const dir_fops = {dir_open, dir_close, dir_read, dir_write};
 
 u8 const elf_header[] = {0x7F, 'E', 'L', 'F'};
+Syscall const syscalls[] = {(Syscall)halt, (Syscall)execute, (Syscall)read, (Syscall)write, (Syscall)open,
+	(Syscall)close, (Syscall)NULL, (Syscall)NULL};
 
 u8 procs = 0x0;
 u8 running_pid = 0;
@@ -23,47 +27,23 @@ static Pcb* get_pcb(u8 proc);
 
 i32 irqh_syscall(void) {
   SyscallType type;
+  Syscall func;
   u32 arg1, arg2, arg3;
 
   /* Read the syscall type and arguments */
   asm volatile("" : "=a"(type), "=b"(arg1), "=c"(arg2), "=d"(arg3));
 
-  switch (type) {
-  case SYSC_HALT:
-    return halt(arg1);
+  /* Ensure the type is within bounds */
+  if (!(u32)type || (u32)type > (u32)SYSC_SIGRETURN)
+    return -1;
 
-  /* Execute */
-  case SYSC_EXEC:
-    return execute((u8 const*)arg1);
+  /* Get the function from the jump table, do NULL check */
+  func = syscalls[(u32)type - 1];
+  if (!func)
+    return -1;
 
-  /* Read */
-  case SYSC_READ:
-    return read(*(i32*)&arg1, (void*)arg2, *(i32*)&arg3);
-
-  case SYSC_WRITE:
-    return write(*(i32*)&arg1, (void const*)arg2, *(i32*)&arg3);
-
-  case SYSC_OPEN:
-    return open((u8 const*)arg1);
-
-  case SYSC_CLOSE:
-    return close(*(i32*)&arg1);
-
-  case SYSC_GETARGS:
-    return getargs((u8*)arg1, *(i32*)&arg1);
-
-  case SYSC_VIDMAP:
-    return vidmap((u8**)arg1);
-
-  case SYSC_SET_HANDLER:
-    NIMPL;
-
-  case SYSC_SIGRETURN:
-    NIMPL;
-
-  default:
-    NIMPL;
-  }
+  /* Call it */
+  return func(arg1, arg2, arg3);
 
   /* EAX, ECX, EDX: Handled in ASM linkage
    * EBX, EDI, ESI: Handled by the compiler
