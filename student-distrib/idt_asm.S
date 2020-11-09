@@ -6,8 +6,10 @@
 #ifdef IDT_C
 
 #include "lib.h"
+#include "syscall.h"
 
 #define ASM_EXC(name) void asm_##name(void);
+#define ASM_EXC_KEEPEAX(name) ASM_EXC(name)
 #define I_ASM_EXC(name, unused) ASM_EXC(name)
 
 /* Some macro magic to choose whether we clear or not */
@@ -43,21 +45,19 @@ typedef struct IntStackE {
   ASM_EXC(name)                                                                                    \
   void name(IntStack stack);                                                                       \
   void name(IntStack stack) {                                                                      \
-    cli();                                                                                         \
     CLR_##clear                                                                                    \
     printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", stack.eip, stack.eflags);                    \
-    HLTLOOP;                                                                                       \
+    halt(1);                                                                                       \
   }
 
 #define I_EXC_DFL_ERRC(name, str, clear)                                                           \
   ASM_EXC(name)                                                                                    \
   void name(IntStackE stack);                                                                      \
   void name(IntStackE stack) {                                                                     \
-    cli();                                                                                         \
     CLR_##clear                                                                                    \
     printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n",                                  \
            stack.errc, stack.eip, stack.eflags);                                                   \
-    HLTLOOP;                                                                                       \
+    halt(1);                                                                                       \
   }
 
 /* Separate versions for whether we should clear the screen or not */
@@ -78,6 +78,7 @@ typedef struct IntStackE {
 
 /* Save/restore registers and call the C code */
 #define ASM_EXC(name) I_ASM_EXC(name, false)
+#define ASM_EXC_KEEPEAX(name) I_ASM_EXC(name, true)
 
 #define I_ASM_EXC(name, clobeax)                                                                   \
   .global asm_##name;                                                                              \
@@ -131,6 +132,6 @@ EXC_DFL(irqh_pit, "PIT event!")
 /* Define normal interrupts */
 ASM_EXC(irqh_keyboard)
 ASM_EXC(irqh_rtc)
-I_ASM_EXC(irqh_syscall, true)
+ASM_EXC_KEEPEAX(irqh_syscall)
 
 #endif
