@@ -22,21 +22,21 @@
 typedef enum RTCRate { HZ1024 = 0x6, HZ512, HZ256, HZ128, HZ64, HZ32, HZ16, HZ8, HZ4, HZ2 } RTCRate;
 
 typedef struct {
-  uint32_t virt_freq; // must be a power of 2 <= 1024
-  uint32_t real_freq; // The intial, real freq requested of RTC (1024)
-  uint32_t int_count;
-  volatile uint8_t flag;
+  u32 virt_freq; // must be a power of 2 <= 1024
+  u32 real_freq; // The intial, real freq requested of RTC (1024)
+  u32 int_count;
+  volatile u8 flag;
 } virtual_rtc;
 
 void init_rtc(void);
 void irqh_rtc(void);
 void set_real_freq_rtc(RTCRate const rate);
-int set_virtual_freq_rtc(uint32_t freq);
-uint32_t ack_rtc_int(void);
+int set_virtual_freq_rtc(u32 freq);
+u32 ack_rtc_int(void);
 
 // System calls
-int32_t rtc_read(int32_t fd, void* buf, int32_t nbytes);
-int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes);
-int32_t rtc_open(const uint8_t* filename);
-int32_t rtc_close(int32_t fd);
+i32 rtc_read(i32 fd, void* buf, i32 nbytes);
+i32 rtc_write(i32 fd, const void* buf, i32 nbytes);
+i32 rtc_open(const u8* filename);
+i32 rtc_close(i32 fd);
 #endif

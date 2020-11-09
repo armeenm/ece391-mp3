@@ -8,28 +8,55 @@
 #include "lib.h"
 
 #define ASM_EXC(name) void asm_##name(void);
+#define I_ASM_EXC(name, unused) ASM_EXC(name)
 
 /* Some macro magic to choose whether we clear or not */
 #define CLR_true clear();
 #define CLR_false
 
+typedef struct IntStack {
+  u32 flags;
+  u32 edx;
+  u32 ecx;
+  u32 eax;
+  u32 eip;
+  u32 cs;
+  u32 eflags;
+  u32 esp;
+  u32 ss;
+} PACKED IntStack;
+
+typedef struct IntStackE {
+  u32 flags;
+  u32 edx;
+  u32 ecx;
+  u32 eax;
+  u32 errc;
+  u32 eip;
+  u32 cs;
+  u32 eflags;
+  u32 esp;
+  u32 ss;
+} PACKED IntStackE;
+
 #define I_EXC_DFL(name, str, clear)                                                                \
   ASM_EXC(name)                                                                                    \
-  void name(void);                                                                                 \
-  void name(void) {                                                                                \
+  void name(IntStack stack);                                                                       \
+  void name(IntStack stack) {                                                                      \
     cli();                                                                                         \
     CLR_##clear                                                                                    \
-    printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", 0, 0);                                       \
+    printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", stack.eip, stack.eflags);                    \
     HLTLOOP;                                                                                       \
   }
 
 #define I_EXC_DFL_ERRC(name, str, clear)                                                           \
   ASM_EXC(name)                                                                                    \
-  void name(void);                                                                                 \
-  void name(void) {                                                                                \
+  void name(IntStackE stack);                                                                      \
+  void name(IntStackE stack) {                                                                     \
     cli();                                                                                         \
     CLR_##clear                                                                                    \
-    printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n", 0, 0, 0);                        \
+    printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n",                                  \
+           stack.errc, stack.eip, stack.eflags);                                                   \
     HLTLOOP;                                                                                       \
   }
 
@@ -46,17 +73,24 @@
 
 #define ASM 1
 
+#define CLOBEAX_true addl $4, %esp
+#define CLOBEAX_false popl %eax
+
 /* Save/restore registers and call the C code */
-#define ASM_EXC(name)                                                                              \
+#define ASM_EXC(name) I_ASM_EXC(name, false)
+
+#define I_ASM_EXC(name, clobeax)                                                                   \
   .global asm_##name;                                                                              \
   asm_##name:                                                                                      \
   pushl %eax;                                                                                      \
   pushl %ecx;                                                                                      \
   pushl %edx;                                                                                      \
+  pushf;                                                                                           \
   call name;                                                                                       \
+  popf;                                                                                            \
   popl %edx;                                                                                       \
   popl %ecx;                                                                                       \
-  popl %eax;                                                                                       \
+  CLOBEAX_##clobeax;                                                                               \
   iret;
 
 /* These all use the above macro when we're compiling this file standalone */
@@ -64,8 +98,6 @@
 #define EXC_DFL_ERRC EXC_DFL
 #define EXC_DFL_NOCLR EXC_DFL
 #define EXC_DFL_ERRC_NOCLR EXC_DFL
-
-.align 4
 
 #endif
 
@@ -99,6 +131,6 @@ EXC_DFL(irqh_pit, "PIT event!")
 /* Define normal interrupts */
 ASM_EXC(irqh_keyboard)
 ASM_EXC(irqh_rtc)
-ASM_EXC(irqh_syscall)
+I_ASM_EXC(irqh_syscall, true)
 
 #endif

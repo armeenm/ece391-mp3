@@ -1,7 +1,7 @@
 #include "fs.h"
 #include "debug.h"
 #include "paging.h"
-#include "util.h"
+#include "syscall.h"
 #include "x86_desc.h"
 
 static Bootblk* bootblk = NULL;
@@ -20,12 +20,12 @@ static u32 dir_read_count = 0;
 i32 open_fs(u32 const start, u32 const UNUSED(end)) {
   bootblk = (Bootblk*)start;
   // Enable the filesystem 4mb page to be marked as present
-  pgdir[start >> PG_4M_ADDR_OFFSET] |= PG_PRESENT;
+  pgdir[0][start >> PG_4M_ADDR_OFFSET] |= PG_PRESENT;
 
   /* TODO: Sanity checks */
   if (bootblk->fs_stats.direntry_cnt >= FS_MAX_DIR_ENTRIES) {
     // Reset state on page location
-    pgdir[start >> PG_4M_ADDR_OFFSET] &= ~(1U);
+    pgdir[0][start >> PG_4M_ADDR_OFFSET] &= ~(1U);
     return -1;
   }
 
@@ -39,7 +39,7 @@ i32 open_fs(u32 const start, u32 const UNUSED(end)) {
  * Return Value: 0
  * Function: none currently
  */
-i32 file_open(const u8* UNUSED(filename)) { return 0; }
+i32 file_open(u8 const* UNUSED(filename)) { return 0; }
 
 /* file_close
  * Description: Closes file
@@ -52,24 +52,48 @@ i32 file_close(i32 UNUSED(fd)) { return 0; }
 
 /* file_read
  * Description: Reads file (not to sys call spec for this part of the MP no fds setup)
- * Inputs: fname -- Name of file to read (fd in fututre)
- *         buf -- User supplied buffer to place file data in
+ * Inputs: fd     -- file descriptor to read from
  *         length -- Length of the file
  *         offset -- forward offset (will be in FD in the future)
  * Outputs: none
  * Return Value: -1 on failure, otherwise the number of bytes written to buf
  * Function: Used for the cat test to populate a buffer with file contents
  */
-i32 file_read(i8 const* const fname, u8* const buf, u32 const offset) {
+i32 file_read(i32 fd, void* const buf, i32 nbytes) {
   DirEntry dentry;
 
-  // We validate fname is a ptr and grab the dentry and then do a read on the cooresponding inode to
-  // buf
-  return (!fname)
-             ? -1
-             : read_dentry_by_name((u8 const*)fname, &dentry) // We get the size of this inode
-                   ?: read_data(dentry.inode_idx, offset, buf,
-                                ((INode*)&bootblk[1])[dentry.inode_idx].size);
+  Pcb* pcb = get_current_pcb();
+
+  if (!pcb || (pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE)
+    return -1;
+
+  if (read_dentry_by_index(pcb->fds[fd].inode, &dentry) == -1)
+    return -1;
+
+  /* TODO: Is this the right behavior. If the buf is < size it will write into random memory */
+  if (!nbytes)
+    nbytes = ((INode*)&bootblk[1])[dentry.inode_idx].size;
+
+  i32 bytes_read = read_data(dentry.inode_idx, pcb->fds[fd].file_position, buf, nbytes);
+  if (bytes_read >= 0)
+    pcb->fds[fd].file_position += bytes_read;
+
+  return bytes_read;
+}
+
+i32 file_read_name(i8 const* const fname, void* const buf, u32 const offset, u32 size) {
+  DirEntry dentry;
+
+  if (!fname)
+    return -1;
+
+  if (read_dentry_by_name((u8 const*)fname, &dentry))
+    return -1;
+
+  if (!size)
+    size = ((INode*)&bootblk[1])[dentry.inode_idx].size;
+
+  return read_data(dentry.inode_idx, offset, buf, size);
 }
 
 /* file_write
@@ -79,9 +103,7 @@ i32 file_read(i8 const* const fname, u8* const buf, u32 const offset) {
  * Return Value: -1 (failure because FS is readonly)
  * Function: none currently
  */
-i32 file_write(i32 UNUSED(fd), const void* UNUSED(buf), i32 UNUSED(nbytes)) {
-  return -1;
-}
+i32 file_write(i32 UNUSED(fd), void const* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }
 
 /* dir_open
  * Description: Opens directory (and resets the read count for this directory)
@@ -102,7 +124,7 @@ i32 dir_open(const u8* UNUSED(filename)) {
  * Return Value: 0
  * Function: none currently
  */
-i32 dir_close(u32 UNUSED(fd)) { return 0; }
+i32 dir_close(i32 UNUSED(fd)) { return 0; }
 
 /* dir_read
  * Description: Reads diretory
@@ -114,7 +136,7 @@ i32 dir_close(u32 UNUSED(fd)) { return 0; }
  * Return Value: -1, otherwise the number of bytes copied
  * Function: Read's the current file name  for this directory read
  */
-i32 dir_read(u32 UNUSED(fd), void* buf, i32 nbytes) {
+i32 dir_read(i32 UNUSED(fd), void* buf, i32 nbytes) {
   DirEntry d;
   i32 const i = read_dentry_by_index(dir_read_count++, &d);
   i32 const bytes = MIN(MIN(nbytes, 32), (i32)strlen(d.filename));
@@ -134,9 +156,7 @@ i32 dir_read(u32 UNUSED(fd), void* buf, i32 nbytes) {
  * Return Value: -1
  * Function: none currently
  */
-i32 dir_write(i32 UNUSED(fd), const void* UNUSED(buf), i32 UNUSED(nbytes)) {
-  return -1;
-}
+i32 dir_write(i32 UNUSED(fd), void const* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }
 
 /* read_dentry_by_name
  * Description: Reads directory entry by name
@@ -191,8 +211,7 @@ i32 read_dentry_by_index(u32 const idx, DirEntry* const dentry) {
  * Return Value: -1 on failure, otherwise how many bytes were read
  * Function: used in cat to grab the data from a given file
  */
-i32 read_data(u32 const inode, u32 const offset, u8* const buf,
-                  u32 const ulength) {
+i32 read_data(u32 const inode, u32 const offset, u8* const buf, u32 const ulength) {
 
   INode const* const inodes = (INode*)&bootblk[1];
   Datablk const* const datablks = (Datablk const*)&inodes[bootblk->fs_stats.inode_cnt];
@@ -204,7 +223,7 @@ i32 read_data(u32 const inode, u32 const offset, u8* const buf,
   u32 datablk_offset = offset % FS_BLK_SIZE;
 
   if (!buf)
-    return 0;
+    return -1;
 
   // Ensure we're in bounds for inode
   if (inode >= bootblk->fs_stats.inode_cnt)

@@ -12,42 +12,42 @@
 #define VGA_CURSOR_HIGH_REGISTER 0x0E
 #define VGA_CURSOR_LOW_REGISTER 0x0F
 
-int32_t printf(int8_t* format, ...);
-void putc(int8_t c);
-int32_t puts(int8_t* s);
-int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix);
-int8_t* strrev(int8_t* s);
-uint32_t strlen(const int8_t* s);
+i32 printf(i8* format, ...);
+void putc(i8 c);
+i32 puts(i8* s);
+i8* itoa(u32 value, i8* buf, i32 radix);
+i8* strrev(i8* s);
+u32 strlen(const i8* s);
 void clear(void);
 
-void* memset(void* s, int32_t c, uint32_t n);
-void* memset_word(void* s, int32_t c, uint32_t n);
-void* memset_dword(void* s, int32_t c, uint32_t n);
-void* memcpy(void* dest, const void* src, uint32_t n);
-void* memmove(void* dest, const void* src, uint32_t n);
-int32_t strncmp(const int8_t* s1, const int8_t* s2, uint32_t n);
-int8_t* strcpy(int8_t* dest, const int8_t* src);
-int8_t* strncpy(int8_t* dest, const int8_t* src, uint32_t n);
+void* memset(void* s, i32 c, u32 n);
+void* memset_word(void* s, i32 c, u32 n);
+void* memset_dword(void* s, i32 c, u32 n);
+void* memcpy(void* dest, const void* src, u32 n);
+void* memmove(void* dest, const void* src, u32 n);
+i32 strncmp(const i8* s1, const i8* s2, u32 n);
+i8* strcpy(i8* dest, const i8* src);
+i8* strncpy(i8* dest, const i8* src, u32 n);
 
 /* Userspace address-check functions */
-int32_t bad_userspace_addr(const void* addr, int32_t len);
-int32_t safe_strncpy(int8_t* dest, const int8_t* src, int32_t n);
+i32 bad_userspace_addr(const void* addr, i32 len);
+i32 safe_strncpy(i8* dest, const i8* src, i32 n);
 
 void test_interrupts(void);
-uint16_t get_screen_x(void);
-uint16_t get_screen_y(void);
-void set_screen_x(uint16_t x);
-void set_screen_y(uint16_t y);
+u16 get_screen_x(void);
+u16 get_screen_y(void);
+void set_screen_x(u16 x);
+void set_screen_y(u16 y);
 void scroll_up(void);
 void clear_screen_xy(void);
-void set_cursor_location(uint16_t x, uint16_t y);
-void set_screen_xy(uint16_t x, uint16_t y);
+void set_cursor_location(u16 x, u16 y);
+void set_screen_xy(u16 x, u16 y);
 
 /* Port read functions */
 /* Inb reads a byte and returns its value as a zero-extended 32-bit
  * unsigned int */
-static inline uint32_t inb(int port) {
-  uint32_t val;
+static inline u32 inb(int port) {
+  u32 val;
   asm volatile("             \n\
             xorl %0, %0         \n\
             inb  (%w1), %b0     \n\
@@ -61,8 +61,8 @@ static inline uint32_t inb(int port) {
 /* Reads two bytes from two consecutive ports, starting at "port",
  * concatenates them little-endian style, and returns them zero-extended
  * */
-static inline uint32_t inw(int port) {
-  uint32_t val;
+static inline u32 inw(int port) {
+  u32 val;
   asm volatile("             \n\
             xorl %0, %0         \n\
             inw  (%w1), %w0     \n\
@@ -75,8 +75,8 @@ static inline uint32_t inw(int port) {
 
 /* Reads four bytes from four consecutive ports, starting at "port",
  * concatenates them little-endian style, and returns them */
-static inline uint32_t inl(int port) {
-  uint32_t val;
+static inline u32 inl(int port) {
+  u32 val;
   asm volatile("inl (%w1), %0" : "=a"(val) : "d"(port) : "memory");
   return val;
 }

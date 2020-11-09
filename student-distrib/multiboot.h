@@ -17,54 +17,54 @@
 
 /* The Multiboot header. */
 typedef struct multiboot_header {
-  uint32_t magic;
-  uint32_t flags;
-  uint32_t checksum;
-  uint32_t header_addr;
-  uint32_t load_addr;
-  uint32_t load_end_addr;
-  uint32_t bss_end_addr;
-  uint32_t entry_addr;
+  u32 magic;
+  u32 flags;
+  u32 checksum;
+  u32 header_addr;
+  u32 load_addr;
+  u32 load_end_addr;
+  u32 bss_end_addr;
+  u32 entry_addr;
 } multiboot_header_t;
 
 /* The section header table for ELF. */
 typedef struct elf_section_header_table {
-  uint32_t num;
-  uint32_t size;
-  uint32_t addr;
-  uint32_t shndx;
+  u32 num;
+  u32 size;
+  u32 addr;
+  u32 shndx;
 } elf_section_header_table_t;
 
 /* The Multiboot information. */
 typedef struct multiboot_info {
-  uint32_t flags;
-  uint32_t mem_lower;
-  uint32_t mem_upper;
-  uint32_t boot_device;
-  uint32_t cmdline;
-  uint32_t mods_count;
-  uint32_t mods_addr;
+  u32 flags;
+  u32 mem_lower;
+  u32 mem_upper;
+  u32 boot_device;
+  u32 cmdline;
+  u32 mods_count;
+  u32 mods_addr;
   elf_section_header_table_t elf_sec;
-  uint32_t mmap_length;
-  uint32_t mmap_addr;
+  u32 mmap_length;
+  u32 mmap_addr;
 } multiboot_info_t;
 
 typedef struct module {
-  uint32_t mod_start;
-  uint32_t mod_end;
-  uint32_t string;
-  uint32_t reserved;
+  u32 mod_start;
+  u32 mod_end;
+  u32 string;
+  u32 reserved;
 } module_t;
 
 /* The memory map. Be careful that the offset 0 is base_addr_low
    but no size. */
 typedef struct memory_map {
-  uint32_t size;
-  uint32_t base_addr_low;
-  uint32_t base_addr_high;
-  uint32_t length_low;
-  uint32_t length_high;
-  uint32_t type;
+  u32 size;
+  u32 base_addr_low;
+  u32 base_addr_high;
+  u32 length_low;
+  u32 length_high;
+  u32 type;
 } memory_map_t;
 
 #endif /* ASM */

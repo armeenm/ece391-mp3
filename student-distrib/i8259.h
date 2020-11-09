@@ -35,10 +35,10 @@ enum {
 /* Initialize both PICs */
 void init_i8259(void);
 /* Enable (unmask) the specified IRQ */
-void enable_irq(uint32_t irq_num);
+void enable_irq(u32 irq_num);
 /* Disable (mask) the specified IRQ */
-void disable_irq(uint32_t irq_num);
+void disable_irq(u32 irq_num);
 /* Send end-of-interrupt signal for the specified IRQ */
-void send_eoi(uint32_t irq_num);
+void send_eoi(u32 irq_num);
 
 #endif /* I8259_H */

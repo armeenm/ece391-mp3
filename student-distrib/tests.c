@@ -6,6 +6,7 @@
 #include "options.h"
 #include "paging.h"
 #include "rtc.h"
+#include "syscall.h"
 #include "terminal_driver.h"
 #include "util.h"
 #include "x86_desc.h"
@@ -28,6 +29,7 @@ enum { FAIL, PASS };
   static void TEST_##name(void) {                                                                  \
     if (!ENABLE_TEST_##name)                                                                       \
       return;                                                                                      \
+    clear();                                                                                       \
     printf("[TEST %s] Running at %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 
 #define TEST_END                                                                                   \
@@ -126,11 +128,11 @@ TEST(PAGING) {
   /* Check 4KB page directory entry for valid address + permission bits (because the CPU can set
    * other bits) */
 
-  if ((pgdir[0] & PDE_USED_4K) != (PG_PRESENT | PG_RW | (u32)pgtbl))
+  if ((pgdir[0][0] & PDE_USED_4K) != (PG_PRESENT | PG_RW | (u32)pgtbl))
     TEST_FAIL;
 
   /* Check kernel entry for valid address + permission bits */
-  if ((pgdir[1] & PDE_USED_4M) != (PG_PRESENT | PG_RW | PG_SIZE | PG_4M_START))
+  if ((pgdir[0][1] & PDE_USED_4M) != (PG_PRESENT | PG_RW | PG_SIZE | PG_4M_START))
     TEST_FAIL;
 
   /* Check nullptr region */
@@ -151,7 +153,7 @@ TEST(PAGING) {
   /* Check that the 4MB to 4GB range has the correct bits set (4MB entries, not present), no
    * address yet */
   for (i = 2; i < PGDIR_LEN; ++i)
-    if ((pgdir[i] & PDE_USED_4M & ~1U) != ((i * PG_4M_START) | PG_RW | PG_USPACE | PG_SIZE))
+    if ((pgdir[0][i] & PDE_USED_4M & ~1U) != ((i * PG_4M_START) | PG_RW | PG_USPACE | PG_SIZE))
       TEST_FAIL_MSG("i: %u", i);
 
   /* Memory sanity check */
@@ -208,8 +210,6 @@ TEST(UD) {
  * Coverage: Tests large negative to large postiive scancode inputs
  */
 TEST(KEYPRESS) {
-  clear();
-
   {
     int NUM_COLS = 80;
     char* video_mem = (char*)(0xB8000);
@@ -318,8 +318,6 @@ TEST(SHELL) {
   i8 const* const s = "Input: ";
 
   terminal_open(0);
-  clear();
-
   for (;;) {
     terminal_write(0, SHELL_PS1, sizeof(SHELL_PS1));
     size = terminal_read(0, buf, 128);
@@ -348,8 +346,8 @@ TEST(LS) {
 TEST(CAT_FRAME0) {
   char buf[200] = {0};
 
-  clear();
-  file_read("frame0.txt", (u8*)buf, 0);
+  int fd = open((u8*)"frame0.txt");
+  read(fd, (u8*)buf, 0);
   printf("File: frame0.txt\n%s\n", buf);
 
   TEST_END;
@@ -358,8 +356,8 @@ TEST(CAT_FRAME0) {
 TEST(CAT_VLTWLN) {
   char buf[30000] = {0};
 
-  clear();
-  file_read("verylargetextwithverylongname.txt", (u8*)buf, 0);
+  int fd = open((u8*)"verylargetextwithverylongname.txt");
+  read(fd, (u8*)buf, 0);
   printf("File: verylargetextwithverylongname.txt\n%s\n", buf);
 
   TEST_END;
@@ -368,8 +366,8 @@ TEST(CAT_VLTWLN) {
 TEST(CAT_HELLO) {
   char buf[30000] = {0};
 
-  clear();
-  file_read("hello", (u8*)buf, 0);
+  int fd = open((u8*)"hello");
+  read(fd, (u8*)buf, 0);
   printf("File: hello\n");
   buf[4] = '\0';
   printf("First 4 bytes: %s\n", buf);
@@ -388,8 +386,6 @@ TEST(RTC_DEMO) {
     freq = 1 << j;
 
     /* Print 8 chars for 2Hz, print 16 for 4Hz (4 seconds per RTC) */
-    clear();
-    set_screen_xy(0, 0);
     rtc_write(0, &freq, sizeof(int));
 
     for (i = 0; i < 1 << (2 + j); ++i) {
@@ -479,13 +475,24 @@ TEST(FS) {
   if (read_dentry_by_index(0, 0) != -1)
     TEST_FAIL;
 
-  if (read_data(0, 0, 0, 0))
+  if (read_data(0, 0, 0, 0) != -1)
     TEST_FAIL;
 
   TEST_END;
 }
 
 /***** }}} CHECKPOINT 2 *****/
+
+/***** CHECKPOINT 3 {{{ *****/
+
+TEST(EXEC_LS) {
+  if (execute((u8*)"ls"))
+    TEST_FAIL;
+
+  TEST_END;
+}
+
+/***** }}} CHECKPOINT 3 *****/
 
 /* Test suite entry point */
 void launch_tests(void) {
@@ -509,5 +516,7 @@ void launch_tests(void) {
   TEST_CAT_VLTWLN();
   TEST_CAT_HELLO();
   TEST_SHELL();
+
+  TEST_EXEC_LS();
 #endif
 }

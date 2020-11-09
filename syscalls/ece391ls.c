@@ -6,6 +6,8 @@
 #define SBUFSIZE 33
 
 int main() {
+  return -1;
+
   int32_t fd, cnt;
   uint8_t buf[SBUFSIZE];
 

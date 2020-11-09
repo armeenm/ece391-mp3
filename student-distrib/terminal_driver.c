@@ -50,7 +50,7 @@ i32 terminal_write(i32 UNUSED(fd), void const* const buf, i32 const nbytes) {
  * Return Value: 0
  * Function: Opens the terminal driver and allocates any memory it needs to
  */
-i32 terminal_open(i32 UNUSED(fd)) { return 0; }
+i32 terminal_open(const u8* UNUSED(filename)) { return 0; }
 
 /* terminal_close
  * Description: Close the terminal driver

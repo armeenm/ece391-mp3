@@ -29,112 +29,113 @@
 /* This structure is used to load descriptor base registers
  * like the GDTR and IDTR */
 typedef struct x86_desc {
-  uint16_t padding;
-  uint16_t size;
-  uint32_t addr;
+  u16 padding;
+  u16 size;
+  u32 addr;
 } x86_desc_t;
 
 /* This is a segment descriptor.  It goes in the GDT. */
 typedef struct seg_desc {
   union {
-    uint32_t val[2];
+    u32 val[2];
     struct {
-      uint16_t seg_lim_15_00;
-      uint16_t base_15_00;
-      uint8_t base_23_16;
-      uint32_t type : 4;
-      uint32_t sys : 1;
-      uint32_t dpl : 2;
-      uint32_t present : 1;
-      uint32_t seg_lim_19_16 : 4;
-      uint32_t avail : 1;
-      uint32_t reserved : 1;
-      uint32_t opsize : 1;
-      uint32_t granularity : 1;
-      uint8_t base_31_24;
+      u16 seg_lim_15_00;
+      u16 base_15_00;
+      u8 base_23_16;
+      u32 type : 4;
+      u32 sys : 1;
+      u32 dpl : 2;
+      u32 present : 1;
+      u32 seg_lim_19_16 : 4;
+      u32 avail : 1;
+      u32 reserved : 1;
+      u32 opsize : 1;
+      u32 granularity : 1;
+      u8 base_31_24;
     } __attribute__((packed));
   };
 } seg_desc_t;
 
 /* TSS structure */
 typedef struct __attribute__((packed)) tss_t {
-  uint16_t prev_task_link;
-  uint16_t prev_task_link_pad;
+  u16 prev_task_link;
+  u16 prev_task_link_pad;
 
-  uint32_t esp0;
-  uint16_t ss0;
-  uint16_t ss0_pad;
+  u32 esp0;
+  u16 ss0;
+  u16 ss0_pad;
 
-  uint32_t esp1;
-  uint16_t ss1;
-  uint16_t ss1_pad;
+  u32 esp1;
+  u16 ss1;
+  u16 ss1_pad;
 
-  uint32_t esp2;
-  uint16_t ss2;
-  uint16_t ss2_pad;
+  u32 esp2;
+  u16 ss2;
+  u16 ss2_pad;
 
-  uint32_t cr3;
+  u32 cr3;
 
-  uint32_t eip;
-  uint32_t eflags;
+  u32 eip;
+  u32 eflags;
 
-  uint32_t eax;
-  uint32_t ecx;
-  uint32_t edx;
-  uint32_t ebx;
-  uint32_t esp;
-  uint32_t ebp;
-  uint32_t esi;
-  uint32_t edi;
+  u32 eax;
+  u32 ecx;
+  u32 edx;
+  u32 ebx;
+  u32 esp;
+  u32 ebp;
+  u32 esi;
+  u32 edi;
 
-  uint16_t es;
-  uint16_t es_pad;
+  u16 es;
+  u16 es_pad;
 
-  uint16_t cs;
-  uint16_t cs_pad;
+  u16 cs;
+  u16 cs_pad;
 
-  uint16_t ss;
-  uint16_t ss_pad;
+  u16 ss;
+  u16 ss_pad;
 
-  uint16_t ds;
-  uint16_t ds_pad;
+  u16 ds;
+  u16 ds_pad;
 
-  uint16_t fs;
-  uint16_t fs_pad;
+  u16 fs;
+  u16 fs_pad;
 
-  uint16_t gs;
-  uint16_t gs_pad;
+  u16 gs;
+  u16 gs_pad;
 
-  uint16_t ldt_segment_selector;
-  uint16_t ldt_pad;
+  u16 ldt_segment_selector;
+  u16 ldt_pad;
 
-  uint16_t debug_trap : 1;
-  uint16_t io_pad : 15;
-  uint16_t io_base_addr;
+  u16 debug_trap : 1;
+  u16 io_pad : 15;
+  u16 io_base_addr;
 } tss_t;
 
 /* Some external descriptors declared in .S files */
 extern x86_desc_t gdt_desc;
 
-extern uint16_t ldt_desc;
-extern uint32_t ldt_size;
+extern u16 ldt_desc;
+extern u32 ldt_size;
 extern seg_desc_t ldt_desc_ptr;
 extern seg_desc_t gdt_ptr;
-extern uint32_t ldt;
+extern u32 ldt;
 
-extern uint32_t tss_size;
+extern u32 tss_size;
 extern seg_desc_t tss_desc_ptr;
 extern tss_t tss;
 
-extern uint32_t pgdir[PGDIR_LEN];
-extern uint32_t pgtbl[PGTBL_LEN];
+extern u32 pgdir[8][PGDIR_LEN];
+extern u32 pgtbl[PGTBL_LEN];
+extern u32 pgtbl_proc[PGTBL_LEN];
 
 /* Sets runtime-settable parameters in the GDT entry for the LDT */
 #define SET_LDT_PARAMS(str, addr, lim)                                                             \
   do {                                                                                             \
-    str.base_31_24 = (uint8_t)(((uint32_t)(addr)&0xFF000000) >> 24);                               \
-    str.base_23_16 = (uint8_t)(((uint32_t)(addr)&0x00FF0000) >> 16);                               \
-    str.base_15_00 = (uint16_t)((uint32_t)(addr)&0x0000FFFF);                                      \
+    str.base_31_24 = (u8)(((u32)(addr)&0xFF000000) >> 24);                                         \
+    str.base_23_16 = (u8)(((u32)(addr)&0x00FF0000) >> 16);                                         \
+    str.base_15_00 = (u16)((u32)(addr)&0x0000FFFF);                                                \
     str.seg_lim_19_16 = ((lim)&0x000F0000) >> 16;                                                  \
     str.seg_lim_15_00 = (lim)&0x0000FFFF;                                                          \
   } while (0)
@@ -142,28 +143,28 @@ extern uint32_t pgtbl[PGTBL_LEN];
 /* Sets runtime parameters for the TSS */
 #define SET_TSS_PARAMS(str, addr, lim)                                                             \
   do {                                                                                             \
-    str.base_31_24 = (uint8_t)(((uint32_t)(addr)&0xFF000000) >> 24);                               \
-    str.base_23_16 = (uint8_t)(((uint32_t)(addr)&0x00FF0000) >> 16);                               \
-    str.base_15_00 = (uint16_t)((uint32_t)(addr)&0x0000FFFF);                                      \
+    str.base_31_24 = (u8)(((u32)(addr)&0xFF000000) >> 24);                                         \
+    str.base_23_16 = (u8)(((u32)(addr)&0x00FF0000) >> 16);                                         \
+    str.base_15_00 = (u16)((u32)(addr)&0x0000FFFF);                                                \
     str.seg_lim_19_16 = ((lim)&0x000F0000) >> 16;                                                  \
     str.seg_lim_15_00 = (lim)&0x0000FFFF;                                                          \
   } while (0)
 
 /* An interrupt descriptor entry (goes into the IDT) */
 typedef union idt_desc_t {
-  uint32_t val[2];
+  u32 val[2];
   struct {
-    uint16_t offset_15_00;
-    uint16_t seg_selector;
-    uint8_t reserved4;
-    uint32_t reserved3 : 1;
-    uint32_t reserved2 : 1;
-    uint32_t reserved1 : 1;
-    uint32_t size : 1;
-    uint32_t reserved0 : 1;
-    uint32_t dpl : 2;
-    uint32_t present : 1;
-    uint16_t offset_31_16;
+    u16 offset_15_00;
+    u16 seg_selector;
+    u8 reserved4;
+    u32 reserved3 : 1;
+    u32 reserved2 : 1;
+    u32 reserved1 : 1;
+    u32 size : 1;
+    u32 reserved0 : 1;
+    u32 dpl : 2;
+    u32 present : 1;
+    u16 offset_31_16;
   } __attribute__((packed));
 } idt_desc_t;
 
@@ -175,8 +176,8 @@ extern x86_desc_t idt_desc_ptr;
 /* Sets runtime parameters for an IDT entry */
 #define SET_IDT_ENTRY(str, handler)                                                                \
   do {                                                                                             \
-    str.offset_31_16 = (uint16_t)(((uint32_t)(handler)&0xFFFF0000) >> 16);                         \
-    str.offset_15_00 = (uint16_t)((uint32_t)(handler)&0xFFFF);                                     \
+    str.offset_31_16 = (u16)(((u32)(handler)&0xFFFF0000) >> 16);                                   \
+    str.offset_15_00 = (u16)((u32)(handler)&0xFFFF);                                               \
   } while (0)
 
 /* Load task register.  This macro takes a 16-bit index into the GDT,
