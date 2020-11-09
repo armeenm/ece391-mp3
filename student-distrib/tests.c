@@ -486,7 +486,7 @@ TEST(FS) {
 /***** CHECKPOINT 3 {{{ *****/
 
 TEST(EXEC_LS) {
-  if (execute((u8*)"ls"))
+  if (execute((u8*)"ls blah blah blah!!!"))
     TEST_FAIL;
 
   TEST_END;
