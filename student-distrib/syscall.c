@@ -103,7 +103,7 @@ i32 halt(u8 const status) {
   /* If we're the "parent process" of the OS (pid == 0, shell) don't halt it */
   if (pcb->parent_pid != -1) {
 
-    /* Close all FDS for the current process */
+    /* Close all FDs for the current process */
     for (i = 0; i < FD_CNT; ++i)
       close(i);
 
@@ -112,20 +112,22 @@ i32 halt(u8 const status) {
     remove_task_pgdir(pcb->pid);
     make_task_pgdir(pcb->parent_pid);
 
-    tss.esp0 = pcb->parent_ksp;
-    procs &= ~(1U << pcb->pid);
+    tss.esp0 = MB8 - KB8 * pcb->parent_pid - 4;
+    procs &= ~(0x80U >> pcb->pid);
     running_pid = pcb->parent_pid;
-
-  } else {
-    asm volatile("add $12, %esp;");
   }
 
   asm volatile("mov %0, %%esp;"
                "mov %1, %%ebp;"
-               "leave;"
-               "jmp pog;"
-               : "=g"(pcb->parent_ksp), "=g"(pcb->parent_kbp)::"esp", "ebp");
+               "mov %2, %%eax;"
+               :
+               : "g"(pcb->parent_ksp), "g"(pcb->parent_kbp), "g"(pcb->child_return)
+               : "eax", "esp", "ebp");
 
+  // asm volatile("add $244, %ebp");
+
+  asm volatile("leave;"
+               "ret;");
   return 0;
   /* Not sure if this is correct -- halt is supposed to jump to execute return */
 }
@@ -139,6 +141,7 @@ i32 halt(u8 const status) {
  */
 i32 execute(u8 const* const ucmd) {
   i8 const* const cmd = (i8 const*)ucmd;
+  Pcb* const parent = get_current_pcb();
   DirEntry dentry;
   u32 entry;
   u8 header[4];
@@ -186,17 +189,15 @@ cont:
     return -1;
 
   {
-    Pcb* const pcb = get_pcb(running_pid);
-    Pcb* parent;
+    Pcb* const pcb = get_current_pcb();
     u32 esp, ebp;
 
     asm volatile("mov %%esp, %0;"
                  "mov %%ebp, %1;"
                  : "=g"(esp), "=g"(ebp));
 
-    parent = (Pcb*)(esp & 0xFFFFE);
     for (i = 0; i < 2; ++i) {
-      pcb->fds[i].jumptable = i == 0 ? &std_in_fops : &std_out_fops;
+      pcb->fds[i].jumptable = (i == 0) ? &std_in_fops : &std_out_fops;
       pcb->fds[i].flags = FD_IN_USE;
       pcb->fds[i].inode = 0;
       pcb->fds[i].file_position = 0;
@@ -219,10 +220,9 @@ cont:
     ksp = tss.esp0;
 
     uspace(entry);
-  }
-  asm volatile("pog:");
 
-  return get_current_pcb()->child_return;
+    return pcb->child_return;
+  }
 }
 
 /* read

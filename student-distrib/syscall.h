@@ -38,7 +38,8 @@ typedef struct FileDesc {
 typedef struct Pcb {
   FileDesc fds[FD_CNT];
   i32 argc;
-  i8 argv[ARGS_SIZE];
+  i8 raw_argv[ARGS_SIZE];
+  i8* argv[ARGS_SIZE];
   u32 pid;
   u32 parent_ksp;
   u32 parent_kbp;
