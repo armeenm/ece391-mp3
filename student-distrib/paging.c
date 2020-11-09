@@ -74,7 +74,7 @@ i32 make_task_pgdir(u8 const proc) {
 
   pgdir[proc][0] = (u32)pgtbl_proc | PG_USPACE | PG_RW | PG_PRESENT;
 
-  pgdir[proc][1] = PG_4M_START | PG_RW | PG_SIZE | PG_PRESENT;
+  pgdir[proc][1] = PG_4M_START | PG_USPACE | PG_RW | PG_SIZE | PG_PRESENT;
 
   pgdir[proc][ELF_LOAD_PG] = ((proc + 2) * PG_4M_START) | PG_SIZE | PG_USPACE | PG_RW | PG_PRESENT;
 
@@ -84,7 +84,9 @@ i32 make_task_pgdir(u8 const proc) {
 }
 
 i32 remove_task_pgdir(u8 const proc) {
-  pgdir[proc][ELF_LOAD_PG] = ((proc + 2) * PG_4M_START) | PG_SIZE | PG_USPACE | PG_RW;
+  pgdir[proc][ELF_LOAD_PG] &= ~PG_PRESENT;
+
   asm volatile("mov %0, %%cr3;" ::"g"(pgdir[proc]));
+
   return 0;
 }

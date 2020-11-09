@@ -8,6 +8,7 @@
 #include "lib.h"
 
 #define ASM_EXC(name) void asm_##name(void);
+#define I_ASM_EXC(name, unused) ASM_EXC(name)
 
 /* Some macro magic to choose whether we clear or not */
 #define CLR_true clear();
@@ -72,8 +73,13 @@ typedef struct IntStackE {
 
 #define ASM 1
 
+#define CLOBEAX_true addl $4, %esp
+#define CLOBEAX_false popl %eax
+
 /* Save/restore registers and call the C code */
-#define ASM_EXC(name)                                                                              \
+#define ASM_EXC(name) I_ASM_EXC(name, false)
+
+#define I_ASM_EXC(name, clobeax)                                                                   \
   .global asm_##name;                                                                              \
   asm_##name:                                                                                      \
   pushl %eax;                                                                                      \
@@ -84,7 +90,7 @@ typedef struct IntStackE {
   popf;                                                                                            \
   popl %edx;                                                                                       \
   popl %ecx;                                                                                       \
-  popl %eax;                                                                                       \
+  CLOBEAX_##clobeax;                                                                               \
   iret;
 
 /* These all use the above macro when we're compiling this file standalone */
@@ -125,6 +131,6 @@ EXC_DFL(irqh_pit, "PIT event!")
 /* Define normal interrupts */
 ASM_EXC(irqh_keyboard)
 ASM_EXC(irqh_rtc)
-ASM_EXC(irqh_syscall)
+I_ASM_EXC(irqh_syscall, true)
 
 #endif

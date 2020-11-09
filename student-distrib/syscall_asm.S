@@ -15,11 +15,16 @@ uspace:
   mov %cx, %es
   mov %cx, %fs
   mov %cx, %gs
-  push %ecx
 
   mov %esp, %ecx
+  push $USER_DS
   push %ecx
+
   pushf
+  pop %edx
+  or $0x200, %edx
+  push %edx
+
   push $USER_CS
   push %eax
 

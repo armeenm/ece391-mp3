@@ -68,12 +68,15 @@ void init_idt(void) {
 
   /* PIT */
   idt[IDT_PIT] = make_idt_desc(asm_irqh_pit, KERNEL_CS, INT, DPL0);
+
   /* Keyboard */
   idt[IDT_KEYBOARD] = make_idt_desc(asm_irqh_keyboard, KERNEL_CS, INT, DPL0);
+
   /* RTC */
   idt[IDT_RTC] = make_idt_desc(asm_irqh_rtc, KERNEL_CS, INT, DPL0);
+
   /* Syscall; use privilege lvl 3 for this to allow userspace calls */
-  idt[IDT_SYSCALL] = make_idt_desc(asm_irqh_syscall, KERNEL_CS, INT, DPL3);
+  idt[IDT_SYSCALL] = make_idt_desc(asm_irqh_syscall, KERNEL_CS, TRAP, DPL3);
 
   /* Load the IDT */
   lidt(idt_desc_ptr);

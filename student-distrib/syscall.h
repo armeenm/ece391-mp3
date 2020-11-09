@@ -42,7 +42,7 @@ typedef struct Pcb {
   u32 pid;
   u32 parent_ksp;
   u32 parent_kbp;
-  u32 parent_pid;
+  i32 parent_pid;
   u32 child_return;
 } Pcb;
 

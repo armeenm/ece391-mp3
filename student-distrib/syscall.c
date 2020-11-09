@@ -16,9 +16,9 @@ FileOps const dir_fops = {dir_open, dir_close, dir_read, dir_write};
 
 u8 const elf_header[] = {0x7F, 'E', 'L', 'F'};
 
-u8 procs = 0x80;
+u8 procs = 0x0;
 u8 running_pid = 0;
-static u32 ksp;
+static u32 ksp = 0;
 
 static Pcb* get_pcb(u8 proc);
 
@@ -28,8 +28,6 @@ i32 irqh_syscall(void) {
 
   /* Read the syscall type and arguments */
   asm volatile("" : "=a"(type), "=b"(arg1), "=c"(arg2), "=d"(arg3));
-
-  printf("Handling syscall...\n");
 
   switch (type) {
   case SYSC_HALT:
@@ -72,7 +70,7 @@ i32 irqh_syscall(void) {
 }
 
 /* get_pcb
- * Description:
+ * Description: Gets the current pcb
  * Inputs: proc --
  * Outputs: none
  * Return Value: none
@@ -87,7 +85,7 @@ static Pcb* get_pcb(u8 proc) { return (Pcb*)(MB8 - (proc + 1) * KB8); }
  * Return Value:
  * Function:
  */
-Pcb* get_current_pcb(void) { return (Pcb*)(ksp & 0xFFFFE); }
+Pcb* get_current_pcb(void) { return get_pcb(running_pid); }
 
 /* halt
  * Description:
@@ -96,24 +94,38 @@ Pcb* get_current_pcb(void) { return (Pcb*)(ksp & 0xFFFFE); }
  * Return Value: none
  * Function: currently unimplemented
  */
-i32 halt(u8 status) {
-  int i; 
-  // if we're the "parent process" of the OS (pid == 0, shell) don't halt it
-  if (!get_current_pcb()->parent_pid) {
-    return -1;
+i32 halt(u8 const status) {
+  u32 i;
+  Pcb* const pcb = get_current_pcb();
+
+  /* If we're the "parent process" of the OS (pid == 0, shell) don't halt it */
+  if (pcb->parent_pid != -1) {
+
+    /* Close all FDS for the current process */
+    for (i = 0; i < FD_CNT; ++i)
+      close(i);
+
+    /* There is a parent, we need to switch contexts to the parent */
+    get_pcb(pcb->parent_pid)->child_return = status;
+    remove_task_pgdir(pcb->pid);
+    make_task_pgdir(pcb->parent_pid);
+
+    tss.esp0 = pcb->parent_ksp;
+    procs &= ~(1U << pcb->pid);
+    running_pid = pcb->parent_pid;
+
+  } else {
+    asm volatile("add $12, %esp;");
   }
 
-  // close all FDS for the current process
-  for (i = 0; i<FD_CNT; i++) {
-    close(i);
-  }
+  asm volatile("mov %0, %%esp;"
+               "mov %1, %%ebp;"
+               "leave;"
+               "ret;"
+               : "=g"(pcb->parent_ksp), "=g"(pcb->parent_kbp)::"esp", "ebp");
 
-  // there is a parent, we need to switch contexts to the parent
-  get_pcb(get_current_pcb()->parent_pid)->child_return = status;
-  remove_task_pgdir(get_current_pcb()->pid);
-  make_task_pgdir(get_current_pcb()->parent_pid);
-  tss.esp0 = get_current_pcb()->parent_ksp;;    
-  return 0; // not sure if this is correct -- halt is supposed to jump to execute return
+  return 0;
+  /* Not sure if this is correct -- halt is supposed to jump to execute return */
 }
 
 /* execute
@@ -125,6 +137,7 @@ i32 halt(u8 status) {
  */
 i32 execute(u8 const* const ucmd) {
   i8 const* const cmd = (i8 const*)ucmd;
+  DirEntry dentry;
   u32 entry;
   u8 header[4];
   u8 mask;
@@ -133,8 +146,8 @@ i32 execute(u8 const* const ucmd) {
   if (!cmd)
     return -1;
 
-  /* TODO: argc, argv, stdin, stdout */
-  DirEntry dentry;
+  /* TODO: argc, argv */
+
   /* If directory entry read fails, fail */
   if (read_dentry_by_name(ucmd, &dentry))
     return -1;
@@ -158,13 +171,8 @@ i32 execute(u8 const* const ucmd) {
   return -1;
 
 cont:
-
   /* If bytes read from file isn't the same as the size of the file, fail */
   if (file_read_name(cmd, (u8*)&entry, ENTRY_POINT_OFFSET, sizeof(entry)) != sizeof(entry))
-    return -1;
-
-  /* If file read was unsuccessful, fail */
-  if (file_read_name(cmd, (u8*)LOAD_ADDR, 0, 0) == -1)
     return -1;
 
   /* If making page directory fails, fail */
@@ -175,7 +183,6 @@ cont:
   if (file_read_name(cmd, (u8*)LOAD_ADDR, 0, 0) == -1)
     return -1;
 
-#if 0
   {
     Pcb* const pcb = get_pcb(running_pid);
     Pcb* parent;
@@ -203,15 +210,15 @@ cont:
     pcb->pid = running_pid;
     pcb->parent_ksp = esp;
     pcb->parent_kbp = ebp;
-    pcb->parent_pid = (procs == 0xC0) ? 0 : parent->pid; /* Special case 1st proc */
+    pcb->parent_pid = (procs == 0x80) ? -1 : parent->pid; /* Special case 1st proc */
 
     /* New KSP */
-    tss.esp0 = ksp = MB8 - KB8 * running_pid - 4;
+    tss.esp0 = MB8 - KB8 * running_pid - 4;
+    ksp = tss.esp0;
 
     uspace(entry);
   }
 
-#endif
   return get_current_pcb()->child_return;
 }
 
@@ -224,13 +231,14 @@ cont:
  * Return Value: if fails return -1, if success return 0
  * Function: Checks if inputs are valid, if so then read bytes to buffer
  */
-i32 read(i32 fd, void* buf, i32 nbytes) {
-  /* If buffer is null, fd is invalid value, or nbytes is invalid value, fail */
+i32 read(i32 const fd, void* const buf, i32 const nbytes) {
+  Pcb* const pcb = get_current_pcb();
+
+  /* If buffer is NULL, fd is invalid value, or nbytes is invalid value, fail */
   if (!buf || fd < 0 || fd >= FD_CNT || nbytes < 0)
     return -1;
 
-  Pcb* const pcb = get_current_pcb();
-  /* If pcb is null, file descriptor not in use, and ... */
+  /* If PCB is NULL, file descriptor not in use, and ... */
   if (!pcb || ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || !pcb->fds[fd].jumptable)
     return -1;
 
@@ -247,13 +255,13 @@ i32 read(i32 fd, void* buf, i32 nbytes) {
  * Function: currently unimplemented
  */
 i32 write(i32 fd, void const* buf, i32 nbytes) {
-  /* If buffer is null, fd is invalid value, or nbytes is invalid value, fail */
-  if (buf == NULL || fd < 0 || fd >= FD_CNT || nbytes < 0)
+  /* If buffer is NULL, fd is invalid value, or nbytes is invalid value, fail */
+  if (!buf || fd < 0 || fd >= FD_CNT || nbytes < 0)
     return -1;
 
   Pcb* pcb = get_current_pcb();
   /* If pcb is null, file descriptor not in use, and ... */
-  if (!pcb || ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || pcb->fds[fd].jumptable)
+  if (!pcb || ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || !pcb->fds[fd].jumptable)
     return -1;
 
   return pcb->fds[fd].jumptable->write(fd, buf, nbytes);
@@ -267,23 +275,23 @@ i32 write(i32 fd, void const* buf, i32 nbytes) {
  * Function: Checks for invalid inputs, if valid then open file
  */
 i32 open(u8 const* filename) {
+  DirEntry dentry;
+  Pcb* const pcb = get_current_pcb();
+  i32 fdIndex = 0, fdReturnValue = -1;
+
   /* If filename is null, or empty, fail */
   if (!filename || filename[0] == '\0')
     return -1;
 
-  DirEntry dentry;
   /* If directory entry read fails, fail */
   if (read_dentry_by_name(filename, &dentry) == -1)
     return -1;
-
-  Pcb* const pcb = get_current_pcb();
 
   /* If pcb is null, fail */
   if (!pcb)
     return -1;
 
-  i32 fdIndex = 0, fdReturnValue = -1;
-  for (fdIndex = 0; fdIndex < FD_NOT_IN_USE; ++fdIndex) {
+  for (fdIndex = 2; fdIndex < FD_CNT; ++fdIndex) {
     if (pcb->fds[fdIndex].flags & FD_IN_USE)
       continue;
 
@@ -304,7 +312,7 @@ i32 open(u8 const* filename) {
       return -1;
     }
 
-    if (pcb->fds[fdIndex].jumptable->open(filename)) {
+    if (pcb->fds[fdIndex].jumptable->open(filename) == -1) {
       pcb->fds[fdIndex].jumptable = NULL;
       return -1;
     }
@@ -333,7 +341,7 @@ i32 close(i32 fd) {
 
   Pcb* pcb = get_current_pcb();
   /* If pcb is null, file descriptor not in use, and ... */
-  if (!pcb || ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || pcb->fds[fd].jumptable)
+  if (!pcb || ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || !pcb->fds[fd].jumptable)
     return -1;
 
   /* Close file */
