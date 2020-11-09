@@ -105,15 +105,14 @@ i32 halt(u8 const status) {
     close(i);
 
   if (pcb->parent_pid == -1) {
-    tss.esp0 = MB8 - 4;
-    running_pid = 0;
+    tss.esp0 = MB8 - KB8 - 4;
   } else {
     get_pcb(pcb->parent_pid)->child_return = status;
     /* There is a parent, we need to switch contexts to the parent */
     remove_task_pgdir(pcb->pid);
     make_task_pgdir(pcb->parent_pid);
 
-    tss.esp0 = MB8 - KB8 * pcb->parent_pid - 4;
+    tss.esp0 = MB8 - KB8 * (pcb->parent_pid + 1) - 4;
     running_pid = pcb->parent_pid;
   }
 
@@ -150,7 +149,7 @@ i32 execute(u8 const* const ucmd) {
   u32 i, j;
   u32 argc;
 
-  if (!cmd)
+  if (!ucmd)
     return -1;
 
   // copy the input argument
@@ -242,7 +241,7 @@ cont:
     pcb->parent_pid = (procs == 0x80U) ? -1 : (i32)parent->pid; /* Special case 1st proc */
 
     /* New KSP */
-    tss.esp0 = MB8 - KB8 * running_pid - 4;
+    tss.esp0 = MB8 - KB8 * (running_pid + 1) - 4;
 
     uspace(entry);
 
