@@ -18,6 +18,7 @@ i32 puts(i8* s);
 i8* itoa(u32 value, i8* buf, i32 radix);
 i8* strrev(i8* s);
 u32 strlen(const i8* s);
+u32 strnonspace(i8 const* s);
 void clear(void);
 
 void* memset(void* s, i32 c, u32 n);
