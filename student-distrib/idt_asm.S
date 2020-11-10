@@ -2,75 +2,7 @@
 #ifndef IDT_ASM_S
 #define IDT_ASM_S
 
-/* Macros to use when included in C code */
-#ifdef IDT_C
-
-#include "lib.h"
-#include "syscall.h"
-
-#define ASM_EXC(name) void asm_##name(void);
-#define ASM_EXC_KEEPEAX(name) ASM_EXC(name)
-#define I_ASM_EXC(name, unused) ASM_EXC(name)
-
-/* Some macro magic to choose whether we clear or not */
-#define CLR_true clear();
-#define CLR_false
-
-typedef struct IntStack {
-  u32 flags;
-  u32 edx;
-  u32 ecx;
-  u32 eax;
-  u32 eip;
-  u32 cs;
-  u32 eflags;
-  u32 esp;
-  u32 ss;
-} PACKED IntStack;
-
-typedef struct IntStackE {
-  u32 flags;
-  u32 edx;
-  u32 ecx;
-  u32 eax;
-  u32 errc;
-  u32 eip;
-  u32 cs;
-  u32 eflags;
-  u32 esp;
-  u32 ss;
-} PACKED IntStackE;
-
-#define I_EXC_DFL(name, str, clear)                                                                \
-  ASM_EXC(name)                                                                                    \
-  void name(IntStack stack);                                                                       \
-  void name(IntStack stack) {                                                                      \
-    CLR_##clear                                                                                    \
-    printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", stack.eip, stack.eflags);                    \
-    halt(1);                                                                                       \
-  }
-
-#define I_EXC_DFL_ERRC(name, str, clear)                                                           \
-  ASM_EXC(name)                                                                                    \
-  void name(IntStackE stack);                                                                      \
-  void name(IntStackE stack) {                                                                     \
-    CLR_##clear                                                                                    \
-    printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n",                                  \
-           stack.errc, stack.eip, stack.eflags);                                                   \
-    halt(1);                                                                                       \
-  }
-
-/* Separate versions for whether we should clear the screen or not */
-#define EXC_DFL(name, str) I_EXC_DFL(name, str, true)
-#define EXC_DFL_NOCLR(name, str) I_EXC_DFL(name, str, false)
-
-/* Certain versions for accepting an error code at the top of the stack -- mainly for GPF */
-#define EXC_DFL_ERRC(name, str) I_EXC_DFL_ERRC(name, str, true)
-#define EXC_DFL_ERRC_NOCLR(name, str) I_EXC_DFL_ERRC(name, str, false)
-
-/* Macros to use when compiled standalone */
-#else
-
+#ifndef IDT_C
 #define ASM 1
 
 #define CLOBEAX_true addl $4, %esp
@@ -134,4 +66,5 @@ ASM_EXC(irqh_keyboard)
 ASM_EXC(irqh_rtc)
 ASM_EXC_KEEPEAX(irqh_syscall)
 
+#undef ASM
 #endif

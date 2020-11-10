@@ -1,5 +1,76 @@
+#include "lib.h"
+#include "syscall.h"
+
+#define ASM_EXC(name) void asm_##name(void);
+#define ASM_EXC_KEEPEAX(name) ASM_EXC(name)
+#define I_ASM_EXC(name, unused) ASM_EXC(name)
+
+/* Some macro magic to choose whether we clear or not */
+#define CLR_true clear()
+#define CLR_false
+
+#define ERRC_true u32 errc
+#define ERRC_false
+
+#define INTSTACK_NAME_true IntStackE
+#define INTSTACK_NAME_false IntStack
+
+#define ERRC_PRINTF_true(str)                                                                      \
+  printf("EXC: " str ": errc: 0x%x, eip: 0x%x, eflags: 0x%x\n", stack.errc, stack.eip, stack.eflags)
+#define ERRC_PRINTF_false(str)                                                                     \
+  printf("EXC: " str ": eip: 0x%x, eflags: 0x%x\n", stack.eip, stack.eflags)
+
+#define INTSTACK(has_errc)                                                                         \
+  typedef struct INTSTACK_NAME_##has_errc {                                                        \
+    u32 flags;                                                                                     \
+    u32 edx;                                                                                       \
+    u32 ecx;                                                                                       \
+    u32 eax;                                                                                       \
+    ERRC_##has_errc;                                                                               \
+    u32 eip;                                                                                       \
+    u32 cs;                                                                                        \
+    u32 eflags;                                                                                    \
+    u32 esp;                                                                                       \
+    u32 ss;                                                                                        \
+  } PACKED INTSTACK_NAME_##has_errc
+
+INTSTACK(true);
+INTSTACK(false);
+
+#define I_EXC_DFL(name, str, clear, errc)                                                          \
+  ASM_EXC(name)                                                                                    \
+  void name(INTSTACK_NAME_##errc stack);                                                           \
+  void name(INTSTACK_NAME_##errc stack) {                                                          \
+    CLR_##clear;                                                                                   \
+    ERRC_PRINTF_##errc(str);                                                                       \
+    halt(1);                                                                                       \
+  }
+
+/* Separate versions for whether we should clear the screen or not */
+#define EXC_DFL(name, str) I_EXC_DFL(name, str, true, false)
+#define EXC_DFL_NOCLR(name, str) I_EXC_DFL(name, str, false, false)
+
+/* Certain versions for accepting an error code at the top of the stack -- mainly for GPF */
+#define EXC_DFL_ERRC(name, str) I_EXC_DFL(name, str, true, true)
+#define EXC_DFL_ERRC_NOCLR(name, str) I_EXC_DFL(name, str, false, true)
+
 #define IDT_C
+
 #include "idt_asm.S"
+
+#undef ASM_EXC
+#undef ASM_EXC_KEEPEAX
+#undef I_ASM_EXC
+#undef CLR_true
+#undef CLR_false
+#undef ERRC_true
+#undef ERRC_false
+#undef INTSTACK
+#undef I_EXC_DFL
+#undef EXC_DFL
+#undef EXC_DFL_NOCLR
+#undef EXC_DFL_ERRC
+#undef EXC_DFL_ERRC_NOCLR
 #undef IDT_C
 
 #include "idt.h"
