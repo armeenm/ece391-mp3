@@ -3,15 +3,17 @@
 
 #include "types.h"
 
-#define FD_IN_USE 0x00000001
-#define FD_NOT_IN_USE 0x00000000
-#define FIRST_PID 0x80 // MSB is high to represent only pid 0 is enabled
-#define FD_START 2 // start after std in/out
-#define ADDRESS_SIZE 4
-#define ELF_HEADER_SIZE 4
-#define MAX_PID_COUNT 8
-
-enum { FD_CNT = 8, ARGS_SIZE = 128 };
+enum {
+  FD_NOT_IN_USE = 0,
+  FD_IN_USE = 1,
+  FIRST_PID = 0x80,
+  FD_START = 2,
+  ADDRESS_SIZE = 4,
+  ELF_HEADER_SIZE = 4,
+  MAX_PID_COUNT = 8,
+  FD_CNT = 8,
+  ARGS_SIZE = 128
+};
 
 typedef enum SyscallType {
   SYSC_HALT = 1,
