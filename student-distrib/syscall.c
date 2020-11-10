@@ -171,7 +171,7 @@ i32 execute(u8 const* const ucmd) {
     if (header[i] != elf_header[i])
       return -1;
 
-  for (i = 0, mask = FIRST_PID; i < 8; ++i, mask >>= 1)
+  for (i = 0, mask = FIRST_PID; i < MAX_PID_COUNT; ++i, mask >>= 1)
     if (!(mask & procs)) {
       procs |= mask;
       running_pid = i;
