@@ -9,6 +9,7 @@
 #define FD_START 2 // start after std in/out
 #define ADDRESS_SIZE 4
 #define ELF_HEADER_SIZE 4
+#define MAX_PID_COUNT 8
 
 enum { FD_CNT = 8, ARGS_SIZE = 128 };
 
