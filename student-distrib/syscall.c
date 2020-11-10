@@ -388,7 +388,7 @@ i32 getargs(u8* const buf, i32 const nbytes) {
   if (!buf || nbytes < 0 || !pcb->argv[1])
     return -1;
 
-  memcpy(buf, pcb->argv[1], MIN(strlen(pcb->argv[1]), (u32)nbytes));
+  memcpy(buf, pcb->argv[1], MIN(strlen(pcb->argv[1]) + 1, (u32)nbytes));
 
   return 0;
 }

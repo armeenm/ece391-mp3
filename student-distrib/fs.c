@@ -65,7 +65,6 @@ i32 file_read(i32 fd, void* const buf, i32 nbytes) {
   if (!pcb || (pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE)
     return -1;
 
-  /* TODO: Is this the right behavior. If the buf is < size it will write into random memory */
   if (!nbytes)
     nbytes = ((INode*)&bootblk[1])[pcb->fds[fd].inode].size;
 
