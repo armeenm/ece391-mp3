@@ -18,7 +18,7 @@ FileOps const dir_fops = {dir_open, dir_close, dir_read, dir_write};
 
 u8 const elf_header[] = {0x7F, 'E', 'L', 'F'};
 Syscall const syscalls[] = {(Syscall)halt, (Syscall)execute, (Syscall)read,    (Syscall)write,
-                            (Syscall)open, (Syscall)close,   (Syscall)getargs, (Syscall)NULL,
+                            (Syscall)open, (Syscall)close,   (Syscall)getargs, (Syscall)vidmap,
                             (Syscall)NULL, (Syscall)NULL};
 
 u8 procs = 0x0;
@@ -375,32 +375,44 @@ i32 close(i32 fd) {
 }
 
 /* getargs
- * Description:
- * Inputs: buf -- UNUSED
- *         nbytes -- UNUSED
+ * Description: Gets arguments from the process execution and returns them
+ * Inputs: buf -- buffer to write args to
+ *         nbytes -- number of bytes to write to buffer (uses min(nbytes, argv_length))
  * Outputs: none
  * Return Value: if fails return -1, if success return 0
- * Function: currently unimplemented
+ * Function: Writes the arguments from the function call to the buffer.
  */
 i32 getargs(u8* const buf, i32 const nbytes) {
+  /* Gets the pcb */
   Pcb const* const pcb = get_current_pcb();
-
+  /* Check to see if pcb and buffer are valid */
   if (!buf || nbytes < 0 || !pcb->argv[1])
     return -1;
-
+  /* Copy data into buffer */
   memcpy(buf, pcb->argv[1], MIN(strlen(pcb->argv[1]) + 1, (u32)nbytes));
 
   return 0;
 }
 
 /* vidmap
- * Description:
- * Inputs: screen_start -- UNUSED
+ * Description: Maps a pointer in user space to vga memory
+ * Inputs: screen_start -- Pointer to video memory
  * Outputs: none
  * Return Value: if fails return -1, if success return 0
- * Function: currently unimplemented
+ * Function: Maps pointer to video memory and sets up a PTE for the virtual address
+ * to a physical address
  */
-i32 vidmap(u8** UNUSED(screen_start)) { NIMPL; }
+i32 vidmap(u8** screen_start) {
+  /* Get pcb so we can get the pid */
+  Pcb* pcb = get_current_pcb();
+  /* Check to see if pcb and screen_start pointer are valid, return -1 on fail */
+  if(!screen_start || !pcb)
+    return -1;
+  /* Set screen_start to 128MB + 4MB * 8 Process = 160MB */
+  *screen_start = (u8 *)(PG_4M_START *  (ELF_LOAD_PG + NUM_PROC));
+  /* Map to video memory and return condition */
+  return map_vid_mem(pcb->pid,(u32)(*screen_start), (u32)VIDMEM_START);
+}
 
 i32 read_failure(i32 UNUSED(fd), void* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }
 i32 write_failure(i32 UNUSED(fd), void const* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }

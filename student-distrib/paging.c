@@ -1,7 +1,6 @@
 #include "paging.h"
 #include "x86_desc.h"
 
-enum { ELF_LOAD_PG = 0x20 };
 
 /*
  * 4MB to 8MB is kernel, 0MB to 4MB is 4KB pages 8MB to 4GB is 4MB
@@ -61,12 +60,20 @@ void init_paging(void) {
                : "eax");
 }
 
+
+/* make_task_pgdir
+ * Description: Sets up a page table for a process.
+ * Inputs: proc -- process id to make page table for
+ * Outputs: None
+ * Return Value: -1 on failure, 0 on success
+ * Function: Sets up a page table for a process and flushes the tlb
+ */
 i32 make_task_pgdir(u8 const proc) {
   u32 i;
 
   /* If there are more than 8 processes, fail */
   /* It says >= because 0-7 are our 8 processes */
-  if (proc >= 8)
+  if (proc >= NUM_PROC)
     return -1;
 
   /* Initialize page table for process */
@@ -90,6 +97,13 @@ i32 make_task_pgdir(u8 const proc) {
   return 0;
 }
 
+/* remove_task_pgdir
+ * Description: Removes a processes page table
+ * Inputs: proc -- process id to remove page table
+ * Outputs: None
+ * Return Value: 0 on success
+ * Function: Removes a page table for a process and flushes the tlb
+ */
 i32 remove_task_pgdir(u8 const proc) {
   /* Mark page as not present */
   pgdir[proc][ELF_LOAD_PG] &= ~PG_PRESENT;
@@ -97,5 +111,29 @@ i32 remove_task_pgdir(u8 const proc) {
   /* Sets up page directory for process and flushes TLB */
   asm volatile("mov %0, %%cr3;" ::"g"(pgdir[proc]));
 
+  return 0;
+}
+
+/* map_vid_mem
+ * Description: Maps video memory to a page table entry
+ * Inputs:    proc -- The process to map the page to
+ *            virtual_address -- The virtual address to map to.
+ *            physical_address -- The physical address to map to
+ * Outputs: None
+ * Return Value: -1 on failure, 0 on success
+ * Function: Remaps a virtual address into a physical address and flushes the tlb.
+ */
+i32 map_vid_mem(u8 const proc, u32 virtual_address, u32 physical_address)
+{
+  /* If process id is valid and physical address is not in kernel space */
+  if(proc >= NUM_PROC)
+    return -1;
+  /* Map page table to page directory */
+  pgdir[proc][virtual_address/PG_4M_START] = (u32)pgtbl_proc | PG_USPACE | PG_RW | PG_PRESENT;
+  /* Map page table entry to page table. Sets virtual address */
+  pgtbl_proc[virtual_address % PG_4M_START] = physical_address | PG_USPACE | PG_RW | PG_PRESENT;
+
+   /* Sets up page directory for process and flushes TLB */
+  asm volatile("mov %0, %%cr3;" ::"g"(pgdir[proc]));
   return 0;
 }

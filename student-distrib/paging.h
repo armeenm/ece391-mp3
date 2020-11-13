@@ -20,13 +20,15 @@ enum {
   PG_RW = 1 << 1,
   PG_USPACE = 1 << 2,
   PG_SIZE = 1 << 7,
-  PG_4M_START = 1 << PG_4M_ADDR_OFFSET
+  PG_4M_START = 1 << PG_4M_ADDR_OFFSET,
+  ELF_LOAD_PG = 0x20,
+  NUM_PROC = 8
 };
 
 /* Enable paging and setup page directory and page table */
 void init_paging(void);
 i32 make_task_pgdir(u8 proc);
 i32 remove_task_pgdir(u8 proc);
-
+i32 map_vid_mem(u8 const proc, u32 virtual_address, u32 physical_address);
 #endif
 #endif
