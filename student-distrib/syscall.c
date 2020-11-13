@@ -19,7 +19,7 @@ FileOps const dir_fops = {dir_open, dir_close, dir_read, dir_write};
 u8 const elf_header[] = {0x7F, 'E', 'L', 'F'};
 Syscall const syscalls[] = {(Syscall)halt, (Syscall)execute, (Syscall)read,    (Syscall)write,
                             (Syscall)open, (Syscall)close,   (Syscall)getargs, (Syscall)vidmap,
-                            (Syscall)NULL, (Syscall)NULL};
+                            (Syscall)set_handler, (Syscall)sigreturn};
 
 u8 procs = 0x0;
 u8 running_pid = 0;
@@ -413,6 +413,31 @@ i32 vidmap(u8** screen_start) {
   /* Map to video memory and return condition */
   return map_vid_mem(pcb->pid,(u32)(*screen_start), (u32)VIDMEM_START);
 }
+
+/* set_handler
+ * Description: Changes the default action for a signal for a particular signal
+ * Inputs: signum -- signal to change handler for
+ *         handler_address -- address of user function to go to
+ * Outputs: none
+ * Return Value: if fails return -1, if success return 0
+ * Function: Changes the default action for a signal for a particular signal
+ */
+i32 set_handler(u32 UNUSED(signum), void* UNUSED(handler_address)) {
+  NIMPL;
+}
+
+/* sigreturn
+ * Description: Copies hardware context on the user-level stack to the processor
+ * Inputs: none
+ * Outputs: none
+ * Return Value: if fails return -1, if success return 0
+ * Function: Copies hardware context on the user-level stack to the processor
+ */
+i32 sigreturn(void) {
+  NIMPL;
+}
+
+
 
 i32 read_failure(i32 UNUSED(fd), void* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }
 i32 write_failure(i32 UNUSED(fd), void const* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }

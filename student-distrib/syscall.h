@@ -12,7 +12,8 @@ enum {
   ELF_HEADER_SIZE = 4,
   MAX_PID_COUNT = 8,
   FD_CNT = 8,
-  ARGS_SIZE = 128
+  ARGS_SIZE = 128,
+  NUM_SIGNALS = 4
 };
 
 typedef enum SyscallType {
@@ -52,6 +53,7 @@ typedef struct Pcb {
   u32 parent_kbp;
   i32 parent_pid;
   u32 child_return;
+  void* sig_handler[4];
 } Pcb;
 
 /* Implemented in syscall_asm.S */
@@ -65,7 +67,8 @@ i32 open(u8 const* filename);
 i32 close(i32 fd);
 i32 getargs(u8* buf, i32 nbytes);
 i32 vidmap(u8** screen_start);
-
+i32 set_handler(u32 signum, void* handler_address);
+i32 sigreturn(void);
 i32 irqh_syscall(void);
 
 Pcb* get_current_pcb(void);
