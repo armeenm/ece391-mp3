@@ -139,8 +139,7 @@ i32 execute(u8 const* const ucmd) {
   u32 entry;
   u8 header[ELF_HEADER_SIZE];
   u8 mask;
-  u32 i, j;
-  u32 argc;
+  u32 i, j, l;
 
   /* If our input is null, fail */
   if (!ucmd)
@@ -148,15 +147,17 @@ i32 execute(u8 const* const ucmd) {
 
   /* Copy the input argument neglecting leading spaces */
   memset(cmd, 0, ARGS_SIZE);
-  strcpy(cmd, (i8 const*)ucmd + strnonspace((i8 const*)ucmd));
-  j = strlen(cmd);
-  for (i = 0, argc = 1; i < j; i++) {
-    /* Replace all spaces with null termination, and count up the number of args */
-    if (cmd[i] == ' ') {
-      cmd[i] = '\0';
-      argc++;
+
+  // Remove excess spaces and copy to cmd buffer
+  for (i = strnonspace((i8 const*)ucmd), l = strlen(ucmd), j = 0; i<l; i++, j++) {
+    if (ucmd[i] == ' ') {
+      cmd[j] = '\0';
+      while(i+1 < l && ucmd[i+1] == ' ') {i++;}
+    } else {
+      cmd[j] = ucmd[i];
     }
   }
+  cmd[j] = '\0';
 
   /* If directory entry read fails, fail */
   if (read_dentry_by_name((u8*)cmd, &dentry))
@@ -228,7 +229,6 @@ cont:
         pcb->argv[j++] = &pcb->raw_argv[i + 1];
     }
 
-    pcb->argc = argc;
     pcb->pid = running_pid;
     pcb->parent_ksp = esp;
     pcb->parent_kbp = ebp;
