@@ -149,7 +149,7 @@ i32 execute(u8 const* const ucmd) {
   memset(cmd, 0, ARGS_SIZE);
 
   // Remove excess spaces and copy to cmd buffer
-  for (i = strnonspace((i8 const*)ucmd), l = strlen(ucmd), j = 0; i<l; i++, j++) {
+  for (i = strnonspace((i8 const*)ucmd), l = strlen((i8 const*)ucmd), j = 0; i<l; i++, j++) {
     if (ucmd[i] == ' ') {
       cmd[j] = '\0';
       while(i+1 < l && ucmd[i+1] == ' ') {i++;}
@@ -386,7 +386,7 @@ i32 getargs(u8* const buf, i32 const nbytes) {
   /* Gets the pcb */
   Pcb const* const pcb = get_current_pcb();
   /* Check to see if pcb and buffer are valid */
-  if (!buf || nbytes < 0 || !pcb->argv[1])
+  if (!buf || nbytes < 0 || !pcb->argv[1] || !pcb->argv[1][0])
     return -1;
   /* Copy data into buffer */
   memcpy(buf, pcb->argv[1], MIN(strlen(pcb->argv[1]) + 1, (u32)nbytes));
