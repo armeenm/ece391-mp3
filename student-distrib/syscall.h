@@ -13,7 +13,8 @@ enum {
   MAX_PID_COUNT = 8,
   FD_CNT = 8,
   ARGS_SIZE = 128,
-  NUM_SIGNALS = 4
+  NUM_SIGNALS = 4,
+  PROCESS_KILLED_BY_EXCEPTION = 256
 };
 
 typedef enum SyscallType {
@@ -75,4 +76,5 @@ Pcb* get_current_pcb(void);
 i32 read_failure(i32 fd, void* buf, i32 nbytes);
 i32 write_failure(i32 fd, void const* buf, i32 nbytes);
 
+void set_program_exception(u8 val);
 #endif

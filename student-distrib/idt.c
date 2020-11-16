@@ -43,6 +43,7 @@ INTSTACK(false);
   void name(INTSTACK_NAME_##errc stack) {                                                          \
     CLR_##clear;                                                                                   \
     ERRC_PRINTF_##errc(str);                                                                       \
+    set_program_exception(1);  /* so we can return > 8 bit value*/                                 \
     halt(1);                                                                                       \
   }
 

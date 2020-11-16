@@ -26,6 +26,8 @@ u8 running_pid = 0;
 
 static Pcb* get_pcb(u8 proc);
 
+static u8 program_exception_occured = 0;
+
 /* irqh_syscall
  * Description: IRQ Handler for system calls
  * Inputs: type -- Type of syscall
@@ -71,13 +73,26 @@ i32 irqh_syscall(void) {
 static Pcb* get_pcb(u8 proc) { return (Pcb*)(MB8 - (proc + 1) * KB8); }
 
 /* get_current_pcb
- * Description:
+ * Description: ^
  * Inputs: none
  * Outputs: none
- * Return Value:
+ * Return Value: current PCB ptr
  * Function:
  */
 Pcb* get_current_pcb(void) { return get_pcb(running_pid); }
+
+
+/* set_program_exception
+ * Description: setter for the halt function, this function set's a static boolean to indicate if a exception was thrown
+ * and the proc was killed by the shell
+ * Inputs: u8 bval: boolean to enable or disable this 256 load to EAX instead of halt(status)
+ * Outputs: none
+ * Return Value: none
+ * Function: set program exception occured
+ */
+void set_program_exception(u8 val) {
+  program_exception_occured = val;
+}
 
 /* halt
  * Description: Halts a program
@@ -98,7 +113,9 @@ i32 halt(u8 const status) {
   if (pcb->parent_pid == -1) {
     tss.esp0 = MB8 - KB8 - ADDRESS_SIZE;
   } else {
-    get_pcb(pcb->parent_pid)->child_return = status;
+    // if a program exception occured, we ignore the halt status and return 256 to eax
+    pcb->child_return = program_exception_occured ? PROCESS_KILLED_BY_EXCEPTION : status;
+    set_program_exception(0);
     /* There is a parent, we need to switch contexts to the parent */
     remove_task_pgdir(pcb->pid);
     make_task_pgdir(pcb->parent_pid);
@@ -385,7 +402,8 @@ i32 close(i32 fd) {
 i32 getargs(u8* const buf, i32 const nbytes) {
   /* Gets the pcb */
   Pcb const* const pcb = get_current_pcb();
-  /* Check to see if pcb and buffer are valid */
+  /* Check to see if pcb and buffer are valid, also check 
+     that we're not pointing to an empty string*/
   if (!buf || nbytes < 0 || !pcb->argv[1] || !pcb->argv[1][0])
     return -1;
   /* Copy data into buffer */
