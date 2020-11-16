@@ -423,8 +423,10 @@ i32 getargs(u8* const buf, i32 const nbytes) {
 i32 vidmap(u8** screen_start) {
   /* Get pcb so we can get the pid */
   Pcb* pcb = get_current_pcb();
-  /* Check to see if pcb and screen_start pointer are valid, return -1 on fail */
-  if(!screen_start || !pcb)
+  /* Check to see if pcb and screen_start pointer are valid, return -1 on fail
+   * (Also see if screen_start is < 8MB (not in kernal space)
+   */
+  if(!screen_start || screen_start < (u8 **)(PG_4M_START * 2) || !pcb)
     return -1;
   /* Set screen_start to 128MB + 4MB * 8 Process = 160MB */
   *screen_start = (u8 *)(PG_4M_START *  (ELF_LOAD_PG + NUM_PROC));
