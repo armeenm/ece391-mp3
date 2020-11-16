@@ -116,6 +116,7 @@ i32 halt(u8 const status) {
     // if a program exception occured, we ignore the halt status and return 256 to eax
     pcb->child_return = program_exception_occured ? PROCESS_KILLED_BY_EXCEPTION : status;
     set_program_exception(0);
+
     /* There is a parent, we need to switch contexts to the parent */
     remove_task_pgdir(pcb->pid);
     make_task_pgdir(pcb->parent_pid);
@@ -131,15 +132,13 @@ i32 halt(u8 const status) {
   asm volatile("mov %0, %%esp;"
                "mov %1, %%ebp;"
                "mov %2, %%eax;"
+	       "leave;"
+	       "ret;"
                :
                : "g"(pcb->parent_ksp), "g"(pcb->parent_kbp), "g"(pcb->child_return)
                : "eax", "esp", "ebp");
 
-  asm volatile("leave;"
-               "ret;");
-
   return -1;
-  /* Not sure if this is correct -- halt is supposed to jump to execute return */
 }
 
 /* execute

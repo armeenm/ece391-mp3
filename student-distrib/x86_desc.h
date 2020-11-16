@@ -140,6 +140,7 @@ extern u32 pgtbl_proc[PGTBL_LEN];
     str.seg_lim_15_00 = (lim)&0x0000FFFF;                                                          \
   } while (0)
 
+#define PG_4M (PG_4M_START | PG_USPACE)
 /* Sets runtime parameters for the TSS */
 #define SET_TSS_PARAMS(str, addr, lim)                                                             \
   do {                                                                                             \

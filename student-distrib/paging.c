@@ -1,7 +1,6 @@
 #include "paging.h"
 #include "x86_desc.h"
 
-
 /*
  * 4MB to 8MB is kernel, 0MB to 4MB is 4KB pages 8MB to 4GB is 4MB
  * Differentiating 4MB and 4KB is bit 7 in PDE (0 = 4KB, 1 = 4MB)
@@ -85,8 +84,8 @@ i32 make_task_pgdir(u8 const proc) {
   /* Initialize page directory 4KB pages */
   pgdir[proc][0] = (u32)pgtbl_proc | PG_USPACE | PG_RW | PG_PRESENT;
 
-  /* Initialize page directory kernal */
-  pgdir[proc][1] = PG_4M_START | PG_USPACE | PG_RW | PG_SIZE | PG_PRESENT;
+  /* Initialize page directory kernel */
+  pgdir[proc][1] = PG_4M | PG_RW | PG_SIZE | PG_PRESENT;
 
   /* Initialize page directory 4MB pages */
   pgdir[proc][ELF_LOAD_PG] = ((proc + 2) * PG_4M_START) | PG_SIZE | PG_USPACE | PG_RW | PG_PRESENT;
