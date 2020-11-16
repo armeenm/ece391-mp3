@@ -163,12 +163,14 @@ i32 execute(u8 const* const ucmd) {
 
   /* Copy the input argument neglecting leading spaces */
   memset(cmd, 0, ARGS_SIZE);
-
   // Remove excess spaces and copy to cmd buffer
   for (i = strnonspace((i8 const*)ucmd), l = strlen((i8 const*)ucmd), j = 0; i<l; i++, j++) {
     if (ucmd[i] == ' ') {
       cmd[j] = '\0';
       while(i+1 < l && ucmd[i+1] == ' ') {i++;}
+      // once we run into a command with a space, grab stuff after it 
+      strcpy(cmd+j, (i8 const*)ucmd+i);
+      break;
     } else {
       cmd[j] = ucmd[i];
     }
@@ -239,11 +241,8 @@ cont:
     /* Setup argv to point to sections of the raw_argv string to seperate args */
     memcpy(pcb->raw_argv, cmd, ARGS_SIZE);
     pcb->argv[0] = pcb->raw_argv;
-
-    for (i = 1, j = 1; i < ARGS_SIZE - 1; i++) {
-      if (pcb->raw_argv[i] == (i8)'\0')
-        pcb->argv[j++] = &pcb->raw_argv[i + 1];
-    }
+    // set the remaining section of the argument
+    pcb->argv[1] = pcb->raw_argv+strlen(pcb->raw_argv)+1;
 
     pcb->pid = running_pid;
     pcb->parent_ksp = esp;
