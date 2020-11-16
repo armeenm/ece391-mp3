@@ -5,6 +5,7 @@
 #ifndef IDT_C
 #define ASM 1
 
+/* Whether we should clobber EAX or not */
 #define CLOBEAX_true addl $4, %esp
 #define CLOBEAX_false popl %eax
 
@@ -12,6 +13,14 @@
 #define ASM_EXC(name) I_ASM_EXC(name, false)
 #define ASM_EXC_KEEPEAX(name) I_ASM_EXC(name, true)
 
+/* I_ASM_EXC
+ * Description: Macro for generating assembly linkage for IDT entries.
+ * Macro Inputs: name    -- Name of the C function to call
+ *               clobeax -- Whether to clobber EAX or not; Appropriate values: true/false
+ * Inputs: None
+ * Outputs: EAX may be the return value of the C function if clobeax is true
+ * Function: Saves/restores registers according to x86 cdecl convention and uses iret to return
+ */
 #define I_ASM_EXC(name, clobeax)                                                                   \
   .global asm_##name;                                                                              \
   asm_##name:                                                                                      \
