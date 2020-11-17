@@ -168,7 +168,7 @@ i32 read_dentry_by_name(u8 const* const ufname, DirEntry* const dentry) {
   if (dentry)
     for (i = 0; i < FS_MAX_DIR_ENTRIES; ++i)
       // iterate through each directory entry, compare the files names for a match
-      if (!strncmp(fname, bootblk->direntries[i].filename, FS_FNAME_LEN)) {
+      if (strlen(fname) <= FS_FNAME_LEN && !strncmp(fname, bootblk->direntries[i].filename, FS_FNAME_LEN)) {
         // when they match, grab the dir entry
         memcpy(dentry, &bootblk->direntries[i], sizeof(DirEntry));
         return 0;
