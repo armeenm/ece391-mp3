@@ -215,6 +215,7 @@ cont:
 
   {
     Pcb* const pcb = get_current_pcb();
+    pcb->parent_pcb = parent;
     u32 esp, ebp;
 
     /* Copy the ESP and EBP for the child process to return to parent */

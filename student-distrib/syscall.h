@@ -53,6 +53,7 @@ typedef struct Pcb {
   u32 parent_ksp;
   u32 parent_kbp;
   i32 parent_pid;
+  Pcb* parent_pcb;
   u32 child_return;
   void* sig_handler[4];
 } Pcb;

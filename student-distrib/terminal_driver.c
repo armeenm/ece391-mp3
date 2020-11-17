@@ -1,7 +1,9 @@
 #include "terminal_driver.h"
 #include "keyboard.h"
+#include "lib.h"
+#include "syscall.h"
 
-int terminal_read_flag = 0;
+terminal terminals[TERMINAL_NUM];
 
 /* terminal_read
  * Description: Read input from the terminal
@@ -60,3 +62,33 @@ i32 terminal_open(const u8* UNUSED(filename)) { return 0; }
  * Function: Closes the terminal driver and deallocates any memory it needs to.
  */
 i32 terminal_close(i32 UNUSED(fd)) { return 0; }
+
+
+terminal* get_terminal_from_pid(u32 pid) {
+  int i = 0;
+  for(i = 0; i < TERMINAL_NUM; i++) {
+    if(terminals[i].pid == pid)
+      return &terminals[i];
+  }
+  return NULL;
+}
+
+terminal* get_current_terminal() {
+  Pcb* pcb = get_current_pcb();
+  terminal* term;
+  if(term = get_terminal_from_pid(pcb->pid))
+    return term;
+  while(!pcb->parent_pcb)
+  {
+    if(term = get_terminal_from_pid(pcb->parent_pcb))
+      return term;
+    pcb = pcb->parent_pcb;
+  }
+  return NULL;
+}
+
+void restore_terminal(u8 term_num) {
+  terminal term = terminals[term_num];
+  set_screen_xy(term.cursor_x, term.cursor_y);
+
+}
