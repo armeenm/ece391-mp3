@@ -24,8 +24,6 @@ Syscall const syscalls[] = {(Syscall)halt, (Syscall)execute, (Syscall)read,    (
 u8 procs = 0x0;
 u8 running_pid = 0;
 
-static Pcb* get_pcb(u8 proc);
-
 static u8 program_exception_occured = 0;
 
 /* irqh_syscall
@@ -70,7 +68,7 @@ i32 irqh_syscall(void) {
  * Return Value: none
  * Function:
  */
-static Pcb* get_pcb(u8 proc) { return (Pcb*)(MB8 - (proc + 1) * KB8); }
+Pcb* get_pcb(u8 proc) { return (Pcb*)(MB8 - (proc + 1) * KB8); }
 
 /* get_current_pcb
  * Description: ^
@@ -104,7 +102,8 @@ void set_program_exception(u8 val) {
 i32 halt(u8 const status) {
   u32 i;
   Pcb* const pcb = get_current_pcb();
-
+  pcb->parent_pcb->child_pcb = NULL;
+  
   /* If we're the "parent process" of the OS (pid == 0, shell) don't halt it */
   /* Close all FDs for the current process */
   for (i = 0; i < FD_CNT; ++i)
@@ -216,6 +215,7 @@ cont:
   {
     Pcb* const pcb = get_current_pcb();
     pcb->parent_pcb = parent;
+    parent->child_pcb = pcb;
     u32 esp, ebp;
 
     /* Copy the ESP and EBP for the child process to return to parent */

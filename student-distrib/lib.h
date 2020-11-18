@@ -12,6 +12,8 @@
 #define VGA_CURSOR_HIGH_REGISTER 0x0E
 #define VGA_CURSOR_LOW_REGISTER 0x0F
 
+enum { ATTRIB = 2, NUM_ROWS = 25, NUM_COLS = 80, VIDEO = 0xB8000 };
+
 i32 printf(i8* format, ...);
 void putc(i8 c);
 i32 puts(i8* s);

@@ -162,10 +162,19 @@ void handle_keypress(SCSet1 const scancode) {
           putc(term->line_buf[i]);
       }
 
-    } else if (!term->read_flag)
+    } else if (!term->read_flag) {
       return;
-
-    else if (key_state[SCS1_PRESSED_BACKSPACE] == 1) {
+    } else if(alt_pressed() == 1 && is_func_key(scancode) == 1) {
+      if(scancode == SCS1_PRESSED_F1) {
+        switch_terminal(0);
+      }
+      else if(scancode == SCS1_PRESSED_F2) {
+        switch_terminal(1);
+      }
+      else if(scancode == SCS1_PRESSED_F3) {
+        switch_terminal(2);
+      }
+    } else if (key_state[SCS1_PRESSED_BACKSPACE] == 1) {
       /* If there is data in the line buf and backspace is pressed
        * decrement the line buf and handle the backspace keypress
        */
@@ -322,3 +331,11 @@ i32 shift_pressed(void) {
  * Side Effects: none
  */
 i32 capslock_pressed(void) { return key_state[SCS1_PRESSED_CAPSLOCK]; }
+
+i32 is_func_key(SCSet1 scancode) {
+  return (scancode >= SCS1_PRESSED_F1 && scancode <= SCS1_PRESSED_F12);
+}
+
+i32 alt_pressed(void) {
+  return key_state[SCS1_PRESSED_LEFTALT];
+}

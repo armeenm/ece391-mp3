@@ -1,8 +1,8 @@
 /* lib.c - Some basic library functions (printf, strlen, etc.) */
 
 #include "lib.h"
-
-enum { ATTRIB = 2, NUM_ROWS = 25, NUM_COLS = 80, VIDEO = 0xB8000 };
+#include "terminal_driver.h"
+#include "syscall.h"
 
 static u16 screen_x;
 static u16 screen_y;
@@ -77,6 +77,10 @@ void set_screen_x(u16 const x) {
   if (x < NUM_COLS) {
     /* If valid position set x position to x and set the cursor */
     screen_x = x;
+    terminal* term = get_current_terminal();
+    if(term) {
+      term->cursor_x = x;
+    }
     set_cursor_location(x, screen_y);
   }
 }
@@ -90,6 +94,10 @@ void set_screen_y(u16 const y) {
   if (y < NUM_ROWS) {
     /* If valid position set y position to y and set the cursor */
     screen_y = y;
+    terminal* term = get_current_terminal();
+    if(term) {
+      term->cursor_y = y;
+    }
     set_cursor_location(screen_x, y);
   }
 }
@@ -105,6 +113,12 @@ void set_screen_xy(u16 const x, u16 const y) {
     /* If valid position set y position to y and set the cursor */
     screen_y = y;
     screen_x = x;
+    terminal* term = get_current_terminal();
+    if(term) {
+      term->cursor_x = x;
+      term->cursor_y = y;
+    }
+    
     set_cursor_location(x, y);
   }
 }

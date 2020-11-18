@@ -52,8 +52,11 @@ typedef struct Pcb {
   u32 pid;
   u32 parent_ksp;
   u32 parent_kbp;
+  u32 ksp;
+  u32 kbp;
   i32 parent_pid;
-  Pcb* parent_pcb;
+  struct Pcb* parent_pcb;
+  struct Pcb* child_pcb;
   u32 child_return;
   void* sig_handler[4];
 } Pcb;
@@ -74,6 +77,7 @@ i32 sigreturn(void);
 i32 irqh_syscall(void);
 
 Pcb* get_current_pcb(void);
+Pcb* get_pcb(u8 proc);
 i32 read_failure(i32 fd, void* buf, i32 nbytes);
 i32 write_failure(i32 fd, void const* buf, i32 nbytes);
 
