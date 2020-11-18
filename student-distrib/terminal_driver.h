@@ -17,6 +17,8 @@ typedef struct terminal {
     u8 running;
 }terminal;
 
+u8 current_terminal;
+terminal terminals[TERMINAL_NUM];
 
 /* Define Function Calls */
 i32 terminal_read(i32 fd, void* buf, i32 nbytes);
@@ -29,4 +31,5 @@ void switch_terminal(u8 term_num);
 void init_terminals(void);
 terminal* get_terminal_from_pid(u32 pid);
 terminal* get_current_terminal(void);
+terminal* new_terminal(u8 pid);
 #endif

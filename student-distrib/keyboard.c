@@ -164,14 +164,17 @@ void handle_keypress(SCSet1 const scancode) {
 
     } else if (!term->read_flag) {
       return;
-    } else if(alt_pressed() == 1 && is_func_key(scancode) == 1) {
+    } else if(is_func_key()) {
       if(scancode == SCS1_PRESSED_F1) {
+        send_eoi(KEYBOARD_IRQ);
         switch_terminal(0);
       }
       else if(scancode == SCS1_PRESSED_F2) {
+        send_eoi(KEYBOARD_IRQ);
         switch_terminal(1);
       }
       else if(scancode == SCS1_PRESSED_F3) {
+        send_eoi(KEYBOARD_IRQ);
         switch_terminal(2);
       }
     } else if (key_state[SCS1_PRESSED_BACKSPACE] == 1) {
@@ -332,8 +335,13 @@ i32 shift_pressed(void) {
  */
 i32 capslock_pressed(void) { return key_state[SCS1_PRESSED_CAPSLOCK]; }
 
-i32 is_func_key(SCSet1 scancode) {
-  return (scancode >= SCS1_PRESSED_F1 && scancode <= SCS1_PRESSED_F12);
+i32 is_func_key(void) {
+  return (key_state[SCS1_PRESSED_F1] || key_state[SCS1_PRESSED_F2] ||
+  key_state[SCS1_PRESSED_F3] || key_state[SCS1_PRESSED_F4] ||
+  key_state[SCS1_PRESSED_F5] || key_state[SCS1_PRESSED_F6] ||
+  key_state[SCS1_PRESSED_F7] || key_state[SCS1_PRESSED_F8] ||
+  key_state[SCS1_PRESSED_F9] || key_state[SCS1_PRESSED_F10] ||
+  key_state[SCS1_PRESSED_F11] || key_state[SCS1_PRESSED_F12]);
 }
 
 i32 alt_pressed(void) {

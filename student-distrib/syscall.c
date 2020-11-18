@@ -214,7 +214,6 @@ cont:
 
   {
     Pcb* const pcb = get_current_pcb();
-    pcb->parent_pcb = parent;
     parent->child_pcb = pcb;
     u32 esp, ebp;
 
@@ -248,8 +247,33 @@ cont:
     pcb->pid = running_pid;
     pcb->parent_ksp = esp;
     pcb->parent_kbp = ebp;
-    pcb->parent_pid = (procs == FIRST_PID) ? -1 : (i32)parent->pid; /* Special case 1st proc */
 
+    
+    terminal* term;
+    pcb->parent_pcb = parent;
+    if(terminals[current_terminal].running == 1) {
+      term = get_current_terminal();
+      pcb->parent_pcb = pcb;
+    }
+    else {
+      new_terminal(running_pid);
+      term = get_current_terminal();
+    }
+
+    // if(parent != pcb) {
+    //   term = get_current_terminal();
+    // }
+
+    // if(!term) {
+    //   new_terminal(running_pid);
+    //   term = get_current_terminal();
+    // }
+    // if(term->running) {
+    //   pcb->parent_pcb = pcb;
+    // }
+    
+    pcb->parent_pid = (running_pid == term->pid) ? -1 : (i32)parent->pid; /* Special case 1st proc */
+    term->running = 1;
     /* New KSP */
     tss.esp0 = MB8 - KB8 * (running_pid + 1) - ADDRESS_SIZE;
 

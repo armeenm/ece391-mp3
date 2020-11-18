@@ -90,7 +90,7 @@ void clear_line_buf(void);
 i32 get_line_buf(i8* buf, i32 nbytes);
 i32 capslock_pressed(void);
 i32 shift_pressed(void);
-i32 is_func_key(SCSet1 scancode);
+i32 is_func_key(void);
 i32 alt_pressed(void);
 
 #endif

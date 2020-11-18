@@ -1,7 +1,7 @@
 #ifndef OPTIONS_H
 #define OPTIONS_H
 
-#define TESTS_ENABLED 1
+#define TESTS_ENABLED 0
 
 /* BSOD */
 #define ENABLE_TEST_DIV_ZERO 0
