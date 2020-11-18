@@ -126,7 +126,7 @@ void switch_terminal(u8 term_num) {
 
   
   Pcb* current_pcb = get_current_pcb();
-  while(current_pcb->child_pcb != current_pcb)
+  while(current_pcb->child_pcb != NULL && current_pcb->child_pcb != current_pcb)
   {
     current_pcb = current_pcb->child_pcb;
   }
@@ -158,8 +158,8 @@ void switch_terminal(u8 term_num) {
     asm volatile("mov %%esp, %0;"
                  "mov %%ebp, %1;"
                  : "=g"(esp), "=g"(ebp));
-    current_pcb->parent_ksp = esp;
-    current_pcb->parent_kbp = ebp;
+    current_pcb->ksp = esp;
+    current_pcb->ksp = ebp;
     
     execute((u8*)"shell");
   }

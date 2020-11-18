@@ -164,7 +164,7 @@ void handle_keypress(SCSet1 const scancode) {
 
     } else if (!term->read_flag) {
       return;
-    } else if(is_func_key()) {
+    } else if(alt_pressed() && is_func_key()) {
       if(scancode == SCS1_PRESSED_F1) {
         send_eoi(KEYBOARD_IRQ);
         switch_terminal(0);
