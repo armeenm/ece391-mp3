@@ -2,7 +2,7 @@
 #include "keyboard.h"
 #include "syscall.h"
 #include "lib.h"
-
+#include "x86_desc.h"
 
 
 /* terminal_read
@@ -126,18 +126,16 @@ void switch_terminal(u8 term_num) {
 
   
   Pcb* current_pcb = get_current_pcb();
-  while(current_pcb->child_pcb != NULL && current_pcb->child_pcb != current_pcb)
-  {
-    current_pcb = current_pcb->child_pcb;
-  }
-
-  if(terminals[term_num].running == 1)
-  {
-    /* Copy the ESP and EBP for the child process to return to parent */
+  // while(current_pcb->child_pcb != NULL && current_pcb->child_pcb != current_pcb)
+  // {
+  //   current_pcb = current_pcb->child_pcb;
+  // }
+   /* Copy the ESP and EBP for the child process to return to parent */
     asm volatile("mov %%esp, %0;"
                  "mov %%ebp, %1;"
                  : "=g"(esp), "=g"(ebp));
-   
+  if(terminals[term_num].running == 1)
+  {
     Pcb* pcb = get_pcb(terminals[term_num].pid);
     while(pcb->child_pcb != pcb->child_pcb) {
       pcb = pcb->child_pcb;
@@ -145,6 +143,9 @@ void switch_terminal(u8 term_num) {
 
     current_pcb->ksp = esp;
     current_pcb->kbp = ebp;
+
+    tss.esp0 = MB8 - KB8 * (terminals[term_num].pid + 1) - ADDRESS_SIZE;
+
     asm volatile("mov %0, %%esp;"
                 "mov %1, %%ebp;"
           "leave;"
@@ -154,12 +155,8 @@ void switch_terminal(u8 term_num) {
                 : "eax", "esp", "ebp");
   }
   else {
-    /* Copy the ESP and EBP for the child process to return to parent */
-    asm volatile("mov %%esp, %0;"
-                 "mov %%ebp, %1;"
-                 : "=g"(esp), "=g"(ebp));
     current_pcb->ksp = esp;
-    current_pcb->ksp = ebp;
+    current_pcb->kbp = ebp;
     
     execute((u8*)"shell");
   }

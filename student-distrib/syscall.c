@@ -6,7 +6,6 @@
 #include "util.h"
 #include "x86_desc.h"
 
-enum { ENTRY_POINT_OFFSET = 24, LOAD_ADDR = 0x8048000, MB8 = 0x800000, KB8 = 0x2000 };
 
 typedef i32 (*Syscall)(u32 arg1, u32 arg2, u32 arg3);
 
@@ -110,7 +109,7 @@ i32 halt(u8 const status) {
     close(i);
 
   if (pcb->parent_pid == -1) {
-    tss.esp0 = MB8 - KB8 - ADDRESS_SIZE;
+    tss.esp0 = MB8 - KB8 * (get_current_terminal()->pid + 1) - ADDRESS_SIZE;
   } else {
     // if a program exception occured, we ignore the halt status and return 256 to eax
     pcb->child_return = program_exception_occured ? PROCESS_KILLED_BY_EXCEPTION : status;
@@ -259,18 +258,6 @@ cont:
       new_terminal(running_pid);
       term = get_current_terminal();
     }
-
-    // if(parent != pcb) {
-    //   term = get_current_terminal();
-    // }
-
-    // if(!term) {
-    //   new_terminal(running_pid);
-    //   term = get_current_terminal();
-    // }
-    // if(term->running) {
-    //   pcb->parent_pcb = pcb;
-    // }
     
     pcb->parent_pid = (running_pid == term->pid) ? -1 : (i32)parent->pid; /* Special case 1st proc */
     term->running = 1;

@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+enum { ENTRY_POINT_OFFSET = 24, LOAD_ADDR = 0x8048000, MB8 = 0x800000, KB8 = 0x2000 };
+
 enum {
   FD_NOT_IN_USE = 0,
   FD_IN_USE = 1,

@@ -66,6 +66,12 @@ void set_cursor_location(u16 const x, u16 const y) {
 
   outb(VGA_CURSOR_LOW_REGISTER, VGA_ADDRESS_REGISTER);
   outb(vga_position, VGA_DATA_REGISTER);
+
+  terminal* term;
+  if((term = get_current_terminal())) {
+    term->cursor_x = x;
+    term->cursor_y = y;
+  }
 }
 
 /* void setscreen_x(int x);
