@@ -30,5 +30,6 @@ void init_paging(void);
 i32 make_task_pgdir(u8 proc);
 i32 remove_task_pgdir(u8 proc);
 i32 map_vid_mem(u8 const proc, u32 virtual_address, u32 physical_address);
+void flush_tlb(void);
 #endif
 #endif

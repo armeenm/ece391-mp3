@@ -258,7 +258,7 @@ cont:
       new_terminal(running_pid);
       term = get_current_terminal();
     }
-    
+    pcb->child_pcb = NULL;
     pcb->parent_pid = (running_pid == term->pid) ? -1 : (i32)parent->pid; /* Special case 1st proc */
     term->running = 1;
     /* New KSP */

@@ -54,12 +54,13 @@ void irqh_pit(void) {
   if(terminals[current_schedule].running == 1)
   {
     Pcb* pcb = get_pcb(terminals[current_schedule].pid);
-    while(pcb->child_pcb != pcb->child_pcb) {
+    while(pcb->child_pcb) {
       pcb = pcb->child_pcb;
     }
     tss.esp0 = MB8 - KB8 * (pcb->pid + 1) - ADDRESS_SIZE;
     set_pid(pcb->pid);
     send_eoi(PIT_IRQ);
+    flush_tlb();
     asm volatile("mov %0, %%esp;"
                 "mov %1, %%ebp;"
           "leave;"

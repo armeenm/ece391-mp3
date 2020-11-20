@@ -1,6 +1,6 @@
 #include "paging.h"
 #include "x86_desc.h"
-
+#include "syscall.h"
 /*
  * 4MB to 8MB is kernel, 0MB to 4MB is 4KB pages 8MB to 4GB is 4MB
  * Differentiating 4MB and 4KB is bit 7 in PDE (0 = 4KB, 1 = 4MB)
@@ -135,4 +135,9 @@ i32 map_vid_mem(u8 const proc, u32 virtual_address, u32 physical_address)
    /* Sets up page directory for process and flushes TLB */
   asm volatile("mov %0, %%cr3;" ::"g"(pgdir[proc]));
   return 0;
+}
+
+
+void flush_tlb(void) {
+  asm volatile("mov %0, %%cr3;" ::"g"(pgdir[(get_current_pcb())->pid]));
 }
