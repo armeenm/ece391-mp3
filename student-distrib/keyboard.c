@@ -119,7 +119,7 @@ void irqh_keyboard(void) {
  */
 void handle_keypress(SCSet1 const scancode) {
   u32 i;
-  terminal* term = get_current_terminal();
+  terminal* term = &terminals[current_terminal];
   
   if(!term)
     return;
@@ -144,9 +144,23 @@ void handle_keypress(SCSet1 const scancode) {
       /* Otherwise the keystate is equal to 1 */
       key_state[scancode] = 1;
     }
-
+    
+    if(alt_pressed() && is_func_key()) {
+      if(scancode == SCS1_PRESSED_F1) {
+        send_eoi(KEYBOARD_IRQ);
+        switch_terminal(0);
+      }
+      else if(scancode == SCS1_PRESSED_F2) {
+        send_eoi(KEYBOARD_IRQ);
+        switch_terminal(1);
+      }
+      else if(scancode == SCS1_PRESSED_F3) {
+        send_eoi(KEYBOARD_IRQ);
+        switch_terminal(2);
+      }
+    }
     /* If the command ctrl + l is pressed clear the screen */
-    if (key_state[SCS1_PRESSED_LEFTCTRL] && scancode == SCS1_PRESSED_L) {
+    else if (key_state[SCS1_PRESSED_LEFTCTRL] && scancode == SCS1_PRESSED_L) {
 
       /* Clear screen and reset terminal */
       clear();
@@ -162,19 +176,6 @@ void handle_keypress(SCSet1 const scancode) {
           putc(term->line_buf[i]);
       }
 
-    } else if(alt_pressed() && is_func_key()) {
-      if(scancode == SCS1_PRESSED_F1) {
-        send_eoi(KEYBOARD_IRQ);
-        switch_terminal(0);
-      }
-      else if(scancode == SCS1_PRESSED_F2) {
-        send_eoi(KEYBOARD_IRQ);
-        switch_terminal(1);
-      }
-      else if(scancode == SCS1_PRESSED_F3) {
-        send_eoi(KEYBOARD_IRQ);
-        switch_terminal(2);
-      }
     } else if (!term->read_flag) {
       return;
     }

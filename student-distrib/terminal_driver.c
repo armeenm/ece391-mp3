@@ -128,7 +128,7 @@ void switch_terminal(u8 term_num) {
   current_terminal = term_num;
   terminals[term_num].status = TASK_RUNNING;
   sti();
-  
+
   // Pcb* current_pcb = get_current_pcb();
   // // while(current_pcb->child_pcb != NULL && current_pcb->child_pcb != current_pcb)
   // // {
@@ -179,6 +179,8 @@ void restore_terminal(u8 term_num) {
     memcpy(prev_term->vid_mem_buf, (u8*)VIDEO, NUM_COLS * NUM_ROWS * 2);
 
   memcpy((u8 *)VIDEO, &term.vid_mem_buf, NUM_COLS * NUM_ROWS * 2);
+  vidmap(&(term.vid_mem_buf));
+  map_vid_mem(prev_term->pid, (u32)VIDEO, &(prev_term->vid_mem_buf));
 }
 
 

@@ -41,35 +41,36 @@ void irqh_pit(void) {
 
     current_schedule = schedule_counter;
 
-    send_eoi(PIT_IRQ);
+   
     /* TODO SWITCH TASKS HERE:*/
 
-//     Pcb* current_pcb = get_current_pcb();
-//    /* Copy the ESP and EBP for the child process to return to parent */
-//     asm volatile("mov %%esp, %0;"
-//                  "mov %%ebp, %1;"
-//                  : "=g"(esp), "=g"(ebp));
-//     current_pcb->ksp = esp;
-//     current_pcb->kbp = ebp;
-//   if(terminals[current_schedule].running == 1)
-//   {
-//     Pcb* pcb = get_pcb(terminals[current_schedule].pid);
-//     while(pcb->child_pcb != pcb->child_pcb) {
-//       pcb = pcb->child_pcb;
-//     }
-//     tss.esp0 = MB8 - KB8 * (terminals[current_schedule].pid + 1) - ADDRESS_SIZE;
-//     send_eoi(PIT_IRQ);
-//     asm volatile("mov %0, %%esp;"
-//                 "mov %1, %%ebp;"
-//           "leave;"
-//           "ret;"
-//                 :
-//                 : "g"(pcb->ksp), "g"(pcb->kbp)
-//                 : "esp", "ebp");
-//   }
-//   else {
-//     send_eoi(PIT_IRQ);
-//     execute((u8*)"shell");
-//   }
+    Pcb* current_pcb = get_current_pcb();
+   /* Copy the ESP and EBP for the child process to return to parent */
+    asm volatile("mov %%esp, %0;"
+                 "mov %%ebp, %1;"
+                 : "=g"(esp), "=g"(ebp));
+    current_pcb->ksp = esp;
+    current_pcb->kbp = ebp;
+  if(terminals[current_schedule].running == 1)
+  {
+    Pcb* pcb = get_pcb(terminals[current_schedule].pid);
+    while(pcb->child_pcb != pcb->child_pcb) {
+      pcb = pcb->child_pcb;
+    }
+    tss.esp0 = MB8 - KB8 * (pcb->pid + 1) - ADDRESS_SIZE;
+    set_pid(pcb->pid);
+    send_eoi(PIT_IRQ);
+    asm volatile("mov %0, %%esp;"
+                "mov %1, %%ebp;"
+          "leave;"
+          "ret;"
+                :
+                : "g"(pcb->ksp), "g"(pcb->kbp)
+                : "esp", "ebp");
+  }
+  else {
+    send_eoi(PIT_IRQ);
+    execute((u8*)"shell");
+  }
 
 }

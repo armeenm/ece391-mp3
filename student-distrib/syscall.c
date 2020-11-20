@@ -467,7 +467,9 @@ i32 sigreturn(void) {
   NIMPL;
 }
 
-
+void set_pid(u8 pid) {
+  running_pid = pid;
+}
 
 i32 read_failure(i32 UNUSED(fd), void* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }
 i32 write_failure(i32 UNUSED(fd), void const* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }

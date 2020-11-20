@@ -77,7 +77,7 @@ i32 vidmap(u8** screen_start);
 i32 set_handler(u32 signum, void* handler_address);
 i32 sigreturn(void);
 i32 irqh_syscall(void);
-
+void set_pid(u8 pid);
 Pcb* get_current_pcb(void);
 Pcb* get_pcb(u8 proc);
 i32 read_failure(i32 fd, void* buf, i32 nbytes);
