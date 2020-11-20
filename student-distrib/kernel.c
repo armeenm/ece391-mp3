@@ -17,6 +17,7 @@
 #include "util.h"
 #include "x86_desc.h"
 #include "terminal_driver.h"
+#include "pit.h"
 
 #define RUN_TESTS
 
@@ -147,6 +148,7 @@ void entry(u32 const magic, u32 const addr) {
   init_rtc();
   init_paging();
   init_idt();
+  init_pit();
   
   /* Grab the first module and use it to open the filesystem */
   module_t* const mod = (module_t*)mbi->mods_addr;

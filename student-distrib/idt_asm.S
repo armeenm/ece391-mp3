@@ -68,7 +68,7 @@ EXC_DFL(exc_ve, "Virtualization Exception")
 EXC_DFL(exc_sx, "Security Exception")
 
 /* PIT - unused */
-EXC_DFL(irqh_pit, "PIT event!")
+ASM_EXC(irqh_pit)
 
 /* Define normal interrupts */
 ASM_EXC(irqh_keyboard)

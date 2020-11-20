@@ -15,6 +15,7 @@ typedef struct terminal {
     u8 read_flag;
     u8 vid_mem_buf[NUM_COLS * NUM_ROWS * 2];
     u8 running;
+    u8 status;
 }terminal;
 
 u8 current_terminal;

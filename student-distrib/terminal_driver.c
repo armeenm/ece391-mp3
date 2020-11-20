@@ -3,7 +3,7 @@
 #include "syscall.h"
 #include "lib.h"
 #include "x86_desc.h"
-
+#include "pit.h"
 
 /* terminal_read
  * Description: Read input from the terminal
@@ -99,6 +99,7 @@ void init_terminals(void) {
     term.cursor_y = 0;
     term.read_flag = 0;
     term.line_buf_index = 0;
+    term.status = TASK_NOT_RUNNING;
     int j;
     for(j = 0; j < LINE_BUFFER_SIZE; j++)
       term.line_buf[j] = 0;
@@ -112,6 +113,7 @@ void init_terminals(void) {
     }
   }
   terminals[0].running = 1;
+  terminals[0].status = TASK_RUNNING;
   current_terminal = 0;
   execute((u8*)"shell");
 }
@@ -120,46 +122,48 @@ void switch_terminal(u8 term_num) {
   u32 esp, ebp;
   if(current_terminal == term_num || term_num >= TERMINAL_NUM)
     return;
-  
+
+  cli();
   restore_terminal(term_num);
   current_terminal = term_num;
-
+  terminals[term_num].status = TASK_RUNNING;
+  sti();
   
-  Pcb* current_pcb = get_current_pcb();
-  // while(current_pcb->child_pcb != NULL && current_pcb->child_pcb != current_pcb)
+  // Pcb* current_pcb = get_current_pcb();
+  // // while(current_pcb->child_pcb != NULL && current_pcb->child_pcb != current_pcb)
+  // // {
+  // //   current_pcb = current_pcb->child_pcb;
+  // // }
+  //  /* Copy the ESP and EBP for the child process to return to parent */
+  //   asm volatile("mov %%esp, %0;"
+  //                "mov %%ebp, %1;"
+  //                : "=g"(esp), "=g"(ebp));
+  // if(terminals[term_num].running == 1)
   // {
-  //   current_pcb = current_pcb->child_pcb;
+  //   Pcb* pcb = get_pcb(terminals[term_num].pid);
+  //   while(pcb->child_pcb != pcb->child_pcb) {
+  //     pcb = pcb->child_pcb;
+  //   }
+
+  //   current_pcb->ksp = esp;
+  //   current_pcb->kbp = ebp;
+
+  //   tss.esp0 = MB8 - KB8 * (terminals[term_num].pid + 1) - ADDRESS_SIZE;
+
+  //   asm volatile("mov %0, %%esp;"
+  //               "mov %1, %%ebp;"
+  //         "leave;"
+  //         "ret;"
+  //               :
+  //               : "g"(pcb->ksp), "g"(pcb->kbp)
+  //               : "eax", "esp", "ebp");
   // }
-   /* Copy the ESP and EBP for the child process to return to parent */
-    asm volatile("mov %%esp, %0;"
-                 "mov %%ebp, %1;"
-                 : "=g"(esp), "=g"(ebp));
-  if(terminals[term_num].running == 1)
-  {
-    Pcb* pcb = get_pcb(terminals[term_num].pid);
-    while(pcb->child_pcb != pcb->child_pcb) {
-      pcb = pcb->child_pcb;
-    }
-
-    current_pcb->ksp = esp;
-    current_pcb->kbp = ebp;
-
-    tss.esp0 = MB8 - KB8 * (terminals[term_num].pid + 1) - ADDRESS_SIZE;
-
-    asm volatile("mov %0, %%esp;"
-                "mov %1, %%ebp;"
-          "leave;"
-          "ret;"
-                :
-                : "g"(pcb->ksp), "g"(pcb->kbp)
-                : "eax", "esp", "ebp");
-  }
-  else {
-    current_pcb->ksp = esp;
-    current_pcb->kbp = ebp;
+  // else {
+  //   current_pcb->ksp = esp;
+  //   current_pcb->kbp = ebp;
     
-    execute((u8*)"shell");
-  }
+  //   execute((u8*)"shell");
+  // }
   
   
 }
