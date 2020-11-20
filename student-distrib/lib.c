@@ -68,7 +68,7 @@ void set_cursor_location(u16 const x, u16 const y) {
   outb(vga_position, VGA_DATA_REGISTER);
 
   terminal* term;
-  if((term = get_current_terminal())) {
+  if((term = &terminals[current_terminal])) {
     term->cursor_x = x;
     term->cursor_y = y;
   }
@@ -83,10 +83,6 @@ void set_screen_x(u16 const x) {
   if (x < NUM_COLS) {
     /* If valid position set x position to x and set the cursor */
     screen_x = x;
-    terminal* term = get_current_terminal();
-    if(term) {
-      term->cursor_x = x;
-    }
     set_cursor_location(x, screen_y);
   }
 }
@@ -100,10 +96,6 @@ void set_screen_y(u16 const y) {
   if (y < NUM_ROWS) {
     /* If valid position set y position to y and set the cursor */
     screen_y = y;
-    terminal* term = get_current_terminal();
-    if(term) {
-      term->cursor_y = y;
-    }
     set_cursor_location(screen_x, y);
   }
 }
@@ -118,13 +110,7 @@ void set_screen_xy(u16 const x, u16 const y) {
   if (y < NUM_ROWS && x < NUM_COLS) {
     /* If valid position set y position to y and set the cursor */
     screen_y = y;
-    screen_x = x;
-    terminal* term = get_current_terminal();
-    if(term) {
-      term->cursor_x = x;
-      term->cursor_y = y;
-    }
-    
+    screen_x = x;    
     set_cursor_location(x, y);
   }
 }
