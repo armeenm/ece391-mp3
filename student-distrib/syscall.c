@@ -101,7 +101,8 @@ void set_program_exception(u8 val) {
 i32 halt(u8 const status) {
   u32 i;
   Pcb* const pcb = get_current_pcb();
-  pcb->parent_pcb->child_pcb = NULL;
+  if(pcb && pcb->parent_pcb)
+    pcb->parent_pcb->child_pcb = NULL;
   
   /* If we're the "parent process" of the OS (pid == 0, shell) don't halt it */
   /* Close all FDs for the current process */
@@ -213,7 +214,7 @@ cont:
 
   {
     Pcb* const pcb = get_current_pcb();
-    parent->child_pcb = pcb;
+    
     u32 esp, ebp;
 
     /* Copy the ESP and EBP for the child process to return to parent */
@@ -249,17 +250,23 @@ cont:
 
     
     terminal* term;
-    pcb->parent_pcb = parent;
+    
     if(terminals[current_terminal].running == 1) {
-      term = get_current_terminal();
-      pcb->parent_pcb = pcb;
+      term = &terminals[current_terminal];
     }
     else {
-      new_terminal(running_pid);
-      term = get_current_terminal();
+      term = new_terminal(running_pid);
     }
     pcb->child_pcb = NULL;
     pcb->parent_pid = (running_pid == term->pid) ? -1 : (i32)parent->pid; /* Special case 1st proc */
+    
+    pcb->parent_pcb = parent;
+    if(pcb->parent_pid != -1) {
+      parent->child_pcb = pcb;
+    } else {
+      pcb->parent_pcb = NULL;
+    }
+      
     term->running = 1;
     /* New KSP */
     tss.esp0 = MB8 - KB8 * (running_pid + 1) - ADDRESS_SIZE;
