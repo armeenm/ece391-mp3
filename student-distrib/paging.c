@@ -130,7 +130,7 @@ i32 map_vid_mem(u8 const proc, u32 virtual_address, u32 physical_address)
   /* Map page table to page directory */
   pgdir[proc][virtual_address/MB4] = (u32)(pgtbl_proc[proc]) | PG_USPACE | PG_RW | PG_PRESENT;
   /* Map page table entry to page table. Sets virtual address */
-  pgtbl_proc[proc][physical_address/KB4] = physical_address | PG_USPACE | PG_RW | PG_PRESENT;
+  pgtbl_proc[proc][virtual_address/KB4] = physical_address | PG_USPACE | PG_RW | PG_PRESENT;
 
    /* Sets up page directory for process and flushes TLB */
   asm volatile("mov %0, %%cr3;" ::"g"(pgdir[proc]));
