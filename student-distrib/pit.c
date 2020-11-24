@@ -63,20 +63,20 @@ void irqh_pit(void) {
     // if(&terminals[current_terminal] == prev_term) {
     //   map_vid_mem(prev_pcb->pid, (u32)VIDEO, (u32)VIDEO);
     // } else {
-    //   map_vid_mem(prev_pcb->pid, (u32)VIDEO, (u32)&(prev_term->vid_mem_buf));
+    //   map_vid_mem(prev_pcb->pid, (u32)VIDEO, (u32)(prev_term->vid_mem_buf));
     // }
 
     set_pid(next_pcb->pid);
+  
+     if(current_schedule == current_terminal) {
+       map_vid_mem(next_pcb->pid, (u32)VIDEO, (u32)VIDEO);
+     } else {
+       map_vid_mem(next_pcb->pid, (u32)VIDEO, (u32)(terminals[current_schedule].vid_mem_buf));
+     }
 
-    //  if(current_schedule == current_terminal) {
-    //    map_vid_mem(next_pcb->pid, (u32)VIDEO, (u32)VIDEO);
-    //  } else {
-    //    u32 buf = &(terminals[current_schedule].vid_mem_buf);
-    //    map_vid_mem(next_pcb->pid, (u32)VIDEO, (u32) buf);
-    //  }
-
-    send_eoi(PIT_IRQ);
+    
     flush_tlb();
+    send_eoi(PIT_IRQ);
     asm volatile("mov %0, %%esp;"
                 "mov %1, %%ebp;"
           "leave;"

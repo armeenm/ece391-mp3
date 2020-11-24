@@ -13,7 +13,7 @@ typedef struct terminal {
     u16 cursor_x, cursor_y;
     u32 pid;
     u8 read_flag;
-    u8 vid_mem_buf[NUM_COLS * NUM_ROWS * 2];
+    u8* vid_mem_buf;
     u8 running;
     u8 status;
 }terminal;

@@ -92,24 +92,25 @@ terminal* get_current_terminal(void) {
 
 void init_terminals(void) {
   int i;
-  terminal term;
+  terminal* term;
   for(i = 0; i < TERMINAL_NUM; i++) {
-    term = terminals[i];
-    term.cursor_x = 0;
-    term.cursor_y = 0;
-    term.read_flag = 0;
-    term.line_buf_index = 0;
-    term.status = TASK_NOT_RUNNING;
+    term = &terminals[i];
+    term->cursor_x = 0;
+    term->cursor_y = 0;
+    term->read_flag = 0;
+    term->line_buf_index = 0;
+    term->status = TASK_NOT_RUNNING;
+    term->vid_mem_buf = (u8 *)(KB4 * ((VIDEO/KB4) + i + 1));
     int j;
     for(j = 0; j < LINE_BUFFER_SIZE; j++)
-      term.line_buf[j] = 0;
+      term->line_buf[j] = 0;
     if(i == 0) {
-      term.cursor_x = get_screen_x();
-      term.cursor_y = get_screen_y();
+      term->cursor_x = get_screen_x();
+      term->cursor_y = get_screen_y();
     }
     else {
       for(j = 0; j < NUM_ROWS * NUM_COLS * 2; j++)
-        term.vid_mem_buf[j] = 0;
+        term->vid_mem_buf[j] = 0;
     }
   }
   terminals[0].running = 1;
