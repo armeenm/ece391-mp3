@@ -44,21 +44,37 @@ void irqh_pit(void) {
    
     /* TODO SWITCH TASKS HERE:*/
 
-    Pcb* current_pcb = get_current_pcb();
+    Pcb* prev_pcb = get_current_pcb();
    /* Copy the ESP and EBP for the child process to return to parent */
     asm volatile("mov %%esp, %0;"
                  "mov %%ebp, %1;"
                  : "=g"(esp), "=g"(ebp));
-    current_pcb->ksp = esp;
-    current_pcb->kbp = ebp;
+    prev_pcb->ksp = esp;
+    prev_pcb->kbp = ebp;
   if(terminals[current_schedule].running == 1)
   {
-    Pcb* pcb = get_pcb(terminals[current_schedule].pid);
-    while(pcb->child_pcb) {
-      pcb = pcb->child_pcb;
+    Pcb* next_pcb = get_pcb(terminals[current_schedule].pid);
+    while(next_pcb->child_pcb) {
+      next_pcb = next_pcb->child_pcb;
     }
-    tss.esp0 = MB8 - KB8 * (pcb->pid + 1) - ADDRESS_SIZE;
-    set_pid(pcb->pid);
+    tss.esp0 = MB8 - KB8 * (next_pcb->pid + 1) - ADDRESS_SIZE;
+
+    // terminal* prev_term = get_terminal_from_pid(prev_pcb->pid);
+    // if(&terminals[current_terminal] == prev_term) {
+    //   map_vid_mem(prev_pcb->pid, (u32)VIDEO, (u32)VIDEO);
+    // } else {
+    //   map_vid_mem(prev_pcb->pid, (u32)VIDEO, (u32)&(prev_term->vid_mem_buf));
+    // }
+
+    set_pid(next_pcb->pid);
+
+    //  if(current_schedule == current_terminal) {
+    //    map_vid_mem(next_pcb->pid, (u32)VIDEO, (u32)VIDEO);
+    //  } else {
+    //    u32 buf = &(terminals[current_schedule].vid_mem_buf);
+    //    map_vid_mem(next_pcb->pid, (u32)VIDEO, (u32) buf);
+    //  }
+
     send_eoi(PIT_IRQ);
     flush_tlb();
     asm volatile("mov %0, %%esp;"
@@ -66,7 +82,7 @@ void irqh_pit(void) {
           "leave;"
           "ret;"
                 :
-                : "g"(pcb->ksp), "g"(pcb->kbp)
+                : "g"(next_pcb->ksp), "g"(next_pcb->kbp)
                 : "esp", "ebp");
   }
   else {

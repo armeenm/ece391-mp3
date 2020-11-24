@@ -31,8 +31,8 @@ i32 terminal_write(i32 UNUSED(fd), void const* const buf, i32 const nbytes) {
   terminal* term;
   char const* const cbuf = (char const*)buf;
   i32 i, bytes_written = 0;
-  if((term = &terminals[current_terminal]) == get_current_terminal())
-    printf("terminal pid is %d\n", term->pid);
+  // if((term = &terminals[current_terminal]) == get_current_terminal())
+  //   printf("terminal pid is %d\n", term->pid);
   /* If params are invalid return -1 */
   if (nbytes <= 0 || !buf)
     return -1;
@@ -128,60 +128,51 @@ void switch_terminal(u8 term_num) {
   current_terminal = term_num;
   terminals[term_num].status = TASK_RUNNING;
   sti();
-
-  // Pcb* current_pcb = get_current_pcb();
-  // // while(current_pcb->child_pcb != NULL && current_pcb->child_pcb != current_pcb)
-  // // {
-  // //   current_pcb = current_pcb->child_pcb;
-  // // }
-  //  /* Copy the ESP and EBP for the child process to return to parent */
-  //   asm volatile("mov %%esp, %0;"
-  //                "mov %%ebp, %1;"
-  //                : "=g"(esp), "=g"(ebp));
-  // if(terminals[term_num].running == 1)
-  // {
-  //   Pcb* pcb = get_pcb(terminals[term_num].pid);
-  //   while(pcb->child_pcb != pcb->child_pcb) {
-  //     pcb = pcb->child_pcb;
-  //   }
-
-  //   current_pcb->ksp = esp;
-  //   current_pcb->kbp = ebp;
-
-  //   tss.esp0 = MB8 - KB8 * (terminals[term_num].pid + 1) - ADDRESS_SIZE;
-
-  //   asm volatile("mov %0, %%esp;"
-  //               "mov %1, %%ebp;"
-  //         "leave;"
-  //         "ret;"
-  //               :
-  //               : "g"(pcb->ksp), "g"(pcb->kbp)
-  //               : "eax", "esp", "ebp");
-  // }
-  // else {
-  //   current_pcb->ksp = esp;
-  //   current_pcb->kbp = ebp;
-    
-  //   execute((u8*)"shell");
-  // }
-  
-  
 }
+
+
 void restore_terminal(u8 term_num) {
   terminal term;
   if(term_num >= TERMINAL_NUM)
     return;
-  term = terminals[term_num];
-  set_screen_xy(term.cursor_x, term.cursor_y);
 
   terminal* prev_term = get_current_terminal();
+  prev_term->cursor_x = get_screen_x();
+  prev_term->cursor_y = get_screen_y();
+
+  term = terminals[term_num];
+  set_screen_xy(term.cursor_x, term.cursor_y);
+  set_terminal_cursor_location(term_num, term.cursor_x, term.cursor_y);
+
   if(prev_term)
     memcpy(prev_term->vid_mem_buf, (u8*)VIDEO, NUM_COLS * NUM_ROWS * 2);
 
-  memcpy((u8 *)VIDEO, &term.vid_mem_buf, NUM_COLS * NUM_ROWS * 2);
+  memcpy((u8*)VIDEO, &term.vid_mem_buf, NUM_COLS * NUM_ROWS * 2);
+
+  /* Map term_num to physical memory and current_terminal to virtual memory */
+
+
+/* TODO:
+ * What do I do if the current terminal is not running??
+ * Also need to pay attention to flushing tlb with map_vid_mem
+ */
+
+  /* Maps the address of term_num to VIDEO */
+  // IFF term is running
+  // vidmap(&(term.vid_mem_buf));
+
+  /* maps video for the "current" terminal to address of its buffer */
+  // map_vid_mem(prev_term->pid, (u32)VIDEO, &(prev_term->vid_mem_buf));
+
+  // if(term.running) {
+  //   Pcb* terminal_pcb = get_pcb(term.pid);
+  //   while(terminal_pcb->child_pcb) {
+  //     terminal_pcb = terminal_pcb->child_pcb;
+  //   }
+  //   map_vid_mem(terminal_pcb->pid, (u32)VIDEO, (u32)VIDEO);
+  // }
+    
   
-  vidmap(&(term.vid_mem_buf));
-  map_vid_mem(prev_term->pid, (u32)VIDEO, &(prev_term->vid_mem_buf));
 }
 
 

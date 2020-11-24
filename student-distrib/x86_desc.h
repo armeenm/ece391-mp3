@@ -128,7 +128,7 @@ extern tss_t tss;
 
 extern u32 pgdir[8][PGDIR_LEN];
 extern u32 pgtbl[PGTBL_LEN];
-extern u32 pgtbl_proc[PGTBL_LEN];
+extern u32 pgtbl_proc[8][PGTBL_LEN];
 
 /* Sets runtime-settable parameters in the GDT entry for the LDT */
 #define SET_LDT_PARAMS(str, addr, lim)                                                             \

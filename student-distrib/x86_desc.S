@@ -119,4 +119,4 @@ pgtbl:
 
 .align PTE_SIZE_MCR
 pgtbl_proc:
-  .fill PGTBL_LEN_MCR, 4, 0
+  .fill PGTBL_LEN_MCR * 8, 4, 0
