@@ -142,7 +142,6 @@ void restore_terminal(u8 term_num) {
 
   term = terminals[term_num];
   set_screen_xy(term.cursor_x, term.cursor_y);
-  set_terminal_cursor_location(term_num, term.cursor_x, term.cursor_y);
 
   if(prev_term)
     memcpy(prev_term->vid_mem_buf, (u8*)VIDEO, NUM_COLS * NUM_ROWS * 2);
