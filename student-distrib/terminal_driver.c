@@ -148,10 +148,13 @@ void restore_terminal(u8 term_num) {
   term = terminals[term_num];
   set_screen_xy(term.screen_x, term.screen_y);
 
-  if(prev_term)
-    memcpy(prev_term->vid_mem_buf, (u8*)VIDEO, NUM_COLS * NUM_ROWS * 2);
+  u32 pid = get_current_pcb()->pid;
+  map_vid_mem(pid, (u32)VIDEO, (u32)VIDEO);
 
+  memcpy(prev_term->vid_mem_buf, (u8*)VIDEO, NUM_COLS * NUM_ROWS * 2);
   memcpy((u8*)VIDEO, term.vid_mem_buf, NUM_COLS * NUM_ROWS * 2);
+
+  map_vid_mem(pid, (u32)VIDEO, (u32)VIDEO);
 
   /* Map term_num to physical memory and current_terminal to virtual memory */
 

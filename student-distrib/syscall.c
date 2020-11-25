@@ -448,7 +448,7 @@ i32 vidmap(u8** screen_start) {
   /* Set screen_start to 128MB + 4MB * 8 Process = 160MB */
   *screen_start = (u8 *)(PG_4M_START *  (ELF_LOAD_PG + NUM_PROC));
   /* Map to video memory and return condition */
-  return map_vid_mem(pcb->pid,(u32)(*screen_start), (u32)VIDMEM_START);
+  return map_vid_mem(pcb->pid,(u32)(*screen_start), (u32)VIDEO);
 }
 
 /* set_handler

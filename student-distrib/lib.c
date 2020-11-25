@@ -288,8 +288,9 @@ i32 puts(i8* s) {
   }
   return index;
 }
-/* void putc(u8 c);
- * Inputs: uint_8* c = character to print
+/* void terminal_putc(u8 num_term, u8 c);
+ * Inputs: int_8* c = character to print
+ *         uint_8 num_term -- termrinal to print to
  * Return Value: void
  *  Function: Output a character to the console */
 void terminal_putc(u8 num_term, i8 c) {
@@ -333,7 +334,7 @@ void terminal_putc(u8 num_term, i8 c) {
 
   } else if (c == '\t') {
     /* if tab use a space */
-    putc(' ');
+    terminal_putc(num_term, ' ');
     return;
 
   } else {
@@ -372,10 +373,10 @@ void terminal_putc(u8 num_term, i8 c) {
  *  Function: Output a character to the console */
 void putc(i8 c) {
   terminal* term = get_current_terminal();
-  if (c == 0 || !term)
+  if (c == 0)
     return;
   u8 remap_vid_mem = 0;
-  if(term->id != current_terminal) {
+  if(term && term->id != current_terminal) {
     remap_vid_mem = 1;
     map_vid_mem(get_current_pcb()->pid, (u32)VIDEO, (u32)VIDEO);
   }
