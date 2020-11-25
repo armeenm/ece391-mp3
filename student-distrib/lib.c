@@ -3,6 +3,7 @@
 #include "lib.h"
 #include "terminal_driver.h"
 #include "syscall.h"
+#include "paging.h"
 
 static u16 screen_x;
 static u16 screen_y;
@@ -52,6 +53,16 @@ void clear_screen_xy(void) {
   video_mem[((NUM_COLS * screen_y + screen_x) << 1) + 1] = ATTRIB;
 }
 
+void clear_terminal_screen_xy(u8 num_term) {
+  if(num_term >= TERMINAL_NUM)
+    return;
+  terminal* term = &terminals[num_term];
+  /* Sets char to ' ' at the current screen location */
+  video_mem[(NUM_COLS * term->screen_y + term->screen_x) << 1] = ' ';
+  /* sets attribute to ATTRIB at the current location */
+  video_mem[((NUM_COLS * term->screen_y + term->screen_x) << 1) + 1] = ATTRIB;
+}
+
 /* void set_cursor_location(int x, int y)
  * Inputs:  x - x position to set cursor to
  *          y - y position to set cursor to
@@ -67,11 +78,6 @@ void set_cursor_location(u16 const x, u16 const y) {
   outb(VGA_CURSOR_LOW_REGISTER, VGA_ADDRESS_REGISTER);
   outb(vga_position, VGA_DATA_REGISTER);
 
-  terminal* term;
-  if((term = &terminals[current_terminal])) {
-    term->cursor_x = x;
-    term->cursor_y = y;
-  }
 }
 
 /* void setscreen_x(int x);
@@ -115,6 +121,31 @@ void set_screen_xy(u16 const x, u16 const y) {
   }
 }
 
+void set_terminal_screen_xy(u8 num_term, u16 x, u16 y) {
+  if(num_term >= TERMINAL_NUM || (y >= NUM_ROWS && x >= NUM_COLS))
+    return;
+  terminal* term = &terminals[num_term];
+  term->screen_x = x;
+  term->screen_y = y;
+}
+
+void set_terminal_screen_x(u8 num_term, u16 x) {
+  if(num_term >= TERMINAL_NUM || x >= NUM_COLS)
+    return;
+  terminal* term = &terminals[num_term];
+  term->screen_x = x;
+}
+
+void set_terminal_screen_y(u8 num_term, u16 y) {
+  if(num_term >= TERMINAL_NUM || y >= NUM_ROWS)
+    return;
+  terminal* term = &terminals[num_term];
+  term->screen_y = y;
+}
+
+void set_terminal_cursor_location(u8 num_term, u16 x, u16 y) {
+
+}
 /* int get_screen_x();
  * Inputs: void
  * Return Value: int
@@ -257,14 +288,97 @@ i32 puts(i8* s) {
   }
   return index;
 }
+/* void putc(u8 c);
+ * Inputs: uint_8* c = character to print
+ * Return Value: void
+ *  Function: Output a character to the console */
+void terminal_putc(u8 num_term, i8 c) {
+  if (c == 0 || num_term >= TERMINAL_NUM)
+    return;
+  /* Get x and y pos  */
+  u16 x = get_screen_x();
+  u16 y = get_screen_y();
+  terminal* term = &terminals[num_term];
+  if (c == '\n') {
+    /* If there is still screenspace left then go to next line */
+    if (y < NUM_ROWS - 1) {
+      y++;
+    } else {
+      /* If there is no screenspace left scroll up */
+      scroll_up();
+    }
+    /* Reset to the start of the line */
+    x = 0;
+
+  } else if (c == '\b') {
+    /* if x is zero go to previous line */
+    if (x == 0 && y > 0) {
+      x = NUM_COLS - 1;
+      y--;
+    } else {
+      /* Otherwise go back one */
+      x--;
+    }
+
+    if(term->id == current_terminal) {
+      /* clear the character at the current location */
+      set_screen_xy(x, y);
+      clear_screen_xy();
+    } else {
+      set_terminal_screen_xy(term->id, x, y);
+      clear_terminal_screen_xy(term->id);
+    }
+    
+    return;
+
+  } else if (c == '\t') {
+    /* if tab use a space */
+    putc(' ');
+    return;
+
+  } else {
+    video_mem[(NUM_COLS * y + x) << 1] = c;
+    video_mem[((NUM_COLS * y + x) << 1) + 1] = ATTRIB;
+
+    ++x;
+
+    /* if it is a newline then go to the next line */
+    if ((x / NUM_COLS) > 0) {
+
+      /* At the top of the screen scroll up */
+      if (y == NUM_ROWS - 1)
+        scroll_up();
+      else {
+        /* Otherwise go to the next row */
+        y = (u16)((y + (x / NUM_COLS)) % NUM_ROWS);
+      }
+    }
+    /* Make sure x is bounded by the columns */
+    x %= NUM_COLS;
+  }
+
+  if(term->id == current_terminal) {
+    /* Set location of the cursor based on new x and y */
+    set_screen_xy(x, y);
+  } else {
+    set_terminal_screen_xy(term->id, x, y);
+  }
+
+}
 
 /* void putc(u8 c);
  * Inputs: uint_8* c = character to print
  * Return Value: void
  *  Function: Output a character to the console */
 void putc(i8 c) {
-  if (c == 0)
+  terminal* term = get_current_terminal();
+  if (c == 0 || !term)
     return;
+  u8 remap_vid_mem = 0;
+  if(term->id != current_terminal) {
+    remap_vid_mem = 1;
+    map_vid_mem(get_current_pcb()->pid, (u32)VIDEO, (u32)VIDEO);
+  }
 
   if (c == '\n') {
     /* If there is still screenspace left then go to next line */
@@ -316,7 +430,9 @@ void putc(i8 c) {
     /* Make sure x is bounded by the columns */
     screen_x %= NUM_COLS;
   }
-
+  if(remap_vid_mem) {
+    map_vid_mem(get_current_pcb()->pid, (u32)VIDEO, (u32)term->vid_mem_buf);
+  }
   /* Set location of the cursor based on new screen_x and screen_y */
   set_cursor_location(screen_x, screen_y);
 }

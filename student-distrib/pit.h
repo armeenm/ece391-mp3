@@ -1,6 +1,8 @@
 #ifndef PIT_H
 #define PIT_H
 
+#include "types.h"
+
 #define PIT_CHANNEL_0       0x40
 #define PIT_CHANNEL_1       0x41
 #define PIT_CHANNEL_2       0x42
@@ -39,5 +41,6 @@
 
 void irqh_pit(void);
 void init_pit(void);
+u8 get_current_schedule(void);
 
 #endif

@@ -28,18 +28,18 @@ i32 terminal_read(i32 UNUSED(fd), void* const buf, i32 const nbytes) {
  */
 i32 terminal_write(i32 UNUSED(fd), void const* const buf, i32 const nbytes) {
   /* Typecast buf to a char* */
-  terminal* term;
+  terminal* term = get_current_terminal();
   char const* const cbuf = (char const*)buf;
   i32 i, bytes_written = 0;
   // if((term = &terminals[current_terminal]) == get_current_terminal())
   //   printf("terminal pid is %d\n", term->pid);
   /* If params are invalid return -1 */
-  if (nbytes <= 0 || !buf)
+  if (nbytes <= 0 || !buf || !term)
     return -1;
 
   for (i = 0; i < nbytes; ++i) {
     /* Write to screen */
-    putc(cbuf[i]);
+    terminal_putc(term->id, cbuf[i]);
     ++bytes_written;
   }
 
@@ -95,22 +95,26 @@ void init_terminals(void) {
   terminal* term;
   for(i = 0; i < TERMINAL_NUM; i++) {
     term = &terminals[i];
-    term->cursor_x = 0;
-    term->cursor_y = 0;
+    term->screen_x = 0;
+    term->screen_y = 0;
     term->read_flag = 0;
     term->line_buf_index = 0;
     term->status = TASK_NOT_RUNNING;
     term->vid_mem_buf = (u8 *)(KB4 * ((VIDEO/KB4) + i + 1));
+    term->id = (u8)i;
     int j;
     for(j = 0; j < LINE_BUFFER_SIZE; j++)
       term->line_buf[j] = 0;
     if(i == 0) {
-      term->cursor_x = get_screen_x();
-      term->cursor_y = get_screen_y();
+      term->screen_x = get_screen_x();
+      term->screen_y = get_screen_y();
     }
     else {
-      for(j = 0; j < NUM_ROWS * NUM_COLS * 2; j++)
-        term->vid_mem_buf[j] = 0;
+      for(j = 0; j < NUM_ROWS * NUM_COLS * 2; j+=2) {
+        term->vid_mem_buf[j] = ' ';
+        term->vid_mem_buf[j + 1] = ATTRIB;
+      }
+        
     }
   }
   terminals[0].running = 1;
@@ -137,17 +141,17 @@ void restore_terminal(u8 term_num) {
   if(term_num >= TERMINAL_NUM)
     return;
 
-  terminal* prev_term = get_current_terminal();
-  prev_term->cursor_x = get_screen_x();
-  prev_term->cursor_y = get_screen_y();
+  terminal* prev_term = &terminals[current_terminal];
+  prev_term->screen_x = get_screen_x();
+  prev_term->screen_y = get_screen_y();
 
   term = terminals[term_num];
-  set_screen_xy(term.cursor_x, term.cursor_y);
+  set_screen_xy(term.screen_x, term.screen_y);
 
   if(prev_term)
     memcpy(prev_term->vid_mem_buf, (u8*)VIDEO, NUM_COLS * NUM_ROWS * 2);
 
-  memcpy((u8*)VIDEO, &term.vid_mem_buf, NUM_COLS * NUM_ROWS * 2);
+  memcpy((u8*)VIDEO, term.vid_mem_buf, NUM_COLS * NUM_ROWS * 2);
 
   /* Map term_num to physical memory and current_terminal to virtual memory */
 

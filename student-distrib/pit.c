@@ -58,14 +58,6 @@ void irqh_pit(void) {
       next_pcb = next_pcb->child_pcb;
     }
     tss.esp0 = MB8 - KB8 * (next_pcb->pid + 1) - ADDRESS_SIZE;
-
-    // terminal* prev_term = get_terminal_from_pid(prev_pcb->pid);
-    // if(&terminals[current_terminal] == prev_term) {
-    //   map_vid_mem(prev_pcb->pid, (u32)VIDEO, (u32)VIDEO);
-    // } else {
-    //   map_vid_mem(prev_pcb->pid, (u32)VIDEO, (u32)(prev_term->vid_mem_buf));
-    // }
-
     set_pid(next_pcb->pid);
   
      if(current_schedule == current_terminal) {
@@ -91,3 +83,6 @@ void irqh_pit(void) {
   }
 
 }
+
+
+u8 get_current_schedule(void) { return current_schedule; }
