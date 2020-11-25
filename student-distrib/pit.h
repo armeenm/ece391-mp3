@@ -30,7 +30,7 @@
 #define PIT_IRQ 0x0
 
 #define PIT_FREQ 1193182
-#define SCHEDULE_TIME 25
+#define SCHEDULE_TIME 10
 
 #define TASK_NOT_RUNNING        0
 #define TASK_RUNNING            1

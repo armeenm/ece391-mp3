@@ -137,6 +137,7 @@ void switch_terminal(u8 term_num) {
 
 
 void restore_terminal(u8 term_num) {
+  /* TODO: Move this into pit.c or pit.c stuff into here */
   terminal term;
   if(term_num >= TERMINAL_NUM)
     return;
@@ -154,7 +155,7 @@ void restore_terminal(u8 term_num) {
   memcpy(prev_term->vid_mem_buf, (u8*)VIDEO, NUM_COLS * NUM_ROWS * 2);
   memcpy((u8*)VIDEO, term.vid_mem_buf, NUM_COLS * NUM_ROWS * 2);
 
-  map_vid_mem(pid, (u32)VIDEO, (u32)VIDEO);
+  map_vid_mem(pid, (u32)VIDEO, (u32)prev_term->vid_mem_buf);
 
   /* Map term_num to physical memory and current_terminal to virtual memory */
 
