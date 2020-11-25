@@ -59,7 +59,8 @@ void irqh_pit(void) {
     }
     tss.esp0 = MB8 - KB8 * (next_pcb->pid + 1) - ADDRESS_SIZE;
     set_pid(next_pcb->pid);
-  
+    u32* screen_start;
+    vidmap(&screen_start);
      if(current_schedule == current_terminal) {
        map_vid_mem(next_pcb->pid, (u32)VIDEO, (u32)VIDEO);
      } else {

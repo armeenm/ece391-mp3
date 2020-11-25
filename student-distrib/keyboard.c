@@ -164,7 +164,6 @@ void handle_keypress(SCSet1 const scancode) {
 
       /* Clear screen and reset terminal */
       clear();
-      set_screen_xy(0, 0);
 
       // Todo: let's not have the keyboard setup the screen again? maybe call out to shell?
       if (term->read_flag) {

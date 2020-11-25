@@ -16,12 +16,24 @@ static i8* video_mem = (i8*)VIDEO;
 void clear(void) {
   u32 i;
 
+
+  terminal* term = get_current_terminal();
+  u8 remap_vid_mem = 0;
+  if(term && term->id != current_terminal) {
+    remap_vid_mem = 1;
+    map_vid_mem(get_current_pcb()->pid, (u32)VIDEO, (u32)VIDEO);
+  }
+
   for (i = 0; i < NUM_ROWS * NUM_COLS; ++i) {
     video_mem[i << 1] = ' ';
     video_mem[(i << 1) + 1] = ATTRIB;
   }
 
-  set_screen_xy(0, 0);
+  if(remap_vid_mem) {
+    map_vid_mem(get_current_pcb()->pid, (u32)VIDEO, (u32)term->vid_mem_buf);
+    set_terminal_screen_xy(current_terminal, 0, 0);
+  }
+    set_screen_xy(0, 0);
 }
 /* void scroll_up
  * Inputs: none
