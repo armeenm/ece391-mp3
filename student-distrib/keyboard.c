@@ -46,8 +46,8 @@ i32 get_line_buf(char* const buf, i32 const nbytes) {
   terminal* term;
   if (nbytes <= 0 || !buf)
     return -1;
-
-  term = get_current_terminal();
+  /* Get running terminal and set it's read flag to 1 */
+  term = get_running_terminal();
   if(!term)
     return -1;
   
@@ -120,9 +120,6 @@ void irqh_keyboard(void) {
 void handle_keypress(SCSet1 const scancode) {
   u32 i;
   terminal* term = &terminals[current_terminal];
-  
-  if(!term)
-    return;
 
   /* If scancode is multibyte set multibyte_flag to 1 */
   if (scancode == SCS1_MULTIBYTE)
@@ -144,8 +141,9 @@ void handle_keypress(SCSet1 const scancode) {
       /* Otherwise the keystate is equal to 1 */
       key_state[scancode] = 1;
     }
-    
+    /* Switch between terminals if alt and f1, f2, f3 is pressed */
     if(alt_pressed() && is_func_key()) {
+      /* For each Function key, switch to either terminal 0, 1, or 2 */
       if(scancode == SCS1_PRESSED_F1) {
         send_eoi(KEYBOARD_IRQ);
         switch_terminal(0);
@@ -305,7 +303,7 @@ i8 handle_disp(i8 disp) {
 void clear_line_buf(void) {
   /* Iterate through the entire line buf */
   u32 i;
-  terminal * term = get_current_terminal();
+  terminal * term = get_running_terminal();
   if(!term)
     return;
   /* Clear the line buf */

@@ -7,69 +7,103 @@
 
 u8 current_schedule, schedule_counter;
 
-/* https://wiki.osdev.org/PIT#Mode_0_.E2.80.93_Interrupt_On_Terminal_Count */
+
+/* init_pit
+ * Description: Initialize the PIT
+ * Inputs: none
+ * Outputs: none
+ * Return Value: none
+ * Function: Sets the PIT frequency so that it interrupts at a consistant rate
+ * Reference: https://wiki.osdev.org/PIT#Mode_0_.E2.80.93_Interrupt_On_Terminal_Count
+ */
 void init_pit(void) {
     
     /* Get reload value (1193182 / reload_value HZ) */
     u16 frequency =  (PIT_FREQ * SCHEDULE_TIME / 1000);
 
+    /* Ensure that schedule time is indeed within [10, 50]ms */
     ASSERT(SCHEDULE_TIME >= 10 && SCHEDULE_TIME <= 50);
+    /* Enable irq for the pit */
     enable_irq(PIT_IRQ);
+
+    /* Mask high and low bits of frequency */
     u8 low = (u8)(frequency & 0x00FF);
     u8 high = (u8)(frequency >> 8);
 
+    /* Set PIT Modes, written to the pit register */
     outb(PIT_SET_CHANNEL_0 | PIT_SET_ACCESS_MODE_3 | PIT_SET_MODE_RATE | PIT_SET_BCD_MODE_0, PIT_MODE_REGISTER);
+    /* Write data to the pit */
     outb(low,PIT_CHANNEL_0);
     outb(high,PIT_CHANNEL_0);
 
+    /* Initialize schedule */
     current_schedule = 0;
 }
 
-
+/* irqh_pit
+ * Description: pit interrupt handler -- Executes next program in the schedule
+ * Inputs: none
+ * Outputs: none
+ * Return Value: none
+ * Function: Iterates through scheduler to find next program to run
+ */
 void irqh_pit(void) {
-    u32 esp, ebp;
-    do {
-        schedule_counter++;
-        schedule_counter %= TERMINAL_NUM;
-    } while(terminals[schedule_counter].status != TASK_RUNNING);
+  u32 esp, ebp;
+  /* Iterates through the terminals until a running one is found */
+  do {
+      schedule_counter++;
+      schedule_counter %= TERMINAL_NUM;
+  } while(terminals[schedule_counter].status != TASK_RUNNING);
 
-    if(schedule_counter == current_schedule) {
-         send_eoi(PIT_IRQ);
-         return;
-    }
-        
+  /* If this schedule is the current schedule we can continue to run it */
+  if(schedule_counter == current_schedule) {
+        send_eoi(PIT_IRQ);
+        return;
+  }  
+  /* Set the current schedule to the schedule_counter */
+  current_schedule = schedule_counter;
 
-    current_schedule = schedule_counter;
-
-   
-    /* TODO SWITCH TASKS HERE:*/
-
-    Pcb* prev_pcb = get_current_pcb();
-   /* Copy the ESP and EBP for the child process to return to parent */
-    asm volatile("mov %%esp, %0;"
-                 "mov %%ebp, %1;"
-                 : "=g"(esp), "=g"(ebp));
-    prev_pcb->ksp = esp;
-    prev_pcb->kbp = ebp;
+  Pcb* prev_pcb = get_current_pcb();
+  /* Save the ESP and EBP so this process is still reachable */
+  asm volatile("mov %%esp, %0;"
+               "mov %%ebp, %1;"
+               : "=g"(esp), "=g"(ebp));
+  /* Save esp and ebp to the ksp and kbp */
+  prev_pcb->ksp = esp;
+  prev_pcb->kbp = ebp;
+  
   if(terminals[current_schedule].running == 1)
   {
+    /* If the terminal is running get the next pcb */
     Pcb* next_pcb = get_pcb(terminals[current_schedule].pid);
+    /* find the lowest child pcb */
     while(next_pcb->child_pcb) {
       next_pcb = next_pcb->child_pcb;
     }
+    /* Setup the TSS to switch to the next pid and set the running pid*/
     tss.esp0 = MB8 - KB8 * (next_pcb->pid + 1) - ADDRESS_SIZE;
     set_pid(next_pcb->pid);
-    u32* screen_start;
-    vidmap(&screen_start);
-     if(current_schedule == current_terminal) {
-       map_vid_mem(next_pcb->pid, (u32)VIDEO, (u32)VIDEO);
-     } else {
-       map_vid_mem(next_pcb->pid, (u32)VIDEO, (u32)(terminals[current_schedule].vid_mem_buf));
-     }
 
-    
+    /* 
+     * TODO: Unsure if this is correct. If userprogram calls vidmap, needs to make sure
+     * that the mapping is kept.
+     */
+    u32* screen_start;
+    vidmap((u8 **)&screen_start);
+
+    /* If the terminal is the current one map video memory to the physical address.
+     * Otherwise it should not be displayed and set it to the address of the buffer */
+    if(current_schedule == current_terminal) {
+      map_vid_mem(next_pcb->pid, (u32)VIDEO, (u32)VIDEO);
+    } else {
+      map_vid_mem(next_pcb->pid, (u32)VIDEO, (u32)(terminals[current_schedule].vid_mem_buf));
+    }
+
+    /* Flush the tlb and end the interrupt */
     flush_tlb();
     send_eoi(PIT_IRQ);
+
+    /* Switch to the next program in the scheduler to run */
     asm volatile("mov %0, %%esp;"
                 "mov %1, %%ebp;"
           "leave;"
@@ -79,11 +113,18 @@ void irqh_pit(void) {
                 : "esp", "ebp");
   }
   else {
+    /* If the terminal is not running end the interrupt and start the shell */
     send_eoi(PIT_IRQ);
     execute((u8*)"shell");
   }
 
 }
 
-
+/* get_current_schedule
+ * Description: Gets the current schedule
+ * Inputs: none
+ * Outputs: none
+ * Return Value: current_schedule
+ * Function: Returns the current schedule
+ */
 u8 get_current_schedule(void) { return current_schedule; }

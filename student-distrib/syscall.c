@@ -110,7 +110,7 @@ i32 halt(u8 const status) {
     close(i);
 
   if (pcb->parent_pid == -1) {
-    tss.esp0 = MB8 - KB8 * (get_current_terminal()->pid + 1) - ADDRESS_SIZE;
+    tss.esp0 = MB8 - KB8 * (get_running_terminal()->pid + 1) - ADDRESS_SIZE;
   } else {
     // if a program exception occured, we ignore the halt status and return 256 to eax
     pcb->child_return = program_exception_occured ? PROCESS_KILLED_BY_EXCEPTION : status;
@@ -244,22 +244,23 @@ cont:
     // set the remaining section of the argument
     pcb->argv[1] = pcb->raw_argv+strlen(pcb->raw_argv)+1;
 
+    /* Set the pcb pid and it's parents ksp and kbp */
     pcb->pid = running_pid;
     pcb->parent_ksp = esp;
     pcb->parent_kbp = ebp;
 
-    
+    /* Create a new terminal if needed */
     terminal* term;
-    
     if(terminals[current_terminal].running == 1) {
       term = &terminals[current_terminal];
-    }
-    else {
+    } else {
       term = new_terminal(running_pid);
     }
+    /* Set child pcb to null and set parent pid based on the terminals pid */
     pcb->child_pcb = NULL;
     pcb->parent_pid = (running_pid == term->pid) ? -1 : (i32)parent->pid; /* Special case 1st proc */
     
+    /* If the parent exists set it's child to the new pcb, otherwise the parent pcb is null */
     pcb->parent_pcb = parent;
     if(pcb->parent_pid != -1) {
       parent->child_pcb = pcb;
@@ -267,12 +268,13 @@ cont:
       pcb->parent_pcb = NULL;
     }
       
-    term->running = 1;
     /* New KSP */
     tss.esp0 = MB8 - KB8 * (running_pid + 1) - ADDRESS_SIZE;
 
+    /* Enter into userspace */
     uspace(entry);
 
+    /* After return from userspace return the appropriate value */
     return pcb->child_return;
   }
 }
@@ -448,15 +450,20 @@ i32 vidmap(u8** screen_start) {
   /* Set screen_start to 128MB + 4MB * 8 Process = 160MB */
   *screen_start = (u8 *)(PG_4M_START *  (ELF_LOAD_PG + NUM_PROC));
   /* Map to video memory and return condition */
-  terminal* term = get_current_terminal();
+  terminal* term = get_running_terminal();
   if(!term)
     return -1;
+  /* 
+   * If the terminal is displayed set physical address to
+   * video memory. Otherwise it needs to be set to the terminal video_buffer
+   */
   u32 video_addr;
   if(term->id == current_terminal) {
     video_addr = (u32)VIDEO;
   } else {
     video_addr = (u32)term->vid_mem_buf;
   }
+  /* Map screen start pointer to appropriate video address */
   return map_vid_mem(pcb->pid,(u32)(*screen_start), video_addr);
 }
 

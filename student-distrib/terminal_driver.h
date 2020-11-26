@@ -32,6 +32,6 @@ void restore_terminal(u8 term_num);
 void switch_terminal(u8 term_num);
 void init_terminals(void);
 terminal* get_terminal_from_pid(u32 pid);
-terminal* get_current_terminal(void);
+terminal* get_running_terminal(void);
 terminal* new_terminal(u8 pid);
 #endif

@@ -46,7 +46,6 @@ void clear_screen_xy(void);
 void set_cursor_location(u16 x, u16 y);
 void set_screen_xy(u16 x, u16 y);
 
-/* DONE */
 void set_terminal_screen_xy(u8 num_term, u16 x, u16 y);
 void set_terminal_screen_x(u8 num_term, u16 x);
 void set_terminal_screen_y(u8 num_term, u16 y);
