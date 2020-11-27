@@ -109,8 +109,10 @@ i32 halt(u8 const status) {
   for (i = 0; i < FD_CNT; ++i)
     close(i);
 
+  terminal* term = get_running_terminal();
+
   if (pcb->parent_pid == -1) {
-    tss.esp0 = MB8 - KB8 * (get_running_terminal()->pid + 1) - ADDRESS_SIZE;
+    tss.esp0 = MB8 - KB8 * (term->pid + 1) - ADDRESS_SIZE;
   } else {
     // if a program exception occured, we ignore the halt status and return 256 to eax
     pcb->child_return = program_exception_occured ? PROCESS_KILLED_BY_EXCEPTION : status;
@@ -123,6 +125,8 @@ i32 halt(u8 const status) {
     tss.esp0 = MB8 - KB8 * (pcb->parent_pid + 1) - ADDRESS_SIZE;
     running_pid = pcb->parent_pid;
   }
+  /* Uncheck vidmap for terminal */
+  term->vidmap = 0;
 
   /* Marks process as completed */
   procs &= ~(FIRST_PID >> pcb->pid);
@@ -463,6 +467,7 @@ i32 vidmap(u8** screen_start) {
   } else {
     video_addr = (u32)term->vid_mem_buf;
   }
+  term->vidmap = 1;
   /* Map screen start pointer to appropriate video address */
   return map_vid_mem(pcb->pid,(u32)(*screen_start), video_addr);
 }

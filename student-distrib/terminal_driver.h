@@ -17,6 +17,7 @@ typedef struct terminal {
     u8* vid_mem_buf;
     u8 running;
     u8 status;
+    u8 vidmap;
 }terminal;
 
 u8 current_terminal;

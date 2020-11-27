@@ -7,6 +7,7 @@
 
 u8 current_schedule, schedule_counter;
 
+void scheduler_vidmap(u8 num_term, u32 pid);
 
 /* init_pit
  * Description: Initialize the PIT
@@ -84,12 +85,8 @@ void irqh_pit(void) {
     tss.esp0 = MB8 - KB8 * (next_pcb->pid + 1) - ADDRESS_SIZE;
     set_pid(next_pcb->pid);
 
-    /* 
-     * TODO: Unsure if this is correct. If userprogram calls vidmap, needs to make sure
-     * that the mapping is kept.
-     */
-    u32* screen_start;
-    vidmap((u8 **)&screen_start);
+    if(terminals[current_schedule].vidmap)
+      scheduler_vidmap(current_schedule, next_pcb->pid);
 
     /* If the terminal is the current one map video memory to the physical address.
      * Otherwise it should not be displayed and set it to the address of the buffer */
@@ -128,3 +125,21 @@ void irqh_pit(void) {
  * Function: Returns the current schedule
  */
 u8 get_current_schedule(void) { return current_schedule; }
+
+void scheduler_vidmap(u8 num_term, u32 pid) {
+  /* Make sure vidmap goes to virtual memorry in background */
+  u8* screen_start = (u8 *)(PG_4M_START *  (ELF_LOAD_PG + NUM_PROC));
+  /* 
+   * If the terminal is displayed set physical address to
+   * video memory. Otherwise it needs to be set to the terminal video_buffer
+   */
+  terminal* term = &terminals[num_term];
+  u32 video_addr;
+  if(term->id == current_terminal) {
+    video_addr = (u32)VIDEO;
+  } else {
+    video_addr = (u32)term->vid_mem_buf;
+  }
+  /* Map screen start pointer to appropriate video address */
+  map_vid_mem(pid, (u32)(screen_start), video_addr);
+}

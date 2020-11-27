@@ -133,6 +133,7 @@ void init_terminals(void) {
     /* Set the video mem buffer to be next to the physical video memory */
     term->vid_mem_buf = (u8 *)(VIDEO + (KB4 * (i + 1)));
     term->id = (u8)i;
+    term->vidmap = 0;
     /* Set line buffer to 0 */
     int j;
     for(j = 0; j < LINE_BUFFER_SIZE; j++)
