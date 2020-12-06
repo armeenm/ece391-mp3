@@ -19,6 +19,7 @@ void clear(void) {
   /* If there is a terminal running and it is not the current map video->videos */
   u8 remap_vid_mem = 0;
   if(term && term->id != current_terminal) {
+    cli();
     remap_vid_mem = 1;
     map_vid_mem(get_current_pcb()->pid, (u32)VIDEO, (u32)VIDEO);
   }
@@ -31,6 +32,7 @@ void clear(void) {
   if(remap_vid_mem) {
     map_vid_mem(get_current_pcb()->pid, (u32)VIDEO, (u32)term->vid_mem_buf);
     set_terminal_screen_xy(current_terminal, 0, 0);
+    sti();
   }
   /* Set screen pos to 0,0 */
   set_screen_xy(0, 0);
