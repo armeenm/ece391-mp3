@@ -49,6 +49,7 @@ void set_screen_xy(u16 x, u16 y);
 void set_terminal_screen_xy(u8 num_term, u16 x, u16 y);
 void set_terminal_screen_x(u8 num_term, u16 x);
 void set_terminal_screen_y(u8 num_term, u16 y);
+void clear_terminal_screen_xy(u8 num_term);
 void terminal_putc(u8 num_term, i8 c);
 
 /* Port read functions */

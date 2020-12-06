@@ -130,6 +130,13 @@ void init_terminals(void) {
     term->read_flag = 0;
     term->line_buf_index = 0;
     term->status = TASK_NOT_RUNNING;
+    term->running = 0;
+      
+    // Setup RTC details here since each terminal owns it's own RTC config
+    term->rtc.real_freq = RTC_DEFAULT_REAL_FREQ;
+    term->rtc.virt_freq = RTC_DEFAULT_VIRT_FREQ;
+    term->rtc.int_count = 0;
+    term->rtc.flag = 0;
     /* Set the video mem buffer to be next to the physical video memory */
     term->vid_mem_buf = (u8 *)(VIDEO + (KB4 * (i + 1)));
     term->id = (u8)i;

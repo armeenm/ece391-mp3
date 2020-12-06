@@ -2,12 +2,12 @@
 #define RTC_H
 
 #include "lib.h"
+#include "terminal_driver.h"
 
 #define RTC_SEL_PORT 0x70
 #define RTC_DATA_PORT 0x71
 #define RTC_IRQ 0x8
 #define RTC_BASE_FREQ 32768
-#define RTC_DEFAULT_VIRT_FREQ 2
 
 #define RTC_REG_A 0xA
 #define RTC_REG_B 0xB
@@ -19,14 +19,10 @@
 #define RTC_DIS_NMI (1 << 7)
 #define TOP_BYTE_NIBBLE 0xF0
 
+#define PID_COUNT 8
+
 typedef enum RTCRate { HZ1024 = 0x6, HZ512, HZ256, HZ128, HZ64, HZ32, HZ16, HZ8, HZ4, HZ2 } RTCRate;
 
-typedef struct {
-  u32 virt_freq; // must be a power of 2 <= 1024
-  u32 real_freq; // The intial, real freq requested of RTC (1024)
-  u32 int_count;
-  volatile u8 flag;
-} virtual_rtc;
 
 void init_rtc(void);
 void irqh_rtc(void);

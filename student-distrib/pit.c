@@ -20,7 +20,7 @@ void scheduler_vidmap(u8 num_term, u32 pid);
 void init_pit(void) {
     
     /* Get reload value (1193182 / reload_value HZ) */
-    u16 frequency =  (PIT_FREQ * SCHEDULE_TIME / 1000);
+    u16 frequency = (PIT_FREQ * SCHEDULE_TIME / 1000);
 
     /* Ensure that schedule time is indeed within [10, 50]ms */
     ASSERT(SCHEDULE_TIME >= 10 && SCHEDULE_TIME <= 50);
@@ -39,6 +39,7 @@ void init_pit(void) {
 
     /* Initialize schedule */
     current_schedule = 0;
+    schedule_counter = 0;
 }
 
 /* irqh_pit

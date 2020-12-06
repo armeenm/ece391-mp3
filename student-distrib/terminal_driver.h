@@ -5,20 +5,32 @@
 #include "lib.h"
 #define TERMINAL_NUM 3
 
+#define RTC_DEFAULT_REAL_FREQ 1024
+#define RTC_DEFAULT_VIRT_FREQ 2
+
 static const char SHELL_PS1[] = "391OS> ";
 
-typedef struct terminal {
-    char line_buf[LINE_BUFFER_SIZE];
-    u32 line_buf_index;
-    u16 screen_x, screen_y;
-    u32 pid;
-    u8 id;
-    u8 read_flag;
-    u8* vid_mem_buf;
-    u8 running;
-    u8 status;
-    u8 vidmap;
-}terminal;
+
+typedef struct virtual_rtc {
+  u32 virt_freq; // must be a power of 2 <= 1024
+  u32 real_freq; // The intial, real freq requested of RTC (1024)
+  u32 int_count;
+  volatile u8 flag;
+} virtual_rtc;
+
+typedef struct {
+	char line_buf[128];
+	u32 line_buf_index;
+	u16 screen_x, screen_y;
+	u32 pid;
+	u8 id;
+	u8 read_flag;
+	u8* vid_mem_buf;
+	u8 running;
+	u8 status;
+	u8 vidmap;
+	virtual_rtc rtc;
+} terminal;
 
 u8 current_terminal;
 terminal terminals[TERMINAL_NUM];
