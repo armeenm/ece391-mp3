@@ -11,8 +11,10 @@
 #include "lib.h"
 #include "multiboot.h"
 #include "paging.h"
+#include "pit.h"
 #include "rtc.h"
 #include "syscall.h"
+#include "terminal_driver.h"
 #include "tests.h"
 #include "util.h"
 #include "x86_desc.h"
@@ -146,6 +148,7 @@ void entry(u32 const magic, u32 const addr) {
   init_rtc();
   init_paging();
   init_idt();
+  init_pit();
 
   /* Grab the first module and use it to open the filesystem */
   module_t* const mod = (module_t*)mbi->mods_addr;
@@ -157,18 +160,18 @@ void entry(u32 const magic, u32 const addr) {
   }
 
   clear();
-  sti();
-
-  /* Example of using a syscall */
-  // asm volatile("int $0x80" ::"a"(SYSC_CLOSE));
 
 #ifdef RUN_TESTS
   /* Run tests */
   launch_tests();
 #endif
   /* Execute the first program ("shell") ... */
+
+  init_terminals();
+  sti();
+
   for (;;)
-    execute((u8*)"shell");
+    init_terminals();
 
   /* Spin (nicely, so we don't chew up cycles) */
   HLTLOOP;

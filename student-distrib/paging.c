@@ -1,6 +1,6 @@
 #include "paging.h"
 #include "x86_desc.h"
-
+#include "syscall.h"
 /*
  * 4MB to 8MB is kernel, 0MB to 4MB is 4KB pages 8MB to 4GB is 4MB
  * Differentiating 4MB and 4KB is bit 7 in PDE (0 = 4KB, 1 = 4MB)
@@ -76,19 +76,19 @@ i32 make_task_pgdir(u8 const proc) {
     return -1;
 
   /* Initialize page table for process */
-  pgtbl_proc[0] = PG_USPACE | PG_RW;
+  pgtbl_proc[proc][0] = PG_USPACE | PG_RW;
 
   for (i = 1; i < PGTBL_LEN; ++i)
-    pgtbl_proc[i] = (i * PTE_SIZE) | PG_USPACE | PG_RW | PG_PRESENT;
+    pgtbl_proc[proc][i] = (i * PTE_SIZE) | PG_USPACE | PG_RW | PG_PRESENT;
 
   /* Initialize page directory 4KB pages */
-  pgdir[proc][0] = (u32)pgtbl_proc | PG_USPACE | PG_RW | PG_PRESENT;
+  pgdir[proc][0] = (u32)(pgtbl_proc[proc]) | PG_USPACE | PG_RW | PG_PRESENT;
 
   /* Initialize page directory kernel */
   pgdir[proc][1] = PG_4M | PG_RW | PG_SIZE | PG_PRESENT;
 
   /* Initialize page directory 4MB pages */
-  pgdir[proc][ELF_LOAD_PG] = ((proc + 2) * PG_4M_START) | PG_SIZE | PG_USPACE | PG_RW | PG_PRESENT;
+  pgdir[proc][ELF_LOAD_PG] = ((proc + 2) * MB4) | PG_SIZE | PG_USPACE | PG_RW | PG_PRESENT;
 
   /* Sets up page directory for process and flushes TLB */
   asm volatile("mov %0, %%cr3;" ::"g"(pgdir[proc]));
@@ -128,11 +128,16 @@ i32 map_vid_mem(u8 const proc, u32 virtual_address, u32 physical_address)
   if(proc >= NUM_PROC)
     return -1;
   /* Map page table to page directory */
-  pgdir[proc][virtual_address/PG_4M_START] = (u32)pgtbl_proc | PG_USPACE | PG_RW | PG_PRESENT;
+  pgdir[proc][virtual_address/MB4] = (u32)(pgtbl_proc[proc]) | PG_USPACE | PG_RW | PG_PRESENT;
   /* Map page table entry to page table. Sets virtual address */
-  pgtbl_proc[virtual_address % PG_4M_START] = physical_address | PG_USPACE | PG_RW | PG_PRESENT;
+  pgtbl_proc[proc][(virtual_address % MB4)/KB4] = physical_address | PG_USPACE | PG_RW | PG_PRESENT;
 
    /* Sets up page directory for process and flushes TLB */
   asm volatile("mov %0, %%cr3;" ::"g"(pgdir[proc]));
   return 0;
+}
+
+
+void flush_tlb(void) {
+  asm volatile("mov %0, %%cr3;" ::"g"(pgdir[(get_current_pcb())->pid]));
 }

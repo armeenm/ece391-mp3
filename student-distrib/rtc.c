@@ -4,7 +4,6 @@
 #include "options.h"
 
 // Global to hold RTC state for virtualization
-static virtual_rtc virtual_rtc_instance;
 
 /* init_rtc
  * Description: Initializes the real-time clock.
@@ -29,12 +28,9 @@ void init_rtc(void) {
   outb(prev | PIE_MASK, RTC_DATA_PORT);
 
   /* Set to "max" frequency since we virtualize the interrupts */
-
   set_real_freq_rtc(HZ1024);
-  set_virtual_freq_rtc(RTC_DEFAULT_VIRT_FREQ);
-  virtual_rtc_instance.int_count = 0;
-  virtual_rtc_instance.flag = 0;
-  /* TODO: We may want to renable NMI's here, see OSDev */
+  // Other setup happens in terminal_driver
+    /* TODO: We may want to renable NMI's here, see OSDev */
 }
 
 /* irqh_rtc
@@ -45,14 +41,20 @@ void init_rtc(void) {
  * Side Effects: Reads from RTC port C to ack, sends EOI.
  */
 void irqh_rtc(void) {
+  u8 i;
   ack_rtc_int();
-  virtual_rtc_instance.int_count++;
-  // We only set the flag to indicate a virtualized interrupt occured (eg 1024HZ <= 2HZ * 512 ints)
-  virtual_rtc_instance.flag = (virtual_rtc_instance.real_freq <=
-                               virtual_rtc_instance.virt_freq * virtual_rtc_instance.int_count);
-  if (virtual_rtc_instance.flag) {
-    virtual_rtc_instance.int_count = 0;
-  }
+  // todo: change this
+  // Change RTC details for all terminals (not sure I love this solution, we should use array instead)
+  for (i = 0; i < PID_COUNT; i++) {
+    // We only set the flag to indicate a virtualized interrupt occured (eg 1024HZ <= 2HZ * 512 ints)
+    terminal* term = get_terminal_from_pid(i);    
+    if (!term)
+      continue;
+    // Basically this state doesn't matter until we get a read, then it resets the flag when we get enough IRQs
+    term->rtc.flag = (term->rtc.real_freq <=
+                               term->rtc.virt_freq * ++term->rtc.int_count);
+  } 
+
 #if RTC_RANDOM_TEXT_DEMO
   test_interrupts();
 #endif
@@ -64,15 +66,22 @@ void irqh_rtc(void) {
  * Description: Spin while waiting for the IRQH to fire at virtual freq. Then reset that flag.
  * Inputs: i32 fd, void* buf, i32 nbytes (all ignored)
  * Outputs: resets the virtual flag to 0
- * Return Value: i32 (always 0)
+ * Return Value: i32 (always 0), or -1 if term details are null
  * Side Effects: Blocks exectution of process while waiting for int to occur
  */
 i32 rtc_read(i32 UNUSED(fd), void* UNUSED(buf), i32 UNUSED(nbytes)) {
-  while (!virtual_rtc_instance.flag) {
+  terminal* term = get_running_terminal();
+  // Guard clause against function we don't own
+  if (!term)
+    return -1;
+
+  // Reset flag and inter count -- wait for IRQH to override
+  term->rtc.flag = 0;
+  term->rtc.int_count = 0;
+  
+  while (!term->rtc.flag) {
     // spin while we wait for flag to be set by IRQH (avoid gcc warnings with this comment)
   }
-  // reset the flag so future reads require a future IRQH set
-  virtual_rtc_instance.flag = 0;
   return 0;
 }
 
@@ -144,7 +153,10 @@ void set_real_freq_rtc(RTCRate const rate) {
   outb((prev & TOP_BYTE_NIBBLE) | (u8)rate, RTC_DATA_PORT);
 
   // This is formula to derivce frequency from rate
-  virtual_rtc_instance.real_freq = RTC_BASE_FREQ >> (rate - 1);
+  //find current process +
+  terminal* term = get_running_terminal();
+  if (term)
+    term->rtc.real_freq = RTC_BASE_FREQ >> (rate - 1);
 }
 
 /* set_virtual_freq_rtc
@@ -155,12 +167,13 @@ void set_real_freq_rtc(RTCRate const rate) {
  * Side Effects: none
  */
 int set_virtual_freq_rtc(u32 freq) {
+  terminal* term = get_running_terminal();
   // if freq = 0 or > RTC freq or it's not a power of 2, this in an invalid frequency
-  if (freq == 0 || freq > virtual_rtc_instance.real_freq || (freq & (freq - 1)) != 0) {
+  if (freq == 0 || !term || freq > term->rtc.real_freq || (freq & (freq - 1)) != 0) {
     return -1;
   }
   // We reset interrupt count to start our time-to-first-read constant
-  virtual_rtc_instance.int_count = 0;
-  virtual_rtc_instance.virt_freq = freq;
+  term->rtc.int_count = 0;
+  term->rtc.virt_freq = freq;
   return 0;
 }

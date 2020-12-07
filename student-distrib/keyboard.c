@@ -1,14 +1,13 @@
 #include "keyboard.h"
 #include "i8259.h"
 #include "lib.h"
+#include "syscall.h"
 #include "terminal_driver.h"
-
 /* Declare variables for keyboard */
-char line_buf[LINE_BUFFER_SIZE];
+
 u8 key_state[SCS1_PRESSED_F12];
 u32 caps_lock_repeat = 0;
 u32 multi_byte = 0;
-u32 line_buf_index = 0;
 
 /* contains_newline
  * Description: To determine if a newline is present in a buf
@@ -44,21 +43,27 @@ int contains_newline(i8 const* const buf, i32 const size) {
 i32 get_line_buf(char* const buf, i32 const nbytes) {
   i32 lenstr;
   i32 nl_idx;
+  terminal* term;
 
   if (nbytes <= 0 || !buf)
     return -1;
 
-  terminal_read_flag = 1;
+  /* Get running terminal and set it's read flag to 1 */
+  term = get_running_terminal();
+  if (!term)
+    return -1;
+
+  term->read_flag = 1;
 
   /* Wait while the line_buf does not contain a \n */
-  while ((nl_idx = contains_newline(line_buf, LINE_BUFFER_SIZE)) == -1)
+  while ((nl_idx = contains_newline(term->line_buf, LINE_BUFFER_SIZE)) == -1)
     ;
 
   {
     i32 const limit = MIN(nl_idx + 1, nbytes);
 
     /* Copy from the line buf to the buf */
-    memcpy(buf, line_buf, (u32)limit);
+    memcpy(buf, term->line_buf, (u32)limit);
 
     /* Set the size of the string */
     lenstr = limit;
@@ -70,7 +75,7 @@ i32 get_line_buf(char* const buf, i32 const nbytes) {
   /* clear the line buf and return the size of the buf written to */
   clear_line_buf();
 
-  terminal_read_flag = 0;
+  term->read_flag = 0;
 
   return lenstr;
 }
@@ -116,6 +121,7 @@ void irqh_keyboard(void) {
  */
 void handle_keypress(SCSet1 const scancode) {
   u32 i;
+  terminal* term = &terminals[current_terminal];
 
   /* If scancode is multibyte set multibyte_flag to 1 */
   if (scancode == SCS1_MULTIBYTE)
@@ -137,34 +143,47 @@ void handle_keypress(SCSet1 const scancode) {
       /* Otherwise the keystate is equal to 1 */
       key_state[scancode] = 1;
     }
-
+    /* Switch between terminals if alt and f1, f2, f3 is pressed */
+    if (alt_pressed() && is_func_key()) {
+      /* For each Function key, switch to either terminal 0, 1, or 2 */
+      if (scancode == SCS1_PRESSED_F1) {
+        send_eoi(KEYBOARD_IRQ);
+        switch_terminal(0);
+      } else if (scancode == SCS1_PRESSED_F2) {
+        send_eoi(KEYBOARD_IRQ);
+        switch_terminal(1);
+      } else if (scancode == SCS1_PRESSED_F3) {
+        send_eoi(KEYBOARD_IRQ);
+        switch_terminal(2);
+      }
+    }
     /* If the command ctrl + l is pressed clear the screen */
-    if (key_state[SCS1_PRESSED_LEFTCTRL] && scancode == SCS1_PRESSED_L) {
+    else if (key_state[SCS1_PRESSED_LEFTCTRL] && scancode == SCS1_PRESSED_L) {
 
       /* Clear screen and reset terminal */
       clear();
-      set_screen_xy(0, 0);
 
       // Todo: let's not have the keyboard setup the screen again? maybe call out to shell?
-      if (terminal_read_flag) {
+      if (term->read_flag) {
+        printf("%s", SHELL_PS1);
+
         /* Write to terminal to put "thanOS> " in */
-        terminal_write(0, SHELL_PS1, sizeof(SHELL_PS1));
+        // terminal_write(0, SHELL_PS1, sizeof(SHELL_PS1));
 
         /* Write what's in the input buf */
-        for (i = 0; i < line_buf_index; ++i)
-          putc(line_buf[i]);
+        for (i = 0; i < term->line_buf_index; ++i)
+          putc(term->line_buf[i]);
       }
 
-    } else if (!terminal_read_flag)
+    } else if (!term->read_flag) {
       return;
-
-    else if (key_state[SCS1_PRESSED_BACKSPACE] == 1) {
+    } else if (key_state[SCS1_PRESSED_BACKSPACE] == 1) {
       /* If there is data in the line buf and backspace is pressed
        * decrement the line buf and handle the backspace keypress
        */
-      if (line_buf_index > 0) {
-        line_buf_index--;
-        line_buf[line_buf_index] = 0;
+      if (term->line_buf_index > 0) {
+        term->line_buf_index--;
+        term->line_buf[term->line_buf_index] = 0;
         putc('\b');
       }
     }
@@ -173,18 +192,18 @@ void handle_keypress(SCSet1 const scancode) {
     else if (disp) {
 
       /* If the linebuf is not full (127 characters,  LINE_BUFFER_SIZE - 1) handle keypress */
-      if (line_buf_index < LINE_BUFFER_SIZE - 1) {
+      if (term->line_buf_index < LINE_BUFFER_SIZE - 1) {
         /* print the key and put it in the buf */
         putc(disp);
-        line_buf[line_buf_index] = disp;
-        line_buf_index++;
+        term->line_buf[term->line_buf_index] = disp;
+        term->line_buf_index++;
 
       } else if (disp == '\n') {
         /* Handle newline, put it in the end of the buf, since line_buf_index >=
          * LINE_BUFFER_SIZE - 1 */
         putc(disp);
-        line_buf[line_buf_index] = disp;
-        line_buf_index++;
+        term->line_buf[term->line_buf_index] = disp;
+        term->line_buf_index++;
       }
     }
 
@@ -285,13 +304,15 @@ i8 handle_disp(i8 disp) {
 void clear_line_buf(void) {
   /* Iterate through the entire line buf */
   u32 i;
-
+  terminal* term = get_running_terminal();
+  if (!term)
+    return;
   /* Clear the line buf */
   for (i = 0; i < LINE_BUFFER_SIZE; ++i)
-    line_buf[i] = 0;
+    term->line_buf[i] = 0;
 
   /* Set index to 0 */
-  line_buf_index = 0;
+  term->line_buf_index = 0;
 }
 
 /* shift_pressed
@@ -313,3 +334,13 @@ i32 shift_pressed(void) {
  * Side Effects: none
  */
 i32 capslock_pressed(void) { return key_state[SCS1_PRESSED_CAPSLOCK]; }
+
+i32 is_func_key(void) {
+  return (key_state[SCS1_PRESSED_F1] || key_state[SCS1_PRESSED_F2] || key_state[SCS1_PRESSED_F3] ||
+          key_state[SCS1_PRESSED_F4] || key_state[SCS1_PRESSED_F5] || key_state[SCS1_PRESSED_F6] ||
+          key_state[SCS1_PRESSED_F7] || key_state[SCS1_PRESSED_F8] || key_state[SCS1_PRESSED_F9] ||
+          key_state[SCS1_PRESSED_F10] || key_state[SCS1_PRESSED_F11] ||
+          key_state[SCS1_PRESSED_F12]);
+}
+
+i32 alt_pressed(void) { return key_state[SCS1_PRESSED_LEFTALT]; }

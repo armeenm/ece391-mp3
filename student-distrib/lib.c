@@ -1,8 +1,9 @@
 /* lib.c - Some basic library functions (printf, strlen, etc.) */
 
 #include "lib.h"
-
-enum { ATTRIB = 2, NUM_ROWS = 25, NUM_COLS = 80, VIDEO = 0xB8000 };
+#include "paging.h"
+#include "syscall.h"
+#include "terminal_driver.h"
 
 static u16 screen_x;
 static u16 screen_y;
@@ -14,12 +15,26 @@ static i8* video_mem = (i8*)VIDEO;
  * Function: Clears video memory */
 void clear(void) {
   u32 i;
-
+  terminal* term = get_running_terminal();
+  /* If there is a terminal running and it is not the current map video->videos */
+  u8 remap_vid_mem = 0;
+  if (term && term->id != current_terminal) {
+    cli();
+    remap_vid_mem = 1;
+    map_vid_mem(get_current_pcb()->pid, (u32)VIDEO, (u32)VIDEO);
+  }
+  /* For all the pixels clear their values */
   for (i = 0; i < NUM_ROWS * NUM_COLS; ++i) {
     video_mem[i << 1] = ' ';
     video_mem[(i << 1) + 1] = ATTRIB;
   }
-
+  /* If video memory was remapped map it back  */
+  if (remap_vid_mem) {
+    map_vid_mem(get_current_pcb()->pid, (u32)VIDEO, (u32)term->vid_mem_buf);
+    set_terminal_screen_xy(current_terminal, 0, 0);
+    sti();
+  }
+  /* Set screen pos to 0,0 */
   set_screen_xy(0, 0);
 }
 /* void scroll_up
@@ -50,6 +65,23 @@ void clear_screen_xy(void) {
   video_mem[(NUM_COLS * screen_y + screen_x) << 1] = ' ';
   /* sets attribute to ATTRIB at the current location */
   video_mem[((NUM_COLS * screen_y + screen_x) << 1) + 1] = ATTRIB;
+}
+
+/* void clear_terminal_screen_xy();
+ * Inputs: u8 num_term -- number of terminal to clear at current x,y
+ * Return Value: none
+ * Function: clears the screen position at the current location
+ * WARNING - assumes VIDEO_MEM is appropriately mapped
+ */
+void clear_terminal_screen_xy(u8 num_term) {
+  /* Ensure valid num_term */
+  if (num_term >= TERMINAL_NUM)
+    return;
+  terminal* term = &terminals[num_term];
+  /* Sets char to ' ' at the current screen location */
+  video_mem[(NUM_COLS * term->screen_y + term->screen_x) << 1] = ' ';
+  /* sets attribute to ATTRIB at the current location */
+  video_mem[((NUM_COLS * term->screen_y + term->screen_x) << 1) + 1] = ATTRIB;
 }
 
 /* void set_cursor_location(int x, int y)
@@ -94,7 +126,7 @@ void set_screen_y(u16 const y) {
   }
 }
 
-/* void setscreen_xy(int x, int y);
+/* void set_screen_xy(int x, int y);
  * Inputs:  y - position to set screen_y to
  *          x - position to set screen_x to
  * Return Value: none
@@ -107,6 +139,53 @@ void set_screen_xy(u16 const x, u16 const y) {
     screen_x = x;
     set_cursor_location(x, y);
   }
+}
+
+/* void set_terminal_screen_xy(u8 num_term, u16 x, u16 y);
+ * Inputs:  y - position to set screen_y to
+ *          x - position to set screen_x to
+ *          num_term - terminal to set screen_x and y to
+ * Return Value: none
+ * Function: set value of screen_y to y, screen_x to x
+ */
+void set_terminal_screen_xy(u8 num_term, u16 x, u16 y) {
+  /* validate x, y and num_term */
+  if (num_term >= TERMINAL_NUM || (y >= NUM_ROWS && x >= NUM_COLS))
+    return;
+  /* Set terminal screen x and y */
+  terminal* term = &terminals[num_term];
+  term->screen_x = x;
+  term->screen_y = y;
+}
+
+/* void set_terminal_screen_x(u8 num_term, u16 x);
+ * Inputs:  x - position to set screen_x to
+ *          num_term - terminal to set screen_x
+ * Return Value: none
+ * Function: set value of screen_x to x
+ */
+void set_terminal_screen_x(u8 num_term, u16 x) {
+  /* Validate num_term and x */
+  if (num_term >= TERMINAL_NUM || x >= NUM_COLS)
+    return;
+  /* set terminal screen x to x */
+  terminal* term = &terminals[num_term];
+  term->screen_x = x;
+}
+
+/* void set_terminal_screen_y(u8 num_term, u16 y);
+ * Inputs:  y - position to set screen_y to
+ *          num_term - terminal to set screen_y
+ * Return Value: none
+ * Function: set value of screen_y to y
+ */
+void set_terminal_screen_y(u8 num_term, u16 y) {
+  /* Validate num_term and y */
+  if (num_term >= TERMINAL_NUM || y >= NUM_ROWS)
+    return;
+  /* set terminal screen y to y */
+  terminal* term = &terminals[num_term];
+  term->screen_y = y;
 }
 
 /* int get_screen_x();
@@ -251,14 +330,119 @@ i32 puts(i8* s) {
   }
   return index;
 }
+/* void terminal_putc(u8 num_term, u8 c);
+ * Inputs: int_8* c = character to print
+ *         uint_8 num_term -- termrinal to print to
+ * Return Value: void
+ *  Function: Output a character to the console */
+void terminal_putc(u8 num_term, i8 c) {
+  if (c == 0 || num_term >= TERMINAL_NUM)
+    return;
+
+  terminal* term = &terminals[num_term];
+
+  /* Get x and y pos */
+  u16 x = get_screen_x();
+  u16 y = get_screen_y();
+
+  /* If not the currrent terminal screen_pos is term->screen_ */
+  if (term->id != current_terminal) {
+    x = term->screen_x;
+    y = term->screen_y;
+  }
+
+  if (c == '\n') {
+    /* If there is still screenspace left then go to next line */
+    if (y < NUM_ROWS - 1) {
+      y++;
+    } else {
+      /* If there is no screenspace left scroll up */
+      scroll_up();
+    }
+    /* Reset to the start of the line */
+    x = 0;
+
+  } else if (c == '\b') {
+    /* if x is zero go to previous line */
+    if (x == 0 && y > 0) {
+      x = NUM_COLS - 1;
+      y--;
+    } else {
+      /* Otherwise go back one */
+      x--;
+    }
+
+    /* If not current terminal use terminal libc functions */
+    if (term->id == current_terminal) {
+      /* clear the character at the current location */
+      set_screen_xy(x, y);
+      clear_screen_xy();
+    } else {
+      /* clear the character at the current location */
+      set_terminal_screen_xy(term->id, x, y);
+      clear_terminal_screen_xy(term->id);
+    }
+
+    return;
+
+  } else if (c == '\t') {
+    /* if tab use a space */
+    terminal_putc(num_term, ' ');
+    return;
+
+  } else {
+
+    if (term->id == current_terminal) {
+      video_mem[(NUM_COLS * y + x) << 1] = c;
+      video_mem[((NUM_COLS * y + x) << 1) + 1] = ATTRIB;
+    } else {
+      term->vid_mem_buf[(NUM_COLS * y + x) << 1] = c;
+      term->vid_mem_buf[((NUM_COLS * y + x) << 1) + 1] = ATTRIB;
+    }
+
+    ++x;
+
+    /* if it is a newline then go to the next line */
+    if ((x / NUM_COLS) > 0) {
+
+      /* At the top of the screen scroll up */
+      if (y == NUM_ROWS - 1)
+        scroll_up();
+      else {
+        /* Otherwise go to the next row */
+        y = (u16)((y + (x / NUM_COLS)) % NUM_ROWS);
+      }
+    }
+    /* Make sure x is bounded by the columns */
+    x %= NUM_COLS;
+  }
+
+  if (term->id == current_terminal) {
+    /* Set location of the cursor based on new x and y */
+    set_screen_xy(x, y);
+  } else {
+    set_terminal_screen_xy(term->id, x, y);
+    // map_vid_mem(get_current_pcb()->pid, (u32)VIDEO, (u32)term->vid_mem_buf);
+  }
+}
 
 /* void putc(u8 c);
  * Inputs: uint_8* c = character to print
  * Return Value: void
  *  Function: Output a character to the console */
 void putc(i8 c) {
+  terminal* term = get_running_terminal();
   if (c == 0)
     return;
+
+  /* If not current terminal remap video memory so the screen can be
+   * directly written to.
+   */
+  u8 remap_vid_mem = 0;
+  if (term && term->id != current_terminal) {
+    remap_vid_mem = 1;
+    map_vid_mem(get_current_pcb()->pid, (u32)VIDEO, (u32)VIDEO);
+  }
 
   if (c == '\n') {
     /* If there is still screenspace left then go to next line */
@@ -310,7 +494,10 @@ void putc(i8 c) {
     /* Make sure x is bounded by the columns */
     screen_x %= NUM_COLS;
   }
-
+  /* If video memory was remap move it back to the buffer location */
+  if (remap_vid_mem) {
+    map_vid_mem(get_current_pcb()->pid, (u32)VIDEO, (u32)term->vid_mem_buf);
+  }
   /* Set location of the cursor based on new screen_x and screen_y */
   set_cursor_location(screen_x, screen_y);
 }
@@ -372,14 +559,13 @@ i8* strrev(i8* s) {
   return s;
 }
 
-
 /* u32 strnonspace(i8* s);
  * Inputs:  i8* s
  * Return Value: u32 postition of first non-space character:
  * Function: returns the postition of the first non-scace char */
 u32 strnonspace(i8 const* s) {
   u32 i;
-  for (i = 0; i<strlen(s); i++) {
+  for (i = 0; i < strlen(s); i++) {
     if (s[i] != ' ') {
       return i;
     }

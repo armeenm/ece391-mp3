@@ -211,7 +211,6 @@ TEST(UD) {
  */
 TEST(KEYPRESS) {
   {
-    int NUM_COLS = 80;
     char* video_mem = (char*)(0xB8000);
 
     putc(' ');
@@ -227,7 +226,7 @@ TEST(KEYPRESS) {
     if (*(u8*)(video_mem + ((NUM_COLS * start_y + start_x) << 1)) != ' ')
       TEST_FAIL;
 
-    terminal_read_flag = 1;
+    //terminal_read_flag = 1;
 
     handle_keypress(SCS1_PRESSED_A);
     handle_keypress(SCS1_RELEASED_A);
@@ -289,7 +288,7 @@ TEST(KEYPRESS) {
 
     clear_line_buf();
 
-    terminal_read_flag = 0;
+    //terminal_read_flag = 0;
   }
 
   putc('\n');

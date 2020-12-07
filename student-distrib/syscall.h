@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+enum { ENTRY_POINT_OFFSET = 24, LOAD_ADDR = 0x8048000, MB4 = 0x400000, MB8 = 0x800000, KB8 = 0x2000, KB1 = 0x400, KB4 = 0x1000 };
+
 enum {
   FD_NOT_IN_USE = 0,
   FD_IN_USE = 1,
@@ -52,7 +54,11 @@ typedef struct Pcb {
   u32 pid;
   u32 parent_ksp;
   u32 parent_kbp;
+  u32 ksp;
+  u32 kbp;
   i32 parent_pid;
+  struct Pcb* parent_pcb;
+  struct Pcb* child_pcb;
   u32 child_return;
   void* sig_handler[4];
 } Pcb;
@@ -71,8 +77,9 @@ i32 vidmap(u8** screen_start);
 i32 set_handler(u32 signum, void* handler_address);
 i32 sigreturn(void);
 i32 irqh_syscall(void);
-
+void set_pid(u8 pid);
 Pcb* get_current_pcb(void);
+Pcb* get_pcb(u8 proc);
 i32 read_failure(i32 fd, void* buf, i32 nbytes);
 i32 write_failure(i32 fd, void const* buf, i32 nbytes);
 
