@@ -36,8 +36,11 @@ i32 terminal_write(i32 UNUSED(fd), void const* const buf, i32 const nbytes) {
   // if((term = &terminals[current_terminal]) == get_running_terminal())
   //   printf("terminal pid is %d\n", term->pid);
   /* If params are invalid return -1 */
-  if (nbytes <= 0 || !buf || !term)
+
+  if (nbytes <= 0 || !buf || !term) {
+    sti();
     return -1;
+  }
 
   for (i = 0; i < nbytes; ++i) {
     /* Write to screen */

@@ -338,11 +338,13 @@ i32 puts(i8* s) {
 void terminal_putc(u8 num_term, i8 c) {
   if (c == 0 || num_term >= TERMINAL_NUM)
     return;
+
   terminal* term = &terminals[num_term];
 
-  /* Get x and y pos  */
+  /* Get x and y pos */
   u16 x = get_screen_x();
   u16 y = get_screen_y();
+
   /* If not the currrent terminal screen_pos is term->screen_ */
   if (term->id != current_terminal) {
     x = term->screen_x;
@@ -389,8 +391,14 @@ void terminal_putc(u8 num_term, i8 c) {
     return;
 
   } else {
-    video_mem[(NUM_COLS * y + x) << 1] = c;
-    video_mem[((NUM_COLS * y + x) << 1) + 1] = ATTRIB;
+
+    if (term->id == current_terminal) {
+      video_mem[(NUM_COLS * y + x) << 1] = c;
+      video_mem[((NUM_COLS * y + x) << 1) + 1] = ATTRIB;
+    } else {
+      term->vid_mem_buf[(NUM_COLS * y + x) << 1] = c;
+      term->vid_mem_buf[((NUM_COLS * y + x) << 1) + 1] = ATTRIB;
+    }
 
     ++x;
 
@@ -414,6 +422,7 @@ void terminal_putc(u8 num_term, i8 c) {
     set_screen_xy(x, y);
   } else {
     set_terminal_screen_xy(term->id, x, y);
+    // map_vid_mem(get_current_pcb()->pid, (u32)VIDEO, (u32)term->vid_mem_buf);
   }
 }
 
