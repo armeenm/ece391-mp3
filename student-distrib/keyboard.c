@@ -8,6 +8,7 @@
 u8 key_state[SCS1_PRESSED_F12];
 u32 caps_lock_repeat = 0;
 u32 multi_byte = 0;
+i32 terminal_to_switch_to = -1;
 
 /* contains_newline
  * Description: To determine if a newline is present in a buf
@@ -148,21 +149,21 @@ void handle_keypress(SCSet1 const scancode) {
       /* For each Function key, switch to either terminal 0, 1, or 2 */
       if (scancode == SCS1_PRESSED_F1) {
         send_eoi(KEYBOARD_IRQ);
-        switch_terminal(0);
+        terminal_to_switch_to = 0;
       } else if (scancode == SCS1_PRESSED_F2) {
         send_eoi(KEYBOARD_IRQ);
-        switch_terminal(1);
+        terminal_to_switch_to = 1;
       } else if (scancode == SCS1_PRESSED_F3) {
         send_eoi(KEYBOARD_IRQ);
-        switch_terminal(2);
+        terminal_to_switch_to = 2;
       }
     }
     /* If the command ctrl + l is pressed clear the screen */
     else if (key_state[SCS1_PRESSED_LEFTCTRL] && scancode == SCS1_PRESSED_L) {
-
       /* Clear screen and reset terminal */
       clear();
 
+#if 0
       // Todo: let's not have the keyboard setup the screen again? maybe call out to shell?
       if (term->read_flag) {
         printf("%s", SHELL_PS1);
@@ -174,6 +175,7 @@ void handle_keypress(SCSet1 const scancode) {
         for (i = 0; i < term->line_buf_index; ++i)
           putc(term->line_buf[i]);
       }
+#endif
 
     } else if (!term->read_flag) {
       return;

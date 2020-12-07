@@ -75,12 +75,7 @@ Pcb* get_pcb(u8 proc) { return (Pcb*)(MB8 - (proc + 1) * KB8); }
  * Return Value: current PCB ptr
  * Function:
  */
-Pcb* get_current_pcb(void) {
-  cli();
-  Pcb* tmp = get_pcb(running_pid);
-  sti();
-  return tmp;
-}
+Pcb* get_current_pcb(void) { return get_pcb(running_pid); }
 
 /* set_program_exception
  * Description: setter for the halt function, this function set's a static boolean to indicate if a
@@ -99,8 +94,6 @@ void set_program_exception(u8 val) { program_exception_occured = val; }
  */
 i32 halt(u8 const status) {
   u32 i;
-
-  cli();
 
   Pcb* const pcb = get_current_pcb();
 
@@ -127,7 +120,6 @@ i32 halt(u8 const status) {
                  :
                  : "g"(pcb->parent_ksp), "g"(pcb->parent_kbp)
                  : "esp", "ebp");
-    sti();
     execute((u8*)"shell");
   } else {
     // if a program exception occured, we ignore the halt status and return 256 to eax
@@ -143,8 +135,6 @@ i32 halt(u8 const status) {
   }
   /* Uncheck vidmap for terminal */
   term->vidmap = 0;
-
-  sti();
 
   /* Moves base pointers to parent */
   asm volatile("mov %0, %%esp;"

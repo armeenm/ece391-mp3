@@ -1,6 +1,7 @@
 #include "pit.h"
 #include "debug.h"
 #include "i8259.h"
+#include "keyboard.h"
 #include "syscall.h"
 #include "terminal_driver.h"
 #include "x86_desc.h"
@@ -52,6 +53,11 @@ void init_pit(void) {
  */
 void irqh_pit(void) {
   u32 esp, ebp;
+
+  if (terminal_to_switch_to != -1) {
+    switch_terminal(terminal_to_switch_to);
+    terminal_to_switch_to = -1;
+  }
 
   /* Iterates through the terminals until a running one is found */
   do {

@@ -6,6 +6,8 @@
 #include "scancodes.h"
 #include "util.h"
 
+i32 terminal_to_switch_to;
+
 /* Intel 8042 PS/2 Controller */
 enum {
   KEYBOARD_DATA_PORT = 0x60,
