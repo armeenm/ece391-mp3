@@ -166,12 +166,7 @@ void entry(u32 const magic, u32 const addr) {
   launch_tests();
 #endif
   /* Execute the first program ("shell") ... */
-
   init_terminals();
-  sti();
-
-  for (;;)
-    init_terminals();
 
   /* Spin (nicely, so we don't chew up cycles) */
   HLTLOOP;

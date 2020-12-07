@@ -1,8 +1,6 @@
 #define ASM 1
 #include "x86_desc.h"
 
-#define USER_ESP 0x83FFFF0
-
 .align 4
 
 .globl uspace

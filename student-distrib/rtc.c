@@ -30,7 +30,7 @@ void init_rtc(void) {
   /* Set to "max" frequency since we virtualize the interrupts */
   set_real_freq_rtc(HZ1024);
   // Other setup happens in terminal_driver
-    /* TODO: We may want to renable NMI's here, see OSDev */
+  /* TODO: We may want to renable NMI's here, see OSDev */
 }
 
 /* irqh_rtc
@@ -44,16 +44,18 @@ void irqh_rtc(void) {
   u8 i;
   ack_rtc_int();
   // todo: change this
-  // Change RTC details for all terminals (not sure I love this solution, we should use array instead)
+  // Change RTC details for all terminals (not sure I love this solution, we should use array
+  // instead)
   for (i = 0; i < PID_COUNT; i++) {
-    // We only set the flag to indicate a virtualized interrupt occured (eg 1024HZ <= 2HZ * 512 ints)
-    terminal* term = get_terminal_from_pid(i);    
+    // We only set the flag to indicate a virtualized interrupt occured (eg 1024HZ <= 2HZ * 512
+    // ints)
+    terminal* term = get_terminal_from_pid(i);
     if (!term)
       continue;
-    // Basically this state doesn't matter until we get a read, then it resets the flag when we get enough IRQs
-    term->rtc.flag = (term->rtc.real_freq <=
-                               term->rtc.virt_freq * ++term->rtc.int_count);
-  } 
+    // Basically this state doesn't matter until we get a read, then it resets the flag when we get
+    // enough IRQs
+    term->rtc.flag = (term->rtc.real_freq <= term->rtc.virt_freq * ++term->rtc.int_count);
+  }
 
 #if RTC_RANDOM_TEXT_DEMO
   test_interrupts();
@@ -78,7 +80,7 @@ i32 rtc_read(i32 UNUSED(fd), void* UNUSED(buf), i32 UNUSED(nbytes)) {
   // Reset flag and inter count -- wait for IRQH to override
   term->rtc.flag = 0;
   term->rtc.int_count = 0;
-  
+
   while (!term->rtc.flag) {
     // spin while we wait for flag to be set by IRQH (avoid gcc warnings with this comment)
   }
@@ -153,7 +155,7 @@ void set_real_freq_rtc(RTCRate const rate) {
   outb((prev & TOP_BYTE_NIBBLE) | (u8)rate, RTC_DATA_PORT);
 
   // This is formula to derivce frequency from rate
-  //find current process +
+  // find current process +
   terminal* term = get_running_terminal();
   if (term)
     term->rtc.real_freq = RTC_BASE_FREQ >> (rate - 1);

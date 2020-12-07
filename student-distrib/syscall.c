@@ -48,6 +48,7 @@ i32 irqh_syscall(void) {
 
   /* Get the function from the jump table, do NULL check */
   func = syscalls[(u32)type - 1];
+
   if (!func)
     return -1;
 
@@ -114,25 +115,30 @@ i32 halt(u8 const status) {
     // if the process is a terminal, we mark it as not running, so it's id can be taken in execute
     tss.esp0 = MB8 - KB8 * (term->pid + 1) - ADDRESS_SIZE;
     terminals[current_terminal].running = 0;
+
     // Load KSP/KPB from last execute call
+    // this works bro, just trust me
     asm volatile("mov %0, %%esp;"
                  "mov %1, %%ebp;"
                  :
-                 : "g"(pcb->parent_ksp), "g"(pcb->parent_kbp)
+                 : "g"(pcb->parent_kbp), "g"(pcb->parent_kbp)
                  : "esp", "ebp");
+
     execute((u8*)"shell");
-  } else {
-    // if a program exception occured, we ignore the halt status and return 256 to eax
-    pcb->child_return = program_exception_occured ? PROCESS_KILLED_BY_EXCEPTION : status;
-    set_program_exception(0);
-
-    /* There is a parent, we need to switch contexts to the parent */
-    remove_task_pgdir(pcb->pid);
-    make_task_pgdir(pcb->parent_pid);
-
-    tss.esp0 = MB8 - KB8 * (pcb->parent_pid + 1) - ADDRESS_SIZE;
-    running_pid = pcb->parent_pid;
   }
+
+  // if a program exception occured, we ignore the halt status and return 256 to eax
+  pcb->child_return = program_exception_occured ? PROCESS_KILLED_BY_EXCEPTION : status;
+  set_program_exception(0);
+
+  tss.esp0 = MB8 - KB8 * (pcb->parent_pid + 1) - ADDRESS_SIZE;
+  running_pid = pcb->parent_pid;
+
+  /* There is a parent, we need to switch contexts to the parent */
+  remove_task_pgdir(pcb->pid);
+
+  flush_tlb();
+
   /* Uncheck vidmap for terminal */
   term->vidmap = 0;
 

@@ -22,7 +22,6 @@ i32 open_fs(u32 const start, u32 const UNUSED(end)) {
   // Enable the filesystem 4mb page to be marked as present
   pgdir[0][start >> PG_4M_ADDR_OFFSET] |= PG_PRESENT;
 
-  /* TODO: Sanity checks */
   if (bootblk->fs_stats.direntry_cnt >= FS_MAX_DIR_ENTRIES) {
     // Reset state on page location
     pgdir[0][start >> PG_4M_ADDR_OFFSET] &= ~(1U);
@@ -168,7 +167,8 @@ i32 read_dentry_by_name(u8 const* const ufname, DirEntry* const dentry) {
   if (dentry)
     for (i = 0; i < FS_MAX_DIR_ENTRIES; ++i)
       // iterate through each directory entry, compare the files names for a match
-      if (strlen(fname) <= FS_FNAME_LEN && !strncmp(fname, bootblk->direntries[i].filename, FS_FNAME_LEN)) {
+      if (strlen(fname) <= FS_FNAME_LEN &&
+          !strncmp(fname, bootblk->direntries[i].filename, FS_FNAME_LEN)) {
         // when they match, grab the dir entry
         memcpy(dentry, &bootblk->direntries[i], sizeof(DirEntry));
         return 0;

@@ -5,7 +5,7 @@
 #include "terminal_driver.h"
 /* Declare variables for keyboard */
 
-u8 key_state[SCS1_PRESSED_F12];
+u8 key_state[SCS1_PRESSED_F12 + 1];
 u32 caps_lock_repeat = 0;
 u32 multi_byte = 0;
 i32 terminal_to_switch_to = -1;

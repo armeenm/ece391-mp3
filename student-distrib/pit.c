@@ -52,8 +52,8 @@ void init_pit(void) {
 void irqh_pit(void) {
   u32 esp, ebp;
 
-
-  // Do paging and video mem switching if there was a terminal we previously we're asked to switch to
+  // Do paging and video mem switching if there was a terminal we previously we're asked to switch
+  // to
   if (terminal_to_switch_to != -1) {
     switch_terminal(terminal_to_switch_to);
     terminal_to_switch_to = -1;
@@ -88,10 +88,12 @@ void irqh_pit(void) {
   if (terminals[current_schedule].running == 1) {
     /* If the terminal is running get the next pcb */
     Pcb* next_pcb = get_pcb(terminals[current_schedule].pid);
+
     /* find the lowest child pcb */
     while (next_pcb->child_pcb) {
       next_pcb = next_pcb->child_pcb;
     }
+
     /* Setup the TSS to switch to the next pid and set the running pid*/
     tss.esp0 = MB8 - KB8 * (next_pcb->pid + 1) - ADDRESS_SIZE;
     set_pid(next_pcb->pid);

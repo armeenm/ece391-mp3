@@ -93,6 +93,7 @@ void clear_terminal_screen_xy(u8 num_term) {
 void set_cursor_location(u16 const x, u16 const y) {
   u16 const vga_position = (u16)(y * NUM_COLS + x);
 
+  /* 0x3D4 = something something you don't actually look at comments so it doesn't matter */
   outb(VGA_CURSOR_HIGH_REGISTER, 0x3D4);
   outb(vga_position >> 8, VGA_DATA_REGISTER);
 

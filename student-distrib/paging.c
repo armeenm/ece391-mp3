@@ -129,8 +129,10 @@ i32 map_vid_mem(u8 const proc, u32 virtual_address, u32 physical_address) {
   /* If process id is valid and physical address is not in kernel space */
   if (proc >= NUM_PROC)
     return -1;
+
   /* Map page table to page directory */
   pgdir[proc][virtual_address / MB4] = (u32)(pgtbl_proc[proc]) | PG_USPACE | PG_RW | PG_PRESENT;
+
   /* Map page table entry to page table. Sets virtual address */
   pgtbl_proc[proc][(virtual_address % MB4) / KB4] =
       physical_address | PG_USPACE | PG_RW | PG_PRESENT;
@@ -143,9 +145,7 @@ i32 map_vid_mem(u8 const proc, u32 virtual_address, u32 physical_address) {
 }
 
 /* flush_tlb
- * Description: Bit of a misnomer -- it loads the current PCBs paging details, which in turn flushes the TLB
- * Inputs: void
- * Outputs: None
- * Return Value: none
+ * Description: Bit of a misnomer -- it loads the current PCBs paging details, which in turn flushes
+ * the TLB Inputs: void Outputs: None Return Value: none
  */
 void flush_tlb(void) { asm volatile("mov %0, %%cr3;" ::"g"(pgdir[(get_current_pcb())->pid])); }
