@@ -122,6 +122,7 @@ i32 halt(u8 const status) {
                  :
                  : "g"(pcb->parent_ksp), "g"(pcb->parent_kbp)
                  : "esp", "ebp");
+    sti();
     execute((u8*)"shell");
   } else {
     // if a program exception occured, we ignore the halt status and return 256 to eax
@@ -161,6 +162,8 @@ i32 halt(u8 const status) {
  * Function: Checks cmd validity, if valid executes a system call given as ucmd input
  */
 i32 execute(u8 const* const ucmd) {
+  cli();
+
   i8 cmd[ARGS_SIZE];
   Pcb* const parent = get_current_pcb();
   DirEntry dentry;
@@ -170,8 +173,10 @@ i32 execute(u8 const* const ucmd) {
   u32 i, j, l;
 
   /* If our input is null, fail */
-  if (!ucmd)
+  if (!ucmd) {
+    sti();
     return -1;
+  }
 
   /* Copy the input argument neglecting leading spaces */
   memset(cmd, 0, ARGS_SIZE);
@@ -192,17 +197,23 @@ i32 execute(u8 const* const ucmd) {
   cmd[j] = '\0';
 
   /* If directory entry read fails, fail */
-  if (read_dentry_by_name((u8*)cmd, &dentry))
+  if (read_dentry_by_name((u8*)cmd, &dentry)) {
+    sti();
     return -1;
+  }
 
   /* If the data read isn't the size of the data, fail */
-  if (read_data(dentry.inode_idx, 0, header, sizeof(header)) != sizeof(header))
+  if (read_data(dentry.inode_idx, 0, header, sizeof(header)) != sizeof(header)) {
+    sti();
     return -1;
+  }
 
   /* If file is an invalid executable, fail */
   for (i = 0; i < sizeof(header); ++i)
-    if (header[i] != elf_header[i])
+    if (header[i] != elf_header[i]) {
+      sti();
       return -1;
+    }
 
   for (i = 0, mask = FIRST_PID; i < MAX_PID_COUNT; ++i, mask >>= 1)
     if (!(mask & procs)) {
@@ -212,20 +223,27 @@ i32 execute(u8 const* const ucmd) {
       goto cont;
     }
 
+  sti();
   return -1;
 
 cont:
   /* If bytes read from file isn't the same as the size of the file, fail */
-  if (file_read_name(cmd, (u8*)&entry, ENTRY_POINT_OFFSET, sizeof(entry)) != sizeof(entry))
+  if (file_read_name(cmd, (u8*)&entry, ENTRY_POINT_OFFSET, sizeof(entry)) != sizeof(entry)) {
+    sti();
     return -1;
+  }
 
   /* If making page directory fails, fail */
-  if (make_task_pgdir(running_pid))
+  if (make_task_pgdir(running_pid)) {
+    sti();
     return -1;
+  }
 
   /* If file read was unsuccessful after making pgdir, fail */
-  if (file_read_name(cmd, (u8*)LOAD_ADDR, 0, 0) == -1)
+  if (file_read_name(cmd, (u8*)LOAD_ADDR, 0, 0) == -1) {
+    sti();
     return -1;
+  }
 
   {
     Pcb* const pcb = get_current_pcb();
@@ -286,6 +304,8 @@ cont:
 
     /* New KSP */
     tss.esp0 = MB8 - KB8 * (running_pid + 1) - ADDRESS_SIZE;
+
+    sti();
 
     /* Enter into userspace */
     uspace(entry);

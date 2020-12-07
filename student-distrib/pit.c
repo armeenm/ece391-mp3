@@ -52,6 +52,7 @@ void init_pit(void) {
  */
 void irqh_pit(void) {
   u32 esp, ebp;
+
   /* Iterates through the terminals until a running one is found */
   do {
     schedule_counter++;
@@ -63,6 +64,7 @@ void irqh_pit(void) {
     send_eoi(PIT_IRQ);
     return;
   }
+
   /* Set the current schedule to the schedule_counter */
   current_schedule = schedule_counter;
 
