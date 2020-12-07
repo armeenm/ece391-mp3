@@ -121,7 +121,6 @@ void irqh_keyboard(void) {
  * Side Effects: Writes to the video buf
  */
 void handle_keypress(SCSet1 const scancode) {
-  u32 i;
   terminal* term = &terminals[current_terminal];
 
   /* If scancode is multibyte set multibyte_flag to 1 */
@@ -146,7 +145,7 @@ void handle_keypress(SCSet1 const scancode) {
     }
     /* Switch between terminals if alt and f1, f2, f3 is pressed */
     if (alt_pressed() && is_func_key()) {
-      /* For each Function key, switch to either terminal 0, 1, or 2 */
+      /* For each Function key, switch to either terminal 0, 1, or 2  (runs on the next pit IRQ) */
       if (scancode == SCS1_PRESSED_F1) {
         send_eoi(KEYBOARD_IRQ);
         terminal_to_switch_to = 0;
@@ -162,20 +161,6 @@ void handle_keypress(SCSet1 const scancode) {
     else if (key_state[SCS1_PRESSED_LEFTCTRL] && scancode == SCS1_PRESSED_L) {
       /* Clear screen and reset terminal */
       clear();
-
-#if 0
-      // Todo: let's not have the keyboard setup the screen again? maybe call out to shell?
-      if (term->read_flag) {
-        printf("%s", SHELL_PS1);
-
-        /* Write to terminal to put "thanOS> " in */
-        // terminal_write(0, SHELL_PS1, sizeof(SHELL_PS1));
-
-        /* Write what's in the input buf */
-        for (i = 0; i < term->line_buf_index; ++i)
-          putc(term->line_buf[i]);
-      }
-#endif
 
     } else if (!term->read_flag) {
       return;

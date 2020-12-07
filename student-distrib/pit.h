@@ -30,7 +30,8 @@
 #define PIT_IRQ 0x0
 
 #define PIT_FREQ 1193182
-#define SCHEDULE_TIME 10
+#define SCHEDULE_TIME 10 // in MS
+#define MS_IN_SEC 1000
 
 #define TASK_NOT_RUNNING        0
 #define TASK_RUNNING            1
@@ -38,6 +39,9 @@
 #define TASK_UNINTERRUPTIBLE    3
 #define TASK_STOPPED            4
 #define TASK_ZOMBIE             5
+
+#define UPPER_BYTE_SHIFT 8
+#define LOWER_BYTE_MASK 0x00FF
 
 void irqh_pit(void);
 void init_pit(void);

@@ -21,16 +21,14 @@ void scheduler_vidmap(u8 num_term, u32 pid);
 void init_pit(void) {
 
   /* Get reload value (1193182 / reload_value HZ) */
-  u16 frequency = (PIT_FREQ * SCHEDULE_TIME / 1000);
+  u16 frequency = (PIT_FREQ * SCHEDULE_TIME / MS_IN_SEC);
 
-  /* Ensure that schedule time is indeed within [10, 50]ms */
-  ASSERT(SCHEDULE_TIME >= 10 && SCHEDULE_TIME <= 50);
   /* Enable irq for the pit */
   enable_irq(PIT_IRQ);
 
   /* Mask high and low bits of frequency */
-  u8 low = (u8)(frequency & 0x00FF);
-  u8 high = (u8)(frequency >> 8);
+  u8 low = (u8)(frequency & LOWER_BYTE_MASK);
+  u8 high = (u8)(frequency >> UPPER_BYTE_SHIFT);
 
   /* Set PIT Modes, written to the pit register */
   outb(PIT_SET_CHANNEL_0 | PIT_SET_ACCESS_MODE_3 | PIT_SET_MODE_RATE | PIT_SET_BCD_MODE_0,
@@ -54,6 +52,8 @@ void init_pit(void) {
 void irqh_pit(void) {
   u32 esp, ebp;
 
+
+  // Do paging and video mem switching if there was a terminal we previously we're asked to switch to
   if (terminal_to_switch_to != -1) {
     switch_terminal(terminal_to_switch_to);
     terminal_to_switch_to = -1;

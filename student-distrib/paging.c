@@ -142,4 +142,10 @@ i32 map_vid_mem(u8 const proc, u32 virtual_address, u32 physical_address) {
   return 0;
 }
 
+/* flush_tlb
+ * Description: Bit of a misnomer -- it loads the current PCBs paging details, which in turn flushes the TLB
+ * Inputs: void
+ * Outputs: None
+ * Return Value: none
+ */
 void flush_tlb(void) { asm volatile("mov %0, %%cr3;" ::"g"(pgdir[(get_current_pcb())->pid])); }

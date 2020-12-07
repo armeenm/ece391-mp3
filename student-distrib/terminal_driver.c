@@ -194,7 +194,6 @@ void switch_terminal(u8 term_num) {
   terminals[term_num].status = TASK_RUNNING;
 
   sti();
-  // irqh_pit();
 }
 
 /* restore_terminal
