@@ -132,17 +132,20 @@ u8 get_current_schedule(void) { return current_schedule; }
 void scheduler_vidmap(u8 num_term, u32 pid) {
   /* Make sure vidmap goes to virtual memorry in background */
   u8* screen_start = (u8*)(PG_4M_START * (ELF_LOAD_PG + NUM_PROC));
+
   /*
    * If the terminal is displayed set physical address to
    * video memory. Otherwise it needs to be set to the terminal video_buffer
    */
   terminal* term = &terminals[num_term];
   u32 video_addr;
+
   if (term->id == current_terminal) {
     video_addr = (u32)VIDEO;
   } else {
     video_addr = (u32)term->vid_mem_buf;
   }
+
   /* Map screen start pointer to appropriate video address */
   map_vid_mem(pid, (u32)(screen_start), video_addr);
 }

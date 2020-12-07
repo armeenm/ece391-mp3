@@ -1,6 +1,8 @@
 #include "paging.h"
-#include "x86_desc.h"
+#include "lib.h"
 #include "syscall.h"
+#include "x86_desc.h"
+
 /*
  * 4MB to 8MB is kernel, 0MB to 4MB is 4KB pages 8MB to 4GB is 4MB
  * Differentiating 4MB and 4KB is bit 7 in PDE (0 = 4KB, 1 = 4MB)
@@ -58,7 +60,6 @@ void init_paging(void) {
                : "g"(pgdir[0])
                : "eax");
 }
-
 
 /* make_task_pgdir
  * Description: Sets up a page table for a process.
@@ -122,22 +123,23 @@ i32 remove_task_pgdir(u8 const proc) {
  * Return Value: -1 on failure, 0 on success
  * Function: Remaps a virtual address into a physical address and flushes the tlb.
  */
-i32 map_vid_mem(u8 const proc, u32 virtual_address, u32 physical_address)
-{
+i32 map_vid_mem(u8 const proc, u32 virtual_address, u32 physical_address) {
+  cli();
+
   /* If process id is valid and physical address is not in kernel space */
-  if(proc >= NUM_PROC)
+  if (proc >= NUM_PROC)
     return -1;
   /* Map page table to page directory */
-  pgdir[proc][virtual_address/MB4] = (u32)(pgtbl_proc[proc]) | PG_USPACE | PG_RW | PG_PRESENT;
+  pgdir[proc][virtual_address / MB4] = (u32)(pgtbl_proc[proc]) | PG_USPACE | PG_RW | PG_PRESENT;
   /* Map page table entry to page table. Sets virtual address */
-  pgtbl_proc[proc][(virtual_address % MB4)/KB4] = physical_address | PG_USPACE | PG_RW | PG_PRESENT;
+  pgtbl_proc[proc][(virtual_address % MB4) / KB4] =
+      physical_address | PG_USPACE | PG_RW | PG_PRESENT;
 
-   /* Sets up page directory for process and flushes TLB */
+  /* Sets up page directory for process and flushes TLB */
   asm volatile("mov %0, %%cr3;" ::"g"(pgdir[proc]));
+
+  sti();
   return 0;
 }
 
-
-void flush_tlb(void) {
-  asm volatile("mov %0, %%cr3;" ::"g"(pgdir[(get_current_pcb())->pid]));
-}
+void flush_tlb(void) { asm volatile("mov %0, %%cr3;" ::"g"(pgdir[(get_current_pcb())->pid])); }

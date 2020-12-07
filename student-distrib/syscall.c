@@ -75,7 +75,12 @@ Pcb* get_pcb(u8 proc) { return (Pcb*)(MB8 - (proc + 1) * KB8); }
  * Return Value: current PCB ptr
  * Function:
  */
-Pcb* get_current_pcb(void) { return get_pcb(running_pid); }
+Pcb* get_current_pcb(void) {
+  cli();
+  Pcb* tmp = get_pcb(running_pid);
+  sti();
+  return tmp;
+}
 
 /* set_program_exception
  * Description: setter for the halt function, this function set's a static boolean to indicate if a
@@ -331,6 +336,8 @@ i32 read(i32 const fd, void* const buf, i32 const nbytes) {
   if (!buf || fd < 0 || fd >= FD_CNT || nbytes < 0 || !pcb ||
       ((pcb->fds[fd].flags & FD_IN_USE) == FD_NOT_IN_USE) || !pcb->fds[fd].jumptable)
     return -1;
+
+  sti();
 
   return pcb->fds[fd].jumptable->read(fd, buf, nbytes);
 }

@@ -148,7 +148,7 @@ void init_idt(void) {
   idt[IDT_RTC] = make_idt_desc(asm_irqh_rtc, KERNEL_CS, INT, DPL0);
 
   /* Syscall; use privilege lvl 3 for this to allow userspace calls */
-  idt[IDT_SYSCALL] = make_idt_desc(asm_irqh_syscall, KERNEL_CS, TRAP, DPL3);
+  idt[IDT_SYSCALL] = make_idt_desc(asm_irqh_syscall, KERNEL_CS, INT, DPL3);
 
   /* Load the IDT */
   lidt(idt_desc_ptr);
