@@ -422,7 +422,6 @@ void terminal_putc(u8 num_term, i8 c) {
     set_screen_xy(x, y);
   } else {
     set_terminal_screen_xy(term->id, x, y);
-    // map_vid_mem(get_current_pcb()->pid, (u32)VIDEO, (u32)term->vid_mem_buf);
   }
 }
 
