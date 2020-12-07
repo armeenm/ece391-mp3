@@ -1,9 +1,9 @@
 #include "terminal_driver.h"
 #include "keyboard.h"
-#include "syscall.h"
 #include "lib.h"
-#include "x86_desc.h"
 #include "pit.h"
+#include "syscall.h"
+#include "x86_desc.h"
 
 /* terminal_read
  * Description: Read input from the terminal
@@ -27,6 +27,8 @@ i32 terminal_read(i32 UNUSED(fd), void* const buf, i32 const nbytes) {
  * Function: To write to the line buf
  */
 i32 terminal_write(i32 UNUSED(fd), void const* const buf, i32 const nbytes) {
+  cli();
+
   /* Typecast buf to a char* */
   terminal* term = get_running_terminal();
   char const* const cbuf = (char const*)buf;
@@ -42,6 +44,8 @@ i32 terminal_write(i32 UNUSED(fd), void const* const buf, i32 const nbytes) {
     terminal_putc(term->id, cbuf[i]);
     ++bytes_written;
   }
+
+  sti();
 
   /* Return bytes written */
   return bytes_written;
@@ -75,14 +79,13 @@ i32 terminal_close(i32 UNUSED(fd)) { return 0; }
 terminal* get_terminal_from_pid(u32 pid) {
   int i = 0;
   /* Iterate through all terminals to find pid that matches */
-  for(i = 0; i < TERMINAL_NUM; i++) {
-    if(terminals[i].pid == pid)
+  for (i = 0; i < TERMINAL_NUM; i++) {
+    if (terminals[i].pid == pid)
       return &terminals[i];
   }
   /* Returns NULL is terminal is not found */
   return NULL;
 }
-
 
 /* get_running_terminal
  * Description: Gets the terminal that the scheduler is running
@@ -95,14 +98,14 @@ terminal* get_running_terminal(void) {
   Pcb* pcb = get_current_pcb();
   terminal* term;
   /* If the current pcb is the terminal return it */
-  if((term = get_terminal_from_pid(pcb->pid)))
+  if ((term = get_terminal_from_pid(pcb->pid)))
     return term;
   /* If it is not the current termial and there is no parent there is no terminal */
-  if(!(pcb->parent_pcb))
+  if (!(pcb->parent_pcb))
     return NULL;
   /* Iterate through the parents of the pcb and see if any of them are the terminal */
-  while(pcb->parent_pcb != NULL || pcb->parent_pcb->pid != pcb->pid) {
-    if((term = get_terminal_from_pid(pcb->parent_pid)))
+  while (pcb->parent_pcb != NULL || pcb->parent_pcb->pid != pcb->pid) {
+    if ((term = get_terminal_from_pid(pcb->parent_pid)))
       return term;
     /* Go to parent pcb */
     pcb = pcb->parent_pcb;
@@ -123,7 +126,7 @@ void init_terminals(void) {
   int i;
   terminal* term;
   /* For each terminal set everything to 0 */
-  for(i = 0; i < TERMINAL_NUM; i++) {
+  for (i = 0; i < TERMINAL_NUM; i++) {
     term = &terminals[i];
     term->screen_x = 0;
     term->screen_y = 0;
@@ -131,34 +134,32 @@ void init_terminals(void) {
     term->line_buf_index = 0;
     term->status = TASK_NOT_RUNNING;
     term->running = 0;
-      
+
     // Setup RTC details here since each terminal owns it's own RTC config
     term->rtc.real_freq = RTC_DEFAULT_REAL_FREQ;
     term->rtc.virt_freq = RTC_DEFAULT_VIRT_FREQ;
     term->rtc.int_count = 0;
     term->rtc.flag = 0;
     /* Set the video mem buffer to be next to the physical video memory */
-    term->vid_mem_buf = (u8 *)(VIDEO + (KB4 * (i + 1)));
+    term->vid_mem_buf = (u8*)(VIDEO + (KB4 * (i + 1)));
     term->id = (u8)i;
     term->vidmap = 0;
     /* Set line buffer to 0 */
     int j;
-    for(j = 0; j < LINE_BUFFER_SIZE; j++)
+    for (j = 0; j < LINE_BUFFER_SIZE; j++)
       term->line_buf[j] = 0;
-    if(i == 0) {
+    if (i == 0) {
       /* If it is the currrent terminal then set the screen_pos to wherever
        * bootup leaves us
        */
       term->screen_x = get_screen_x();
       term->screen_y = get_screen_y();
-    }
-    else {
+    } else {
       /* clear the video buffer for non-zero terminal ids */
-      for(j = 0; j < NUM_ROWS * NUM_COLS * 2; j+=2) {
+      for (j = 0; j < NUM_ROWS * NUM_COLS * 2; j += 2) {
         term->vid_mem_buf[j] = ' ';
         term->vid_mem_buf[j + 1] = ATTRIB;
       }
-        
     }
   }
   /* Initialize terminal 0 to be running for the PIT */
@@ -180,15 +181,19 @@ void init_terminals(void) {
  */
 void switch_terminal(u8 term_num) {
   /* Ensure valid input and that it is not the current terminal */
-  if(current_terminal == term_num || term_num >= TERMINAL_NUM)
+  if (current_terminal == term_num || term_num >= TERMINAL_NUM)
     return;
+
   /* Critical section on code. Must not be interrupted */
   cli();
+
   /* Restore new terminals properties and change the current terminal */
   restore_terminal(term_num);
   current_terminal = term_num;
   terminals[term_num].status = TASK_RUNNING;
+
   sti();
+  irqh_pit();
 }
 
 /* restore_terminal
@@ -202,11 +207,12 @@ void switch_terminal(u8 term_num) {
 void restore_terminal(u8 term_num) {
   /* Check if terminal is valid */
   terminal* term;
-  if(term_num >= TERMINAL_NUM)
+  terminal* prev_term = &terminals[current_terminal];
+
+  if (term_num >= TERMINAL_NUM)
     return;
 
   /* Set previous terminal screen position to current screen pos */
-  terminal* prev_term = &terminals[current_terminal];
   prev_term->screen_x = get_screen_x();
   prev_term->screen_y = get_screen_y();
 
@@ -215,10 +221,10 @@ void restore_terminal(u8 term_num) {
   set_screen_xy(term->screen_x, term->screen_y);
 
   /* map video memory to be video memory to ensure there are no virtual addresses */
-  u32 pid = get_current_pcb()->pid;
+  u32 const pid = get_current_pcb()->pid;
   map_vid_mem(pid, (u32)VIDEO, (u32)VIDEO);
 
-  /* 
+  /*
    * Copy video memory into prev_term buffer and copies the new terminals
    * video memory into the physical video memory
    */
@@ -239,8 +245,8 @@ void restore_terminal(u8 term_num) {
 terminal* new_terminal(u8 pid) {
   int i;
   /* Iterate through all terminals */
-  for(i = 0; i < TERMINAL_NUM; i++) {
-    if(terminals[i].running)
+  for (i = 0; i < TERMINAL_NUM; i++) {
+    if (terminals[i].running)
       continue;
     /* If terminal is not running then it is availible. Set it's pid and running */
     terminals[i].pid = pid;

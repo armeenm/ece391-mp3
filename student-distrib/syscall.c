@@ -6,7 +6,6 @@
 #include "util.h"
 #include "x86_desc.h"
 
-
 typedef i32 (*Syscall)(u32 arg1, u32 arg2, u32 arg3);
 
 FileOps const std_in_fops = {terminal_open, terminal_close, terminal_read, write_failure};
@@ -16,9 +15,9 @@ FileOps const fs_fops = {file_open, file_close, file_read, file_write};
 FileOps const dir_fops = {dir_open, dir_close, dir_read, dir_write};
 
 u8 const elf_header[] = {0x7F, 'E', 'L', 'F'};
-Syscall const syscalls[] = {(Syscall)halt, (Syscall)execute, (Syscall)read,    (Syscall)write,
-                            (Syscall)open, (Syscall)close,   (Syscall)getargs, (Syscall)vidmap,
-                            (Syscall)set_handler, (Syscall)sigreturn};
+Syscall const syscalls[] = {
+    (Syscall)halt,  (Syscall)execute, (Syscall)read,   (Syscall)write,       (Syscall)open,
+    (Syscall)close, (Syscall)getargs, (Syscall)vidmap, (Syscall)set_handler, (Syscall)sigreturn};
 
 u8 procs = 0x0;
 u8 running_pid = 0;
@@ -78,18 +77,13 @@ Pcb* get_pcb(u8 proc) { return (Pcb*)(MB8 - (proc + 1) * KB8); }
  */
 Pcb* get_current_pcb(void) { return get_pcb(running_pid); }
 
-
 /* set_program_exception
- * Description: setter for the halt function, this function set's a static boolean to indicate if a exception was thrown
- * and the proc was killed by the shell
- * Inputs: u8 bval: boolean to enable or disable this 256 load to EAX instead of halt(status)
- * Outputs: none
- * Return Value: none
- * Function: set program exception occured
+ * Description: setter for the halt function, this function set's a static boolean to indicate if a
+ * exception was thrown and the proc was killed by the shell Inputs: u8 bval: boolean to enable or
+ * disable this 256 load to EAX instead of halt(status) Outputs: none Return Value: none Function:
+ * set program exception occured
  */
-void set_program_exception(u8 val) {
-  program_exception_occured = val;
-}
+void set_program_exception(u8 val) { program_exception_occured = val; }
 
 /* halt
  * Description: Halts a program
@@ -100,18 +94,21 @@ void set_program_exception(u8 val) {
  */
 i32 halt(u8 const status) {
   u32 i;
-  sti();
+
+  cli();
+
   Pcb* const pcb = get_current_pcb();
-  if(pcb && pcb->parent_pcb)
+
+  if (pcb && pcb->parent_pcb)
     pcb->parent_pcb->child_pcb = NULL;
-  
+
   /* If we're the "parent process" of the OS (pid == 0, shell) don't halt it */
   /* Close all FDs for the current process */
   for (i = 0; i < FD_CNT; ++i)
     close(i);
 
   terminal* term = get_running_terminal();
- 
+
   /* Marks pid as completed */
   procs &= ~(FIRST_PID >> pcb->pid);
 
@@ -121,10 +118,10 @@ i32 halt(u8 const status) {
     terminals[current_terminal].running = 0;
     // Load KSP/KPB from last execute call
     asm volatile("mov %0, %%esp;"
-               "mov %1, %%ebp;"
-               : 
-               : "g"(pcb->parent_ksp), "g"(pcb->parent_kbp)
-               : "esp", "ebp");
+                 "mov %1, %%ebp;"
+                 :
+                 : "g"(pcb->parent_ksp), "g"(pcb->parent_kbp)
+                 : "esp", "ebp");
     execute((u8*)"shell");
   } else {
     // if a program exception occured, we ignore the halt status and return 256 to eax
@@ -141,13 +138,14 @@ i32 halt(u8 const status) {
   /* Uncheck vidmap for terminal */
   term->vidmap = 0;
 
-  cli();
+  sti();
+
   /* Moves base pointers to parent */
   asm volatile("mov %0, %%esp;"
                "mov %1, %%ebp;"
                "mov %2, %%eax;"
-	       "leave;"
-	       "ret;"
+               "leave;"
+               "ret;"
                :
                : "g"(pcb->parent_ksp), "g"(pcb->parent_kbp), "g"(pcb->child_return)
                : "eax", "esp", "ebp");
@@ -178,12 +176,14 @@ i32 execute(u8 const* const ucmd) {
   /* Copy the input argument neglecting leading spaces */
   memset(cmd, 0, ARGS_SIZE);
   // Remove excess spaces and copy to cmd buffer
-  for (i = strnonspace((i8 const*)ucmd), l = strlen((i8 const*)ucmd), j = 0; i<l; i++, j++) {
+  for (i = strnonspace((i8 const*)ucmd), l = strlen((i8 const*)ucmd), j = 0; i < l; i++, j++) {
     if (ucmd[i] == ' ') {
       cmd[j] = '\0';
-      while(i+1 < l && ucmd[i+1] == ' ') {i++;}
-      // once we run into a command with a space, grab stuff after it 
-      strcpy(cmd+j, (i8 const*)ucmd+i);
+      while (i + 1 < l && ucmd[i + 1] == ' ') {
+        i++;
+      }
+      // once we run into a command with a space, grab stuff after it
+      strcpy(cmd + j, (i8 const*)ucmd + i);
       break;
     } else {
       cmd[j] = ucmd[i];
@@ -229,7 +229,7 @@ cont:
 
   {
     Pcb* const pcb = get_current_pcb();
-    
+
     u32 esp, ebp;
 
     /* Copy the ESP and EBP for the child process to return to parent */
@@ -257,7 +257,7 @@ cont:
     memcpy(pcb->raw_argv, cmd, ARGS_SIZE);
     pcb->argv[0] = pcb->raw_argv;
     // set the remaining section of the argument
-    pcb->argv[1] = pcb->raw_argv+strlen(pcb->raw_argv)+1;
+    pcb->argv[1] = pcb->raw_argv + strlen(pcb->raw_argv) + 1;
 
     /* Set the pcb pid and it's parents ksp and kbp */
     pcb->pid = running_pid;
@@ -266,23 +266,24 @@ cont:
 
     /* Create a new terminal if needed */
     terminal* term;
-    if(terminals[current_terminal].running == 1) {
+    if (terminals[current_terminal].running == 1) {
       term = &terminals[current_terminal];
     } else {
       term = new_terminal(running_pid);
     }
     /* Set child pcb to null and set parent pid based on the terminals pid */
     pcb->child_pcb = NULL;
-    pcb->parent_pid = (running_pid == term->pid) ? -1 : (i32)parent->pid; /* Special case 1st proc */
-    
+    pcb->parent_pid =
+        (running_pid == term->pid) ? -1 : (i32)parent->pid; /* Special case 1st proc */
+
     /* If the parent exists set it's child to the new pcb, otherwise the parent pcb is null */
     pcb->parent_pcb = parent;
-    if(pcb->parent_pid != -1) {
+    if (pcb->parent_pid != -1) {
       parent->child_pcb = pcb;
     } else {
       pcb->parent_pcb = NULL;
     }
-      
+
     /* New KSP */
     tss.esp0 = MB8 - KB8 * (running_pid + 1) - ADDRESS_SIZE;
 
@@ -436,7 +437,7 @@ i32 close(i32 fd) {
 i32 getargs(u8* const buf, i32 const nbytes) {
   /* Gets the pcb */
   Pcb const* const pcb = get_current_pcb();
-  /* Check to see if pcb and buffer are valid, also check 
+  /* Check to see if pcb and buffer are valid, also check
      that we're not pointing to an empty string*/
   if (!buf || nbytes < 0 || !pcb->argv[1] || !pcb->argv[1][0])
     return -1;
@@ -460,27 +461,27 @@ i32 vidmap(u8** screen_start) {
   /* Check to see if pcb and screen_start pointer are valid, return -1 on fail
    * (Also see if screen_start is < 8MB (not in kernal space)
    */
-  if(!screen_start || screen_start < (u8 **)(PG_4M_START * 2) || !pcb)
+  if (!screen_start || screen_start < (u8**)(PG_4M_START * 2) || !pcb)
     return -1;
   /* Set screen_start to 128MB + 4MB * 8 Process = 160MB */
-  *screen_start = (u8 *)(PG_4M_START *  (ELF_LOAD_PG + NUM_PROC));
+  *screen_start = (u8*)(PG_4M_START * (ELF_LOAD_PG + NUM_PROC));
   /* Map to video memory and return condition */
   terminal* term = get_running_terminal();
-  if(!term)
+  if (!term)
     return -1;
-  /* 
+  /*
    * If the terminal is displayed set physical address to
    * video memory. Otherwise it needs to be set to the terminal video_buffer
    */
   u32 video_addr;
-  if(term->id == current_terminal) {
+  if (term->id == current_terminal) {
     video_addr = (u32)VIDEO;
   } else {
     video_addr = (u32)term->vid_mem_buf;
   }
   term->vidmap = 1;
   /* Map screen start pointer to appropriate video address */
-  return map_vid_mem(pcb->pid,(u32)(*screen_start), video_addr);
+  return map_vid_mem(pcb->pid, (u32)(*screen_start), video_addr);
 }
 
 /* set_handler
@@ -491,9 +492,7 @@ i32 vidmap(u8** screen_start) {
  * Return Value: if fails return -1, if success return 0
  * Function: Changes the default action for a signal for a particular signal
  */
-i32 set_handler(u32 UNUSED(signum), void* UNUSED(handler_address)) {
-  NIMPL;
-}
+i32 set_handler(u32 UNUSED(signum), void* UNUSED(handler_address)) { NIMPL; }
 
 /* sigreturn
  * Description: Copies hardware context on the user-level stack to the processor
@@ -502,13 +501,9 @@ i32 set_handler(u32 UNUSED(signum), void* UNUSED(handler_address)) {
  * Return Value: if fails return -1, if success return 0
  * Function: Copies hardware context on the user-level stack to the processor
  */
-i32 sigreturn(void) {
-  NIMPL;
-}
+i32 sigreturn(void) { NIMPL; }
 
-void set_pid(u8 pid) {
-  running_pid = pid;
-}
+void set_pid(u8 pid) { running_pid = pid; }
 
 i32 read_failure(i32 UNUSED(fd), void* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }
 i32 write_failure(i32 UNUSED(fd), void const* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }

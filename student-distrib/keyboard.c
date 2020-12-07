@@ -1,8 +1,8 @@
 #include "keyboard.h"
 #include "i8259.h"
 #include "lib.h"
-#include "terminal_driver.h"
 #include "syscall.h"
+#include "terminal_driver.h"
 /* Declare variables for keyboard */
 
 u8 key_state[SCS1_PRESSED_F12];
@@ -44,13 +44,15 @@ i32 get_line_buf(char* const buf, i32 const nbytes) {
   i32 lenstr;
   i32 nl_idx;
   terminal* term;
+
   if (nbytes <= 0 || !buf)
     return -1;
+
   /* Get running terminal and set it's read flag to 1 */
   term = get_running_terminal();
-  if(!term)
+  if (!term)
     return -1;
-  
+
   term->read_flag = 1;
 
   /* Wait while the line_buf does not contain a \n */
@@ -142,17 +144,15 @@ void handle_keypress(SCSet1 const scancode) {
       key_state[scancode] = 1;
     }
     /* Switch between terminals if alt and f1, f2, f3 is pressed */
-    if(alt_pressed() && is_func_key()) {
+    if (alt_pressed() && is_func_key()) {
       /* For each Function key, switch to either terminal 0, 1, or 2 */
-      if(scancode == SCS1_PRESSED_F1) {
+      if (scancode == SCS1_PRESSED_F1) {
         send_eoi(KEYBOARD_IRQ);
         switch_terminal(0);
-      }
-      else if(scancode == SCS1_PRESSED_F2) {
+      } else if (scancode == SCS1_PRESSED_F2) {
         send_eoi(KEYBOARD_IRQ);
         switch_terminal(1);
-      }
-      else if(scancode == SCS1_PRESSED_F3) {
+      } else if (scancode == SCS1_PRESSED_F3) {
         send_eoi(KEYBOARD_IRQ);
         switch_terminal(2);
       }
@@ -165,8 +165,10 @@ void handle_keypress(SCSet1 const scancode) {
 
       // Todo: let's not have the keyboard setup the screen again? maybe call out to shell?
       if (term->read_flag) {
+        printf("%s", SHELL_PS1);
+
         /* Write to terminal to put "thanOS> " in */
-        terminal_write(0, SHELL_PS1, sizeof(SHELL_PS1));
+        // terminal_write(0, SHELL_PS1, sizeof(SHELL_PS1));
 
         /* Write what's in the input buf */
         for (i = 0; i < term->line_buf_index; ++i)
@@ -175,8 +177,7 @@ void handle_keypress(SCSet1 const scancode) {
 
     } else if (!term->read_flag) {
       return;
-    }
-     else if (key_state[SCS1_PRESSED_BACKSPACE] == 1) {
+    } else if (key_state[SCS1_PRESSED_BACKSPACE] == 1) {
       /* If there is data in the line buf and backspace is pressed
        * decrement the line buf and handle the backspace keypress
        */
@@ -303,8 +304,8 @@ i8 handle_disp(i8 disp) {
 void clear_line_buf(void) {
   /* Iterate through the entire line buf */
   u32 i;
-  terminal * term = get_running_terminal();
-  if(!term)
+  terminal* term = get_running_terminal();
+  if (!term)
     return;
   /* Clear the line buf */
   for (i = 0; i < LINE_BUFFER_SIZE; ++i)
@@ -335,14 +336,11 @@ i32 shift_pressed(void) {
 i32 capslock_pressed(void) { return key_state[SCS1_PRESSED_CAPSLOCK]; }
 
 i32 is_func_key(void) {
-  return (key_state[SCS1_PRESSED_F1] || key_state[SCS1_PRESSED_F2] ||
-  key_state[SCS1_PRESSED_F3] || key_state[SCS1_PRESSED_F4] ||
-  key_state[SCS1_PRESSED_F5] || key_state[SCS1_PRESSED_F6] ||
-  key_state[SCS1_PRESSED_F7] || key_state[SCS1_PRESSED_F8] ||
-  key_state[SCS1_PRESSED_F9] || key_state[SCS1_PRESSED_F10] ||
-  key_state[SCS1_PRESSED_F11] || key_state[SCS1_PRESSED_F12]);
+  return (key_state[SCS1_PRESSED_F1] || key_state[SCS1_PRESSED_F2] || key_state[SCS1_PRESSED_F3] ||
+          key_state[SCS1_PRESSED_F4] || key_state[SCS1_PRESSED_F5] || key_state[SCS1_PRESSED_F6] ||
+          key_state[SCS1_PRESSED_F7] || key_state[SCS1_PRESSED_F8] || key_state[SCS1_PRESSED_F9] ||
+          key_state[SCS1_PRESSED_F10] || key_state[SCS1_PRESSED_F11] ||
+          key_state[SCS1_PRESSED_F12]);
 }
 
-i32 alt_pressed(void) {
-  return key_state[SCS1_PRESSED_LEFTALT];
-}
+i32 alt_pressed(void) { return key_state[SCS1_PRESSED_LEFTALT]; }

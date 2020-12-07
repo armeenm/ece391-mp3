@@ -58,7 +58,7 @@ EXC_DFL(exc_ts, "Invalid TSS")
 EXC_DFL(exc_np, "Segment Not Present")
 EXC_DFL(exc_ss, "Stack-Segment Fault")
 EXC_DFL_ERRC(exc_gp, "General Protection Fault")
-EXC_DFL_NOCLR(exc_pf, "Page Fault")
+EXC_DFL_ERRC_NOCLR(exc_pf, "Page Fault")
 EXC_DFL_NOCLR(exc_af, "(Debug) Assertion Failure")
 EXC_DFL(exc_mf, "x87 Floating-Point Exception")
 EXC_DFL(exc_ac, "Alignment Check")
@@ -67,11 +67,9 @@ EXC_DFL(exc_xf, "SIMD Floating-Point Exception")
 EXC_DFL(exc_ve, "Virtualization Exception")
 EXC_DFL(exc_sx, "Security Exception")
 
-/* PIT - unused */
-ASM_EXC(irqh_pit)
-
 /* Define normal interrupts */
 ASM_EXC(irqh_keyboard)
+ASM_EXC(irqh_pit)
 ASM_EXC(irqh_rtc)
 ASM_EXC_KEEPEAX(irqh_syscall)
 
