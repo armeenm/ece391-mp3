@@ -100,6 +100,7 @@ void set_program_exception(u8 val) {
  */
 i32 halt(u8 const status) {
   u32 i;
+  sti();
   Pcb* const pcb = get_current_pcb();
   if(pcb && pcb->parent_pcb)
     pcb->parent_pcb->child_pcb = NULL;
@@ -110,9 +111,21 @@ i32 halt(u8 const status) {
     close(i);
 
   terminal* term = get_running_terminal();
+ 
+  /* Marks pid as completed */
+  procs &= ~(FIRST_PID >> pcb->pid);
 
   if (pcb->parent_pid == -1) {
+    // if the process is a terminal, we mark it as not running, so it's id can be taken in execute
     tss.esp0 = MB8 - KB8 * (term->pid + 1) - ADDRESS_SIZE;
+    terminals[current_terminal].running = 0;
+    // Load KSP/KPB from last execute call
+    asm volatile("mov %0, %%esp;"
+               "mov %1, %%ebp;"
+               : 
+               : "g"(pcb->parent_ksp), "g"(pcb->parent_kbp)
+               : "esp", "ebp");
+    execute((u8*)"shell");
   } else {
     // if a program exception occured, we ignore the halt status and return 256 to eax
     pcb->child_return = program_exception_occured ? PROCESS_KILLED_BY_EXCEPTION : status;
@@ -128,9 +141,7 @@ i32 halt(u8 const status) {
   /* Uncheck vidmap for terminal */
   term->vidmap = 0;
 
-  /* Marks process as completed */
-  procs &= ~(FIRST_PID >> pcb->pid);
-
+  cli();
   /* Moves base pointers to parent */
   asm volatile("mov %0, %%esp;"
                "mov %1, %%ebp;"
