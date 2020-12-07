@@ -526,7 +526,29 @@ i32 set_handler(u32 UNUSED(signum), void* UNUSED(handler_address)) { NIMPL; }
  */
 i32 sigreturn(void) { NIMPL; }
 
+/* set_pid
+ * Description: This has been left as an exercise for the TA.
+ * Inputs: lol
+ * Outputs: lol
+ * Return Value: lol
+ * Function: lol
+ */
 void set_pid(u8 pid) { running_pid = pid; }
 
+/* read_failure
+ * Description: This has been left as an exercise for the TA.
+ * Inputs: lol
+ * Outputs: lol
+ * Return Value: lol
+ * Function: lol
+ */
 i32 read_failure(i32 UNUSED(fd), void* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }
+
+/* write_failure
+ * Description: This has been left as an exercise for the TA.
+ * Inputs: lol
+ * Outputs: lol
+ * Return Value: lol
+ * Function: lol
+ */
 i32 write_failure(i32 UNUSED(fd), void const* UNUSED(buf), i32 UNUSED(nbytes)) { return -1; }

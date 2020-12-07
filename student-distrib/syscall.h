@@ -3,7 +3,15 @@
 
 #include "types.h"
 
-enum { ENTRY_POINT_OFFSET = 24, LOAD_ADDR = 0x8048000, MB4 = 0x400000, MB8 = 0x800000, KB8 = 0x2000, KB1 = 0x400, KB4 = 0x1000 };
+enum {
+  ENTRY_POINT_OFFSET = 24,
+  LOAD_ADDR = 0x8048000,
+  MB4 = 0x400000,
+  MB8 = 0x800000,
+  KB8 = 0x2000,
+  KB1 = 0x400,
+  KB4 = 0x1000
+};
 
 enum {
   FD_NOT_IN_USE = 0,
@@ -48,7 +56,6 @@ typedef struct FileDesc {
 
 typedef struct Pcb {
   FileDesc fds[FD_CNT];
-  i32 argc;
   i8 raw_argv[ARGS_SIZE];
   i8* argv[ARGS_SIZE];
   u32 pid;
